@@ -7,6 +7,7 @@ from minimal_device.base_device import BaseDevice
 device_routes = Blueprint('device_routes', __name__)
 
 
+@device_routes.route('/api/set-<string:devicePart>-state', methods=['POST'])
 @device_routes.route('/set-<string:devicePart>-state', methods=['POST'])
 def set_device_state(devicePart):
     part_index = request.json['partIndex']
@@ -52,6 +53,7 @@ def set_device_state(devicePart):
     return jsonify({'success': True, 'newState': new_state})
 
 
+@device_routes.route('/api/stock_adjust?pump_index=<int:pump_index>?volume=<int:volume>', methods=['POST'])
 @device_routes.route('/stock_adjust?pump_index=<int:pump_index>?volume=<int:volume>', methods=['POST'])
 def adjust_stock_volume(pump_index, volume):
     if pump_index == 1:
@@ -66,6 +68,7 @@ def adjust_stock_volume(pump_index, volume):
         current_app.experiment.parameters = parameters
 
 
+@device_routes.route('/api/measure-<string:devicePart>', methods=['POST'])
 @device_routes.route('/measure-<string:devicePart>', methods=['POST'])
 def measure_device_part(devicePart):
     partIndex = int(request.json['partIndex'])
@@ -81,6 +84,7 @@ def measure_device_part(devicePart):
     return jsonify({'success': True, 'device_states': dev.device_data})
 
 
+@device_routes.route('/api/get-all-device-data', methods=['GET'])
 @device_routes.route('/get-all-device-data', methods=['GET'])
 def get_all_device_states():
     print("Getting all device data")
@@ -109,6 +113,7 @@ def fix_dict_keys_from_javascript(dict):
     return new_dict
 
 
+@device_routes.route('/api/set-<string:devicePart>-calibration', methods=['POST'])
 @device_routes.route('/set-<string:devicePart>-calibration', methods=['POST'])
 def set_part_calibration(devicePart):
     data = request.get_json()
@@ -133,6 +138,7 @@ def set_part_calibration(devicePart):
     return response
 
 
+@device_routes.route('/api/measure-od-calibration', methods=['POST'])
 @device_routes.route('/measure-od-calibration', methods=['POST'])
 def measure_od_calibration():
     data = request.get_json()
@@ -147,6 +153,7 @@ def measure_od_calibration():
     return jsonify(success=True, odValue=odValue)
 
 
+@device_routes.route('/api/start-pump-calibration-sequence', methods=['POST'])
 @device_routes.route('/start-pump-calibration-sequence', methods=['POST'])
 def start_pump_calibration_sequence():
     data = request.get_json()
@@ -169,6 +176,7 @@ def start_pump_calibration_sequence():
     return jsonify(success=True)
 
 
+@device_routes.route('/api/force-connect-device', methods=['POST', 'GET'])
 @device_routes.route('/force-connect-device', methods=['POST', 'GET'])
 def force_connect_device():
     print("Force connecting device")
@@ -197,6 +205,7 @@ def force_connect_device():
         return jsonify({'success': False, 'error': str(e)})
     return
 
+@device_routes.route('/api/connect-device', methods=['POST', 'GET'])
 @device_routes.route('/connect-device', methods=['POST', 'GET'])
 def connect_device():
     global dev

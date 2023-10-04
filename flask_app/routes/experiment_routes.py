@@ -13,6 +13,7 @@ from routes.device_routes import connect_device
 experiment_routes = Blueprint('experiment_routes', __name__)
 
 
+@experiment_routes.route('/api/experiments', methods=['GET'])
 @experiment_routes.route('/experiments', methods=['GET'])
 def experiments():
     try:
@@ -26,6 +27,7 @@ def experiments():
     return jsonify(experiments_clean)
 
 
+@experiment_routes.route('/api/experiments', methods=['POST'])
 @experiment_routes.route('/experiments', methods=['POST'])
 def create_experiment():
     experiment_data = request.json
@@ -39,6 +41,7 @@ def create_experiment():
     return jsonify({'id': experiment_model.id, 'name': experiment_model.name}), 201
 
 
+@experiment_routes.route('/api/experiments/<string:id>', methods=['GET'])
 @experiment_routes.route('/experiments/<string:id>', methods=['GET'])
 def get_experiment(id):
     # When id is 0, return default response
@@ -84,6 +87,7 @@ def get_experiment(id):
     return jsonify(experiment_model.to_dict()), 200
 
 
+@experiment_routes.route('/api/experiments/<int:id>/delete', methods=['GET'])
 @experiment_routes.route('/experiments/<int:id>/delete', methods=['GET'])
 def delete_experiment(id):
     experiment_model = db.session.get(ExperimentModel, id)
@@ -107,6 +111,7 @@ def delete_experiment(id):
     else:
         return jsonify({'error': 'Experiment not found'}), 404
 
+@experiment_routes.route('/api/experiments/current/parameters', methods=['PUT'])
 @experiment_routes.route('/experiments/current/parameters', methods=['PUT'])
 def update_experiment_parameters():
     new_parameters = request.json['parameters']
@@ -120,6 +125,7 @@ def update_experiment_parameters():
         c.get_latest_data_from_db()
     return jsonify(current_app.experiment.model.to_dict()), 200
 
+@experiment_routes.route('/api/experiments/stop_all', methods=['GET'])
 @experiment_routes.route('/experiments/stop_all', methods=['GET'])
 def stop_all_experiments():
     experiment_models = db.session.query(ExperimentModel).all()
@@ -130,6 +136,7 @@ def stop_all_experiments():
     return jsonify({'message': 'All experiments stopped'}), 200
 
 
+@experiment_routes.route('/api/experiments/current/status', methods=['PUT'])
 @experiment_routes.route('/experiments/current/status', methods=['PUT'])
 def update_experiment_status():
     status = request.json['status']
@@ -162,6 +169,7 @@ def update_experiment_status():
         return jsonify({'error': 'Experiment not found'}), 404
 
 
+@experiment_routes.route('/api/get_info', methods=['GET'])
 @experiment_routes.route('/get_info', methods=['GET'])
 def get_info():
     try:
@@ -171,6 +179,7 @@ def get_info():
         return traceback.format_exc()
 
 
+@experiment_routes.route('/api/experiments/<int:experiment_id>/cultures/<int:id>', methods=['GET'])
 @experiment_routes.route('/experiments/<int:experiment_id>/cultures/<int:id>', methods=['GET'])
 def get_culture_data(experiment_id, id):
     culture = db.session.get(CultureData, id)
@@ -180,6 +189,7 @@ def get_culture_data(experiment_id, id):
         return jsonify({'error': 'Culture not found'}), 404
 
 
+@experiment_routes.route('/api/plot/<int:vial>', methods=['GET'])
 @experiment_routes.route('/plot/<int:vial>', methods=['GET'])
 def get_culture_plot(vial):
     fig=current_app.experiment.cultures[vial].plot()
@@ -195,6 +205,7 @@ def get_culture_plot(vial):
 #
 # from flask import render_template_string
 
+@experiment_routes.route('/api/export/<int:vial>/<string:filetype>', methods=['GET'])
 @experiment_routes.route('/export/<int:vial>/<string:filetype>', methods=['GET'])
 def export(vial, filetype):
     culture = current_app.experiment.cultures[vial]

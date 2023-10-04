@@ -1,18 +1,21 @@
 #server.py
 
-from waitress import serve
-from flask import Flask, current_app
-from routes.device_routes import device_routes, connect_device
-
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 import logging
 import os
 import signal
 
+from flask import Flask, current_app, send_from_directory
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_static_digest import FlaskStaticDigest
+from waitress import serve
+
 from experiment.models import db
+from routes.device_routes import connect_device, device_routes
 from routes.experiment_routes import experiment_routes
 from routes.service_routes import service_routes
+
+flask_static_digest = FlaskStaticDigest()
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 pid_file_path = os.path.join(base_dir, "data/flask_app.pid")
@@ -23,10 +26,11 @@ def create_app():
     with open(pid_file_path, "w+") as pid_file:
         pid_file.write(str(pid))
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static/build', static_url_path="/")
     app.register_blueprint(device_routes)
     app.register_blueprint(experiment_routes)
     app.register_blueprint(service_routes)
+    flask_static_digest.init_app(app)
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(script_dir, '../db/replifactory.db')
@@ -48,6 +52,16 @@ def create_app():
         except:
             pass
         os.kill(pid, signal.SIGTERM)
+
+    @app.route('/static/<path:path>')
+    def send_report(path):
+        return send_from_directory('static', path)
+
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all(path):
+        return app.send_static_file("index.html")
+
     return app
 
 

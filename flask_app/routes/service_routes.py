@@ -10,6 +10,7 @@ sys.path.insert(0, "../")
 service_routes = Blueprint('service_routes', __name__)
 
 
+@service_routes.route("/api/capture")
 @service_routes.route("/capture")
 def capture_image():
     try:
@@ -18,6 +19,7 @@ def capture_image():
         return capture_image_cv2()
 
 
+@service_routes.route("/api/capture_cv2")
 @service_routes.route("/capture_cv2")
 def capture_image_cv2():
     import cv2
@@ -32,6 +34,7 @@ def capture_image_cv2():
     return send_file(stream, mimetype='image/jpeg', as_attachment=False)
 
 
+@service_routes.route("/api/picapture")
 @service_routes.route("/picapture")
 def capture_image_pi():
     stream = io.BytesIO()
@@ -49,6 +52,7 @@ from flask import abort
 
 allowed_updates = {"frontend", "backend", "full"}
 
+@service_routes.route('/api/update/<string:update_type>', methods=['GET'])
 @service_routes.route('/update/<string:update_type>', methods=['GET'])
 def update(update_type):
     if update_type not in allowed_updates:
@@ -65,6 +69,7 @@ def update(update_type):
 
     return jsonify({'message': 'Software update initialized'})
 
+@service_routes.route('/api/update_log', methods=['GET'])
 @service_routes.route('/update_log', methods=['GET'])
 def update_log():
     try:
@@ -77,12 +82,14 @@ def update_log():
         return jsonify({'error': 'Log file not found'}), 404
 
 
+@service_routes.route('/api/hostname', methods=['GET'])
 @service_routes.route('/hostname', methods=['GET'])
 def get_hostname():
     hostname = socket.gethostname()
     return jsonify({'hostname': hostname})
 
 
+@service_routes.route('/api/download_db', methods=['GET'])
 @service_routes.route('/download_db', methods=['GET'])
 def download_file():
     script_dir = os.path.dirname(__file__)
@@ -91,6 +98,7 @@ def download_file():
     return send_file(abs_file_path, as_attachment=True)
 
 
+@service_routes.route('/api/log/<int:lines>/', methods=['GET'])
 @service_routes.route('/log/<int:lines>/', methods=['GET'])
 def get_log_tail(lines=100):
     script_path = os.path.dirname(__file__)
@@ -111,6 +119,7 @@ def get_log_tail(lines=100):
     return jsonify(d)
 
 # route to export csv of current experiment database
+@service_routes.route('/api/export_csv', methods=['GET'])
 @service_routes.route('/export_csv', methods=['GET'])
 def export_csv():
     import pandas as pd
@@ -138,6 +147,7 @@ def export_csv():
     return response
 
 
+@service_routes.route('/api/exec/<string:command>', methods=['GET'])
 @service_routes.route('/exec/<string:command>', methods=['GET'])
 def execute_command(command):
     import subprocess
