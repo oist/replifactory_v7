@@ -1,13 +1,17 @@
 node_modules/
+/vue/src/server/daemon/
 /env/
 /data/
 /.idea/
 flask_app/static/build/
 cache_manifest.json
 
+__pycache__/
 /flask_app/minimal_device/__pycache__/
 /flask_app/data/
-__pycache__/
+.venv/
+/flask_app/build/
+/flask_app/dist/
 /secrets/
 /secrets2/
 /logs/
