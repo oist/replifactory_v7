@@ -1,3 +1,10 @@
+FROM fnndsc/python-poetry:1.5.1 as poetry
+
+COPY --from=project_root poetry.lock poetry.toml pyproject.toml ./
+
+RUN poetry export -f requirements.txt --output /tmp/requirements.txt
+
+
 FROM python:3.10.12-bullseye
 
 RUN apt-get update && apt-get install -y \
@@ -16,7 +23,7 @@ RUN useradd -mU $USER_NAME && \
 
 USER $USER
 
-COPY requirements-lock.txt ./
+COPY --from=poetry /tmp/requirements.txt ./requirements-lock.txt
 
 RUN pip install --no-cache-dir -r requirements-lock.txt
 

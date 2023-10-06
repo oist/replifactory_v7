@@ -10,12 +10,12 @@ RUN chown node:node ./
 
 USER node
 
-COPY package.json package-lock.json* ./
+COPY --from=project_root package.json package-lock.json* ./
 
 RUN npm ci && npm cache clean --force
 
 COPY --chown=node:node ./src ./src
-COPY --chown=node:node ./dist ./dist 
+COPY --chown=node:node ./dist ./dist
 COPY --chown=node:node --chmod=775 ./entrypoint.sh ./
 
 ENTRYPOINT ["./entrypoint.sh"]

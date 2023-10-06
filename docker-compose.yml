@@ -2,7 +2,10 @@ services:
   backend:
     image: replifactory
     restart: unless-stopped
-    build: ./flask_app
+    build:
+      context: ./flask_app
+      additional_contexts:
+        project_root: .
     privileged: true
     # work if /etc/udev/rules.d/11-ftdi.rules created on host machine: https://eblot.github.io/pyftdi/installation.html
     devices:  # DO NOT WORK IN DOCKER DESKTOP!
@@ -23,7 +26,10 @@ services:
   frontend:
     image: replifactory-ui
     restart: unless-stopped
-    build: ./vue
+    build:
+      context: ./vue
+      additional_contexts:
+        project_root: .
     depends_on:
       - init
       - backend
@@ -50,9 +56,9 @@ services:
     ports:
       - 4040:4040
     entrypoint: ngrok
-    command: 
-      - http 
-      - frontend:3000 
+    command:
+      - http
+      - frontend:3000
       - --config=/ngrok.yml,/run/secrets/ngrok_auth_token.yml
     depends_on:
       - frontend
