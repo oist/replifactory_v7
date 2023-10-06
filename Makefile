@@ -102,6 +102,9 @@ poetry:
   		curl -sSL https://install.python-poetry.org | POETRY_VERSION=$(POETRY_VERSION) python3 - ; \
 	fi
 
+pip-freeze:
+	pip freeze -r ./flask_app/requirements.txt > ./flask_app/requirements-lock.txt
+
 copy_to_www:
 	@echo "Copying contents of vue/dist/ to /var/www/html..."
 	@sudo cp -r vue/dist/* /var/www/html
@@ -220,3 +223,18 @@ secrets:
 	ssh-keygen -t rsa -b 4096 -C "pi@$$RASPBERRY_NAME" -f ~/.ssh/id_rsa -N ""
 	ssh-copy-id -i ~/.ssh/id_rsa.pub -p $$VPS_PORT pi@$$VPS_IP
 	make vps
+
+
+COMPOSE_OPT = --build --force-recreate
+
+docker-run:
+	docker compose up $(COMPOSE_OPT)
+
+docker-run-daemon:
+	docker compose up -d $(COMPOSE_OPT)
+
+docker-logs:
+	docker compose logs -f
+
+docker-stop:
+	docker compose stop

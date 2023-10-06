@@ -1,5 +1,6 @@
 #server.py
 
+import sys
 import logging
 import os
 import signal
@@ -20,6 +21,9 @@ flask_static_digest = FlaskStaticDigest()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 pid_file_path = os.path.join(base_dir, "data/flask_app.pid")
 
+logging.basicConfig(
+    level=os.environ.get("LOGGING_LEVEL", logging.INFO),
+)
 
 def create_app():
     pid = os.getpid()
@@ -70,5 +74,7 @@ if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         logging.info("Starting server...")
-        app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=False)
-        # serve(app, host="0.0.0.0", port=5000, threads=1)
+        if "serve" in sys.argv:
+            serve(app, host="0.0.0.0", port=5000, threads=1)
+        else:
+            app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=False)
