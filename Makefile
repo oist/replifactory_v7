@@ -1,29 +1,39 @@
 #git clone http://github.com/catalin-rusnac/replifactory_v7; cd replifactory_v7; make install
 
-default: install run
+default: dependencies build run
 
 UI_SERVICE_NAME = ReplifactoryUI
+POETRY_VERSION = 1.6.1
+PYTHON = poetry run python
+
+node_modules: package-lock.json
+	npm ci
+
+python_env: poetry.lock
+	poetry install
+
+dependencies: node_modules python_env
 
 ifeq ($(OS),Windows_NT)
-	DEFAULT_TASKS = windows-install
-	VENV_NAME ?= .venv
-	PYTHON = "flask_app/$(VENV_NAME)/Scripts/python"
-install: install_win_dependencies venv
-	cd vue && npm install -y
-	flask_app/$(VENV_NAME)/Scripts/python -m pip install -r flask_app/requirements.txt
-run: windows-service-compile run-flask run-express
+install: install_win_dependencies dependencies
+run: windows-service-compile run-flask
 else
-	DEFAULT_TASKS = install
-	PYTHON = python
-install: check_env_variables install_apt_dependencies node-pi updatepath pip ngrok dwservice_install wifi_config
-	cd vue && npm install -y;
-	cd flask_app && pip install -r requirements.txt;
-	make services-ctl
-run: run-flask run-express
+install: \
+	poetry \
+	check_env_variables \
+	install_apt_dependencies \
+	node-pi \
+	updatepath \
+	pip \
+	ngrok \
+	dwservice_install \
+	wifi_config \
+	dependencies services-ctl
+run: run-flask
 endif
 
-windows-service-compile: kill-flask
-	cd flask_app && "$(VENV_NAME)/Scripts/pyinstaller" --noconfirm win32_service.spec
+windows-service-compile: kill-flask build
+	cd flask_app && poetry run pyinstaller --noconfirm win32_service.spec
 
 run-flask:
 ifeq ($(OS),Windows_NT)
@@ -33,18 +43,11 @@ else
 	$(PYTHON) flask_app/server.py &
 endif
 
-run-express:
-ifeq ($(OS),Windows_NT)
-	qckwinsvc --name $(UI_SERVICE_NAME) --description "Replifactory UI" --script vue/src/server/express_server.js --startImmediately
-else
-	node vue/src/server/express_server.js &
-endif
-
 run-vue:
-	cd vue && npm run serve
+	npm run serve
 
 build:
-	cd vue && npm run build
+	npm run build
 
 ngrok:
 	@echo "Checking for ngrok..."
@@ -71,7 +74,6 @@ swap:
 		echo "Swap size already 1024. No changes made."; \
 	fi
 
-
 node-pi:
 	@if ! command -v node > /dev/null; then \
 		echo "Installing Node.js and npm for Raspberry Pi..."; \
@@ -93,12 +95,28 @@ pip:
 		rm get-pip.py; \
 	fi
 
+poetry:
+	@echo "Checking for poetry..."
+	@if ! command -v poetry > /dev/null; then \
+		echo "Installing poetry..."; \
+  		curl -sSL https://install.python-poetry.org | POETRY_VERSION=$(POETRY_VERSION) python3 - ; \
+	fi
+
 copy_to_www:
 	@echo "Copying contents of vue/dist/ to /var/www/html..."
 	@sudo cp -r vue/dist/* /var/www/html
 	@echo "Copied contents of vue/dist/ to /var/www/html."
 
-APT_DEPENDENCIES = python3-distutils python3-scipy python3-numpy python3-pandas libatlas-base-dev python3-dev gfortran libopenblas-dev autossh
+APT_DEPENDENCIES = \
+	python3-distutils \
+	python3-scipy \
+	python3-numpy \
+	python3-pandas \
+	libatlas-base-dev \
+	python3-dev \
+	gfortran \
+	libopenblas-dev \
+	autossh
 
 install_apt_dependencies: swap
 	@echo "Checking for apt dependencies..."
@@ -113,10 +131,8 @@ install_win_dependencies:
 	cmd /c "(help npm > nul || exit 0) && where npm > nul 2> nul" || winget install -e --id OpenJS.NodeJS.LTS
 	cmd /c "(help python > nul || exit 0) && where python > nul 2> nul" || winget install -e --name Python 3.10
 	cmd /c "(help qckwinsvc > nul || exit 0) && where qckwinsvc > nul 2> nul" || npm install -g qckwinsvc
-
-venv: flask_app/$(VENV_NAME)
-flask_app/$(VENV_NAME):
-	cd flask_app && python -m venv $(VENV_NAME)
+	SET POETRY_VERSION=$(POETRY_VERSION) && cmd /c "(help poetry > nul || exit 0) && where poetry > nul 2> nul" \
+		|| "(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content" | python -
 
 updatepath:
 	@if echo $$PATH | grep -q "/home/pi/.local/bin"; then \
@@ -126,15 +142,7 @@ updatepath:
 		. ~/.bashrc; \
 	fi
 
-kill: kill-flask kill-express
-
-kill-express:
-ifeq ($(OS),Windows_NT)
-	qckwinsvc --name $(UI_SERVICE_NAME) --script vue/src/server/express_server.js --uninstall
-else
-	sudo nohup fuser -k 3000/tcp &
-endif
-
+kill: kill-flask
 kill-flask:
 ifeq ($(OS),Windows_NT)
 	powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs stop
@@ -162,39 +170,22 @@ services-ctl: directories
 		sudo cp services/flask/flask.service /etc/systemd/system/flask.service; \
 		echo "Copied services/flask/flask.service to /etc/systemd/system/flask.service"; \
 	fi
-	if ! cmp services/vue/vue.service /etc/systemd/system/vue.service >/dev/null 2>&1; then \
-		sudo cp services/vue/vue.service /etc/systemd/system/vue.service; \
-		echo "Copied services/vue/vue.service to /etc/systemd/system/vue.service"; \
-	fi
 	@echo "Reloading systemctl daemon..."
 	sudo systemctl daemon-reload
 	@echo "Enabling flask and vue services..."
 	sudo systemctl enable flask.service
-	sudo systemctl enable vue.service
 	@echo "Starting flask and vue services..."
 	sudo systemctl start flask.service
-	sudo systemctl start vue.service
 
-
-update-full:
+update:
 	git pull
 	make install
 	make kill
-
-update-backend:
-	git pull
-	make install
-	make kill-flask
-
-update-frontend:
-	git pull
-	make install
 
 push:
 	git add .
 	git commit -m "update"
 	git push
-
 
 dwservice_install:
 	cd services && wget https://www.dwservice.net/download/dwagent.sh

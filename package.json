@@ -11,7 +11,7 @@
         "start:win32": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve:win32\" \"npm run flask-server\"",
         "start:default": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve\" \"npm run flask-server\"",
         "flask-server": "poetry run flask --app app run --host=0.0.0.0",
-        "flask-static-digest": "flask --app flask_app/server.py digest compile",
+        "flask-static-digest": "poetry run flask --app app digest compile",
         "serve": "run-script-os",
         "serve:win32": "SET NODE_ENV=debug && vue-cli-service serve",
         "serve:default": "NODE_ENV=debug vue-cli-service serve",
