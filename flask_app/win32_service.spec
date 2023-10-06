@@ -11,7 +11,8 @@ a = Analysis(
     datas=[
         ('data', 'data'),
         ('C:\\Windows\\System32\\libusb0.dll', '.'),
-        ],
+        ('static', 'static'),
+    ],
     hiddenimports=['win32timezone'],
     hookspath=[],
     hooksconfig={},

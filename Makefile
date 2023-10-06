@@ -145,7 +145,7 @@ updatepath:
 kill: kill-flask
 kill-flask:
 ifeq ($(OS),Windows_NT)
-	powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs stop
+	-powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs stop
 	-powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs uninstall
 else
 	sudo nohup fuser -k 5000/tcp &
