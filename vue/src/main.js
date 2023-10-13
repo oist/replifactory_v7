@@ -1,16 +1,17 @@
 import { createApp } from 'vue';
+// import { BootstrapVue, IconsPlugin } from 'bootstrap-vue';
+import { CoreuiVue } from '@coreui/vue';
+import BootstrapVueNext from 'bootstrap-vue-next'
+
 import App from './client/App.vue';
 import store from './client/store';
 
-import { BootstrapVue, IconsPlugin } from 'bootstrap-vue';
-import { CoreuiVue } from '@coreui/vue';
-
 // Import Bootstrap and CoreUI styles
-import 'bootstrap/dist/css/bootstrap.css';
 import '@coreui/coreui/dist/css/coreui.css';
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 
 const app = createApp(App);
-
 
 app.directive('click-outside', {
   beforeMount(el, binding) {
@@ -30,7 +31,8 @@ app.directive('click-outside', {
 
 
 app.use(CoreuiVue)
-  .use(BootstrapVue)
-  .use(IconsPlugin)
+  // .use(BootstrapVue)
+  .use(BootstrapVueNext)
+  // .use(IconsPlugin)
   .use(store) // This line adds your Vuex store to your Vue app
   .mount('#app');

@@ -10,12 +10,15 @@
 
           @change="handleInputChange(key, $event.target.value)"
           v-b-tooltip.hover
-          :title="`Tooltip for ${key}`"
+          :title="`${tooltips[key]}`"
+
         >
+        <!-- v-b-tooltip.hover.left="`${key}:<br>${tooltips[key]}`" -->
+
 <!--add 2s delay before tooltip appears-->
-          <b-tooltip :target="`floatingInput_${key}_vial_${vial}`" triggers="hover" placement="left" delay="500">
+          <!-- <b-tooltip :target="`floatingInput_${key}_vial_${vial}`" triggers="hover" placement="left" delay="500">
             {{key}}:<br> <span v-html="tooltips[key]"></span>
-          </b-tooltip>
+          </b-tooltip>-->
         </CFormInput>
       </div>
     </div>
@@ -24,7 +27,7 @@
 <script>
 import { CFormInput } from "@coreui/vue";
 import { mapActions } from "vuex";
-import { BTooltip } from 'bootstrap-vue';
+// import { BTooltip } from 'bootstrap-vue';
 
 export default {
   data() {
@@ -46,7 +49,7 @@ export default {
   },
   components: {
     CFormInput,
-    BTooltip,
+    // BTooltip,
     // CLink,
   },
   props: {
@@ -82,8 +85,8 @@ export default {
 </script>
 
 <style scoped>
-@import 'bootstrap/dist/css/bootstrap.css';
-@import 'bootstrap-vue/dist/bootstrap-vue.css';
+/* @import 'bootstrap/dist/css/bootstrap.css'; */
+/* @import 'bootstrap-vue/dist/bootstrap-vue.css'; */
 
 .culture-config {
   width: 150px; /* Adjust the width as desired */

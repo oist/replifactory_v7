@@ -1,9 +1,9 @@
 # models.py
 from datetime import datetime
 
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import JSON
-db = SQLAlchemy()
+
+from replifactory.database import db
 
 default_parameters = {"stock_concentration_drug": 100,
               "stock_volume_drug": 1000,

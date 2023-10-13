@@ -27,9 +27,14 @@ export default new Vuex.Store({
         }
         },
   actions: {
-      async fetchHostname({ commit }) {
-        const response = await api.get('/hostname');
-        commit('setHostname', response.data.hostname);
+    fetchHostname({ commit }) {
+        api.get('/hostname')
+          .then(response => {
+            commit('setHostname', response.data.hostname);
+          })
+          .catch(error => {
+            console.log(error);
+          });
     },
     async connectDevice({ dispatch, commit }) {
             try {

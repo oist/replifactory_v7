@@ -38,5 +38,20 @@ module.exports = {
             }
           }
         })
+  },
+  devServer: {
+    // publicPath: "/",
+    proxy: {
+      "/api": {
+        ws: true,
+        changeOrigin: true,
+        target: "http://localhost:5000"
+      },
+      "/socket.io": {
+        ws: true,
+        changeOrigin: true,
+        target: "http://localhost:5000"
+      }
+    }
   }
 }

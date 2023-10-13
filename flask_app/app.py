@@ -1,3 +1,9 @@
-from server import create_app
+import logging
+import os
+import replifactory
 
-app = create_app()
+logging.basicConfig(
+    level=os.environ.get("LOGGING_LEVEL", logging.INFO),
+)
+
+app = replifactory.create_app()
