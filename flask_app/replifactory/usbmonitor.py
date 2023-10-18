@@ -38,8 +38,13 @@ class UsbMonitor(USBMonitor):
 
     def get_available_devices(self):
         available_devices = super().get_available_devices()
+        for device in available_devices.values():
+            device["display_name"] = self.device_display_name(device)
         eventManager().fire(Events.USB_LIST_UPDATED, available_devices)
         return available_devices
+
+    def device_display_name(self, device_info):
+        return f"{device_info[ID_MODEL]}"
 
     def device_info_str(self, device_info):
         return f"{device_info[ID_MODEL]} ({device_info[ID_MODEL_ID]} - {device_info[ID_VENDOR_ID]})"

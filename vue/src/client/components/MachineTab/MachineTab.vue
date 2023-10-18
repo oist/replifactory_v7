@@ -17,14 +17,11 @@
             <div class="connection-setup">
                 <div class="d-flex">
                     <CFormFloating class="flex-grow-1 mt-3">
-                        <CFormSelect v-model="currentMachineId" id="machineSelect" floatingLabel="Select machine"
+                        <CFormSelect v-model="selectedMachine" id="machineSelect" floatingLabel="Select machine"
                             aria-label="Select machine" @change="handleMachineSelected">
-                            <option v-for="(value, key) in availableMachines" :key="key" :value="value">
-                                {{ key }}
+                            <option v-for="(value, key) in availableMachines" :key="key" :value="key">
+                                {{ value.display_name }} ({{ key }})
                             </option>
-                            <!-- <option v-for="machine in availableMachines" :key="machine.id" :value="machine.id">
-                                {{ machine.name }}
-                            </option> -->
                         </CFormSelect>
                     </CFormFloating>
                 </div>
@@ -69,7 +66,7 @@ export default {
     data() {
         return {
             controlsVisible: false,
-            selectedMachine: "",
+            selectedMachine: null,
         };
     },
     watch: {
