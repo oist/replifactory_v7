@@ -3,7 +3,7 @@ import api from '@/api';
 export default {
   namespaced: true,
   state: {
-    audioContext: new (window.AudioContext || window.webkitAudioContext)(),
+    // audioContext: new (window.AudioContext || window.webkitAudioContext)(),
 
     hostname: "replifactory_GUI",
     errorMessage: null,

@@ -1,45 +1,37 @@
 import logging
-from flask import request, current_app
-from flask_socketio import SocketIO, Namespace, emit
-import jwt
+
+from flask_socketio import Namespace, emit
+from replifactory.events import Events, eventManager
 
 log = logging.getLogger(__name__)
-# def authenticate(socket):
-#     token = request.headers.get("Authorization")
-#     if not token:
-#         return False
-#     try:
-#         decoded_token = jwt.decode(
-#             token, current_app.config["SECRET_KEY"], algorithms=["HS256"]
-#         )
-#         socket.user_id = decoded_token["user_id"]
-#         return True
-#     except:
-#         return False
+
+
+class MachineEventListener:
+
+    def __init__(self, app):
+        self._app = app
+        if not hasattr(app, "extensions"):
+            app.extensions = {}  # pragma: no cover
+        app.extensions["machine_event_listener"] = self
+        eventManager().subscribe(Events.USB_LIST_UPDATED, self.on_usb_list_updated)
+
+    def on_usb_list_updated(self, event, payload):
+        with self._app.app_context():
+            emit(Events.USB_LIST_UPDATED, payload, namespace="/machine", broadcast=True)
 
 
 class MachineNamespace(Namespace):
     def on_connect(self):
         log.debug("socket.io client connected")
-        pass
-        # if not authenticate(self):
-        #     return False
-        # Your code here
+        eventManager().fire(Events.CLIENT_CONNECTED)
 
     def on_disconnect(self):
         log.debug("socket.io client disconnected")
-        pass
-        # Your code here
+        eventManager().fire(Events.CLIENT_DISCONNECTED)
 
     def on_join(self, data):
         # Join a room specified by the client
-        room = data.get('room')
+        room = data.get("room")
         if room:
             # join_room(room)
             print(f"Joined room {room}")
-
-    def on_my_event(self, data):
-        pass
-        # if not authenticate(self):
-        #     return False
-        # Your code here

@@ -1821,6 +1821,17 @@ files = [
 ]
 
 [[package]]
+name = "pyudev"
+version = "0.24.1"
+description = "A libudev binding"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyudev-0.24.1-py3-none-any.whl", hash = "sha256:da7e977be15fb5eccf8797b8e2176cd5b4f39288707cdcb39d1cabe7c8793e2b"},
+    {file = "pyudev-0.24.1.tar.gz", hash = "sha256:75e54d37218f5ac45b0da1f0fd9cc5e526a3cac3ef1cfad410cf7ab338b01471"},
+]
+
+[[package]]
 name = "pyusb"
 version = "1.2.1"
 description = "Python USB access module"
@@ -2238,6 +2249,21 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "usb-monitor"
+version = "1.15"
+description = "USBMonitor is an easy-to-use cross-platform library for USB device monitoring that simplifies tracking of connections, disconnections, and examination of connected device attributes on both Windows and Linux, freeing the user from platform-specific details or incompatibilities."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "usb-monitor-1.15.tar.gz", hash = "sha256:d6cfacc71e3eb8913ab8cf5a98e862bc15873b57a51ec25637f93226d458d49b"},
+]
+
+[package.dependencies]
+pyudev = {version = "*", markers = "platform_system == \"Linux\""}
+pywin32 = {version = "*", markers = "platform_system == \"Windows\""}
+wmi = {version = "*", markers = "platform_system == \"Windows\""}
+
+[[package]]
 name = "waitress"
 version = "2.1.2"
 description = "Waitress WSGI server"
@@ -2268,6 +2294,27 @@ MarkupSafe = ">=2.1.1"
 
 [package.extras]
 watchdog = ["watchdog (>=2.3)"]
+
+[[package]]
+name = "wmi"
+version = "1.5.1"
+description = "Windows Management Instrumentation"
+optional = false
+python-versions = "*"
+files = [
+    {file = "WMI-1.5.1-py2.py3-none-any.whl", hash = "sha256:1d6b085e5c445141c475476000b661f60fff1aaa19f76bf82b7abb92e0ff4942"},
+    {file = "WMI-1.5.1.tar.gz", hash = "sha256:b6a6be5711b1b6c8d55bda7a8befd75c48c12b770b9d227d31c1737dbf0d40a6"},
+]
+
+[package.dependencies]
+pywin32 = "*"
+
+[package.extras]
+all = ["pytest", "sphinx", "twine", "wheel"]
+dev = ["pytest", "sphinx", "twine", "wheel"]
+docs = ["sphinx"]
+package = ["twine", "wheel"]
+tests = ["pytest"]
 
 [[package]]
 name = "wsproto"
@@ -2304,4 +2351,4 @@ replifactory = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.0, <3.12"
-content-hash = "950ce58b01c8159ca88934965fd928156f99b4f77fbca7827154f0d5f9af3e4d"
+content-hash = "1b32e8888a206cd427597ad487eac0b5a459a8bf2424c2fe71c24373edfa7002"

@@ -19,9 +19,12 @@
                     <CFormFloating class="flex-grow-1 mt-3">
                         <CFormSelect v-model="currentMachineId" id="machineSelect" floatingLabel="Select machine"
                             aria-label="Select machine" @change="handleMachineSelected">
-                            <option v-for="machine in availableMachines" :key="machine.id" :value="machine.id">
-                                {{ machine.name }}
+                            <option v-for="(value, key) in availableMachines" :key="key" :value="value">
+                                {{ key }}
                             </option>
+                            <!-- <option v-for="machine in availableMachines" :key="machine.id" :value="machine.id">
+                                {{ machine.name }}
+                            </option> -->
                         </CFormSelect>
                     </CFormFloating>
                 </div>
@@ -39,6 +42,7 @@
 // import ValveControl from './ValveControl';
 // import StirrerControl from './StirrerControl';
 // import ODControl from './ODControl';
+import { state } from "@/socket";
 import { mapState, mapMutations, mapActions } from 'vuex';
 import { CFormFloating, CFormSelect } from '@coreui/vue';
 
@@ -55,11 +59,17 @@ export default {
     },
     computed: {
         ...mapState(['deviceConnected', 'deviceControlEnabled']),
-        ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods'])
+        ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),
+        availableMachines() {
+            let available_devices = state.availableDevices
+            console.log(available_devices)
+            return available_devices
+        },
     },
     data() {
         return {
             controlsVisible: false,
+            selectedMachine: "",
         };
     },
     watch: {
@@ -84,15 +94,16 @@ export default {
         ...mapMutations('device', ['toggleCalibrationMode', 'setDeviceControlEnabled']),
         ...mapActions('device', ['getAllDeviceData']),
         ...mapActions(['connectDevice']),
-        async handleMachineSelected(event) {
-            if (this.currentExperiment.status === 'running' || this.currentExperiment.status === 'paused') {
-                await this.stopExperiment(this.currentExperiment.id);
-            }
-            const selectedExperimentId = event.target.value;
-            if (selectedExperimentId !== this.currentExperimentId) {
-                this.currentExperimentId = selectedExperimentId;
-                await this.setCurrentExperimentAction(this.currentExperimentId);
-            }
+        handleMachineSelected(event) {
+            this.selectedMachine = event.target.value
+            // if (this.currentExperiment.status === 'running' || this.currentExperiment.status === 'paused') {
+            //     await this.stopExperiment(this.currentExperiment.id);
+            // }
+            // const selectedExperimentId = event.target.value;
+            // if (selectedExperimentId !== this.currentExperimentId) {
+            //     this.currentExperimentId = selectedExperimentId;
+            //     await this.setCurrentExperimentAction(this.currentExperimentId);
+            // }
         },
     },
     sockets: {

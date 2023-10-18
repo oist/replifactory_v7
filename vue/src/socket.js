@@ -3,8 +3,9 @@ import { io } from "socket.io-client";
 
 export const state = reactive({
   connected: false,
-  fooEvents: [],
-  barEvents: []
+  usbDeviceConnected: [],
+  usbDeviceDisconnected: [],
+  availableDevices: {},
 });
 
 // export const socket = io(`${window.location.origin}/socket.io/machine`);
@@ -27,10 +28,14 @@ socket.on('reconnect', (attemptNumber) => {
   console.log(`Reconnected after ${attemptNumber} attempts`);
 });
 
-socket.on("foo", (...args) => {
-  state.fooEvents.push(args);
+socket.on("UsbListUpdated", (availableDevices) => {
+  state.availableDevices = availableDevices;
 });
 
-socket.on("bar", (...args) => {
-  state.barEvents.push(args);
+socket.on("usb_device_connected", (...args) => {
+  state.usbDeviceConnected.push(args);
+});
+
+socket.on("usb_device_disconnected", (...args) => {
+  state.usbDeviceDisconnected.push(args);
 });

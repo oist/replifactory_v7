@@ -1,11 +1,12 @@
-import Vue from 'vue';
-import Vuex from 'vuex';
+// import Vue from 'vue';
+import { createStore } from 'vuex'
+// import Vuex from 'vuex';
 import device from './deviceStore.js';
 import experiment from './experimentStore.js';
-Vue.use(Vuex);
+// Vue.use(Vuex);
 
 import api from '@/api.js';
-export default new Vuex.Store({
+export default createStore({
   state:{deviceConnected: false,
   deviceControlEnabled: true,
   experimentRunning: null,

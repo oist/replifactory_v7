@@ -1,13 +1,18 @@
+import atexit
 import logging
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, current_app, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
+from replifactory.events import Events, eventManager
+
+
 
 from replifactory.database import db
-from replifactory.socketio import MachineNamespace
+from replifactory.socketio import MachineEventListener, MachineNamespace
+from replifactory.usbmonitor import UsbMonitor
 from routes.device_routes import device_routes
 from routes.experiment_routes import experiment_routes
 from routes.service_routes import service_routes
@@ -20,6 +25,8 @@ pid_file_path = os.path.join(base_dir, "data/flask_app.pid")
 logging.basicConfig(
     level=os.environ.get("LOGGING_LEVEL", logging.INFO),
 )
+
+log = logging.getLogger(__name__)
 
 
 def create_app():
@@ -42,11 +49,15 @@ def create_app():
 
     CORS(app)
 
+    usb_monitor = UsbMonitor(app)
+
     # environment = os.environ.get("ENVIRONMENT", "production")
     # socketio_cors_allowed_origins = "*" if environment == "development" else None
     socketio = SocketIO(app, cors_allowed_origins="*")
     socketio.on_namespace(MachineNamespace("/machine"))
     socketio.run(app)
+
+    MachineEventListener(app)
 
     @app.route("/static/<path:path>")
     def send_report(path):
@@ -56,5 +67,17 @@ def create_app():
     @app.route("/<path:path>")
     def catch_all(path):
         return app.send_static_file("index.html")
+
+    usb_monitor.start_monitoring()
+
+    def on_shutdown():
+        log.info("Shutting down...")
+        usb_monitor.stop_monitoring()
+        # turn off observers and other threads here
+        # eventManager.fire(events.Events.SHUTDOWN)
+
+    atexit.register(on_shutdown)
+
+    eventManager().fire(Events.STARTUP)
 
     return app
