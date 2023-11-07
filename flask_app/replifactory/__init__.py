@@ -1,21 +1,25 @@
 import atexit
+import functools
 import logging
 import os
+from http.client import HTTPException
 
-from flask import Flask, current_app, send_from_directory
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
-from replifactory.events import Events, eventManager
+from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 
-
-
+from replifactory.config import Config, settings
 from replifactory.database import db
+from replifactory.events import Events, eventManager
+from replifactory.machine.model_6 import Machine
 from replifactory.socketio import MachineEventListener, MachineNamespace
-from replifactory.usbmonitor import UsbMonitor
 from routes.device_routes import device_routes
 from routes.experiment_routes import experiment_routes
 from routes.service_routes import service_routes
+
+machine = None
 
 flask_static_digest = FlaskStaticDigest()
 
@@ -30,12 +34,44 @@ log = logging.getLogger(__name__)
 
 
 def create_app():
+    global settings
+
     app = Flask(__name__, static_folder="static/build", static_url_path="/")
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "not-secret-key")
-    app.register_blueprint(device_routes)
-    app.register_blueprint(experiment_routes)
-    app.register_blueprint(service_routes)
-    flask_static_digest.init_app(app)
+    config_file = os.environ.get("REPLIFACTORY_CONFIG", "config.yml")
+    app.config["REPLIFACTORY_CONFIG"] = config_file
+    try:
+        settings(parse_yaml_file_as(Config, config_file))
+    except FileNotFoundError as exc:
+        log.warning("There is no configuration file: %s", config_file, exc_info=exc)
+        settings(Config())
+
+    def save_settings():
+        to_yaml_file(config_file, settings(), exclude_none=True)
+
+    settings().set_save_callback(save_settings)
+
+    def _setup_blueprints():
+        from replifactory.api import api
+        from replifactory.util.flask import make_api_error
+
+        api_endpoints = ["/api"]
+        registrators = [
+            functools.partial(app.register_blueprint, api, url_prefix="/api"),
+            functools.partial(app.register_blueprint, device_routes),
+            functools.partial(app.register_blueprint, experiment_routes),
+            functools.partial(app.register_blueprint, service_routes),
+        ]
+
+        # register everything with the system
+        for registrator in registrators:
+            registrator()
+
+        @app.errorhandler(HTTPException)
+        def _handle_api_error(ex):
+            if any(map(lambda x: request.path.startswith(x), api_endpoints)):
+                return make_api_error(ex.description, ex.code)
+            else:
+                return ex
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(script_dir, "replifactory.db")
@@ -49,12 +85,17 @@ def create_app():
 
     CORS(app)
 
+    global machine
+    machine = Machine()
+
+    # import should be after initialize global machine variable
+    from replifactory.usbmonitor import UsbMonitor
     usb_monitor = UsbMonitor(app)
 
     # environment = os.environ.get("ENVIRONMENT", "production")
     # socketio_cors_allowed_origins = "*" if environment == "development" else None
     socketio = SocketIO(app, cors_allowed_origins="*")
-    socketio.on_namespace(MachineNamespace("/machine"))
+    socketio.on_namespace(MachineNamespace(machine=machine, namespace="/machine"))
     socketio.run(app)
 
     MachineEventListener(app)
@@ -77,6 +118,10 @@ def create_app():
         # eventManager.fire(events.Events.SHUTDOWN)
 
     atexit.register(on_shutdown)
+
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "not-secret-key")
+    _setup_blueprints()
+    flask_static_digest.init_app(app)
 
     eventManager().fire(Events.STARTUP)
 

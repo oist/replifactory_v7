@@ -6,6 +6,7 @@ from usbmonitor.__platform_specific_detectors._constants import _SECONDS_BETWEEN
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 
 from replifactory.events import Events, eventManager
+from replifactory import machine
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +38,9 @@ class UsbMonitor(USBMonitor):
         self.get_available_devices()
 
     def get_available_devices(self):
-        available_devices = super().get_available_devices()
-        for device in available_devices.values():
-            device["display_name"] = self.device_display_name(device)
-        eventManager().fire(Events.USB_LIST_UPDATED, available_devices)
-        return available_devices
+        connection_options = machine.__class__.get_connection_options()
+        eventManager().fire(Events.USB_LIST_UPDATED, connection_options)
+        return connection_options
 
     def device_display_name(self, device_info):
         return f"{device_info[ID_MODEL]}"

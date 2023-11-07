@@ -1,30 +1,30 @@
 <template>
-    <div class="DeviceTab" :class="{ 'device-disconnected': deviceConnected === false }">
+    <div class="MachineConnection" :class="{ 'device-disconnected': deviceConnected === false }">
         <div class="machine-busy-overlay" v-if="deviceBusy === true"></div>
-        <!-- <div style="text-align: right;">
-            <CFormSwitch label="Calibration Mode" id="formSwitchCheckChecked" v-model="calibrationModeEnabled"
-                @change="toggleCalibrationMode" />
-        </div> -->
-
-        <template v-if="deviceControlEnabled || controlsVisible">
-            <!-- <PumpControl />
-            <ValveControl />
-            <StirrerControl />
-            <ODControl /> -->
-        </template>
-
         <template v-if="deviceConnected === false">
             <div class="connection-setup">
-                <div class="d-flex">
-                    <CFormFloating class="flex-grow-1 mt-3">
-                        <CFormSelect v-model="selectedMachine" id="machineSelect" floatingLabel="Select machine"
-                            aria-label="Select machine" @change="handleMachineSelected">
-                            <option v-for="(value, key) in availableMachines" :key="key" :value="key">
-                                {{ value.display_name }} ({{ key }})
+                <CForm class="row g-3">
+                    <CCol xs="12">
+                        <CFormLabel for="machineSelect">Machine path</CFormLabel>
+                        <CFormSelect v-model="selectedMachine" id="machineSelect" aria-label="Select machine"
+                            @change="handleMachineSelected" :disabled="isConnected">
+                            <option v-for="(value, key) in connectionOptions.device_address" :key="key" :value="key">
+                                {{ value }}
                             </option>
                         </CFormSelect>
-                    </CFormFloating>
-                </div>
+                    </CCol>
+                    <CCol xs="12">
+                        <CButton v-if="isDisconnected" @click="connectMachine" :disabled="loading" type="submit" color="primary" variant="outline" class="w-100">
+                            <CSpinner v-if="loading" size="sm" color="secondary" />
+                            Connect
+                        </CButton>
+                        <CButton v-else @click="disconnectMachine" :disabled="loading" type="submit" color="danger" variant="outline" class="w-100">
+                            <CSpinner v-if="loading" size="sm" color="secondary" />
+                            Disconnect
+                        </CButton>
+                    </CCol>
+                    <CAlert v-if="error" color="danger" v-model="showAlert" @dismissed="onDismissed">{{ error }}</CAlert>
+                </CForm>
             </div>
         </template>
 
@@ -41,7 +41,17 @@
 // import ODControl from './ODControl';
 import { state } from "@/socket";
 import { mapState, mapMutations, mapActions } from 'vuex';
-import { CFormFloating, CFormSelect } from '@coreui/vue';
+import { CFormSelect, CButton, CFormLabel, CForm, CCol, CSpinner, CAlert } from '@coreui/vue';
+// import { api } from "@/api";
+import api from '@/api.js';
+
+
+const DISCONNECTED_STATES = [
+    "OFFLINE",
+    "STATE_NONE",
+    "STATE_CLOSED",
+    "STATE_CLOSED_WITH_ERROR",
+]
 
 
 export default {
@@ -50,23 +60,41 @@ export default {
         // ValveControl,
         // StirrerControl,
         // ODControl,
-        CFormFloating,
+        // CFormFloating,
         CFormSelect,
+        CButton,
+        CFormLabel,
+        CForm,
+        CCol,
+        CSpinner,
+        CAlert,
         // CFormSwitch,
     },
     computed: {
         ...mapState(['deviceConnected', 'deviceControlEnabled']),
         ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),
-        availableMachines() {
-            let available_devices = state.availableDevices
+        connectionOptions() {
+            let available_devices = state.connectionOptions
             console.log(available_devices)
             return available_devices
+        },
+        state() {
+            return state.machine.state_id
+        },
+        isDisconnected() {
+            return  DISCONNECTED_STATES.includes(state.machine.state_id)
+        },
+        isConnected() {
+            return !this.isDisconnected
         },
     },
     data() {
         return {
             controlsVisible: false,
             selectedMachine: null,
+            loading: false,
+            error: '',
+            showAlert: false,
         };
     },
     watch: {
@@ -101,6 +129,34 @@ export default {
             //     this.currentExperimentId = selectedExperimentId;
             //     await this.setCurrentExperimentAction(this.currentExperimentId);
             // }
+        },
+        async disconnectMachine() {
+            this.connectCommand({
+                command: "disconnect",
+            })
+        },
+        async connectMachine() {
+            this.connectCommand({
+                command: "connect",
+                device_address: this.selectedMachine,
+            })
+        },
+        async connectCommand(payload) {
+            this.loading = true
+            this.showAlert = false
+            try {
+                const response = await api.post('/connection', payload)
+                console.log("Connection response: " + response)
+                // do something with response.data
+                this.loading = false
+            } catch (err) {
+                this.error = err.message
+                this.showAlert = true
+                this.loading = false
+            }
+        },
+        onDismissed() {
+            // do something when alert is dismissed
         },
     },
     sockets: {

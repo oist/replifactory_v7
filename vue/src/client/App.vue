@@ -5,21 +5,59 @@
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </BAlert>
     </div>
-    <ul class="nav nav-tabs" id="myTab">
-      <li class="nav-item" v-for="tab in tabs" :key="tab">
-        <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
-      </li>
-    </ul>
-    <div class="tab-content">
-      <!--      <HomeTab v-if="currentTab === 'Home'"/>-->
-      <MachineTab v-if="currentTab === 'Machine'" />
-      <ExperimentTab v-if="currentTab === 'Experiment'" />
-      <DeviceControl v-if="currentTab === 'Device'" />
-      <NgrokTab v-if="currentTab === 'Remote'" />
-      <HelpTab v-if="currentTab === 'Help'" />
-      <StatusTab v-if="currentTab === 'Status'" />
-      <LogsTab v-if="currentTab === 'Logs'" />
-    </div>
+    <CContainer>
+      <CRow>
+        <CCol xs="4">
+          <CAccordion :active-item-key="1" class="mt-3">
+            <CAccordionItem :item-key="1">
+              <CAccordionHeader>
+                Connection
+              </CAccordionHeader>
+              <CAccordionBody>
+                <MachineConnection />
+              </CAccordionBody>
+            </CAccordionItem>
+          </CAccordion>
+          <CAccordion :active-item-key="2" class="mt-3">
+            <CAccordionItem :item-key="2">
+              <CAccordionHeader>
+                State
+              </CAccordionHeader>
+              <CAccordionBody>
+                <MachineState/>
+              </CAccordionBody>
+            </CAccordionItem>
+          </CAccordion>
+          <CAccordion :active-item-key="3" class="mt-3">
+            <CAccordionItem :item-key="3">
+              <CAccordionHeader>
+                Experiment Info
+              </CAccordionHeader>
+              <CAccordionBody>
+
+              </CAccordionBody>
+            </CAccordionItem>
+          </CAccordion>
+        </CCol>
+        <CCol xs="8">
+          <ul class="nav nav-tabs" id="myTab">
+            <li class="nav-item" v-for="tab in tabs" :key="tab">
+              <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
+            </li>
+          </ul>
+          <div class="tab-content">
+            <!--      <HomeTab v-if="currentTab === 'Home'"/>-->
+            <!-- <MachineTab v-if="currentTab === 'Machine'" /> -->
+            <ExperimentTab v-if="currentTab === 'Experiment'" />
+            <DeviceControl v-if="currentTab === 'Device'" />
+            <NgrokTab v-if="currentTab === 'Remote'" />
+            <HelpTab v-if="currentTab === 'Help'" />
+            <StatusTab v-if="currentTab === 'Status'" />
+            <LogsTab v-if="currentTab === 'Logs'" />
+          </div>
+        </CCol>
+      </CRow>
+    </CContainer>
   </div>
 </template>
 
@@ -34,7 +72,10 @@ import NgrokTab from "@/client/components/Remote/NgrokTab";
 import HelpTab from "@/client/components/HelpTab/HelpTab";
 import StatusTab from "@/client/components/StatusTab/StatusTab";
 import LogsTab from "@/client/components/LogsTab/LogsTab";
-import MachineTab from "@/client/components/MachineTab/MachineTab";
+// import MachineTab from "@/client/components/MachineTab/MachineTab";
+import MachineConnection from "@/client/components/machine/MachineConnection.vue";
+import MachineState from "@/client/components/machine/MachineState.vue";
+import { CContainer, CRow, CCol, CAccordion, CAccordionItem, CAccordionHeader, CAccordionBody } from '@coreui/vue';
 
 export default {
   name: 'App',
@@ -61,12 +102,21 @@ export default {
     HelpTab,
     StatusTab,
     LogsTab,
-    MachineTab,
+    // MachineTab,
+    MachineConnection,
+    MachineState,
+    CContainer,
+    CRow,
+    CCol,
+    CAccordion,
+    CAccordionItem,
+    CAccordionHeader,
+    CAccordionBody,
   },
   data() {
     return {
       currentTab: 'Machine',
-      tabs: ['Machine', 'Experiment', 'Device', 'Remote', 'Help', 'Status', 'Logs']
+      tabs: ['Experiment', 'Device', 'Remote', 'Help', 'Status', 'Logs']
     };
   },
 };

@@ -1,0 +1,5 @@
+connection:
+  autoconnect: false
+folder: {}
+temperature:
+  cutoff: 30

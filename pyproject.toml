@@ -40,7 +40,6 @@ pyusb = "^1.2.1"
 PyYAML = "^6.0"
 schedule = "*"
 scipy = "*"
-setuptools = "^58.0.4"
 six = "^1.16.0"
 waitress = "*"
 zipp = "^3.15.0"
@@ -53,6 +52,7 @@ pywin32 = [
 flask-socketio = "^5.3.6"
 flask-jwt-extended = "^4.5.3"
 usb-monitor = "^1.15"
+pydantic-yaml = "^1.2.0"
 
 [tool.poetry.extras]
 replifactory = ["python-pxushover", "python-telegram-bot"]
