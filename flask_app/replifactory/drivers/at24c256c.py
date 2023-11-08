@@ -2,8 +2,8 @@ import logging
 import threading
 from collections import OrderedDict
 from typing import Optional
+from pyftdi.i2c import I2cPort
 
-from replifactory.drivers.ft2232h import I2cPort
 from replifactory.util import BraceMessage as __
 
 
@@ -38,7 +38,7 @@ class EepromDriver:
             self.log.debug(
                 __(
                     "W i2c: {port_name} (0x{port_addr:02X}) address: 0x{regaddr:02X} page: {page_num} of {total_pages} data: [{data}]",
-                    port_name=self.port._name,
+                    port_name=self.port._name if hasattr(self.port, "_name") else "Unknown",
                     port_addr=self.port._address,
                     regaddr=next_address,
                     data=bytearray(next_data).hex(" ").upper(),
@@ -64,7 +64,7 @@ class EepromDriver:
         self.log.debug(
             __(
                 "R i2c: {port_name} (0x{port_addr:02X}) address: 0x{regaddr:02X} len: {readlen} data: [{data}]",
-                port_name=self.port._name,
+                port_name=self.port._name if hasattr(self.port, "_name") else "Unknown",
                 port_addr=self.port._address,
                 regaddr=address,
                 readlen=readlen,
