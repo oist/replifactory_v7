@@ -12,30 +12,48 @@
       "console": "integratedTerminal",
       "justMyCode": false,
       "args": [
-        "ftdi://ftdi:2232:1:c/", "-x"
+        "ftdi://ftdi:2232:1:d/2",
+        "-d","-o", "-",
       ]
     },
     {
-        "name": "EEPROM Write",
-        "type": "python",
-        "request": "launch",
-        "program": "replifactory_ftconf.py",
-        "console": "integratedTerminal",
-        "justMyCode": false,
-        "args": [
-          "ftdi://ftdi:2232:1:11/2", "-x",
-          "-s", "00-0000",
-          "-m", "OIST_ESB",
-          "-p", "Replifactory",
-          "-vv", "-u",
-        ]
-      },
+      "name": "EEPROM Write",
+      "type": "python",
+      "request": "launch",
+      "program": "replifactory_ftconf.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": [
+        "ftdi://ftdi:2232:1:d/2",
+        "-i",
+        "data.ini",
+        "-u",
+      ]
+    },
+    {
+      "name": "EEPROM Erase",
+      "type": "python",
+      "request": "launch",
+      "program": "replifactory_ftconf.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": [
+        "ftdi://ftdi:2232:1:d/2",
+        "-E",
+        "-u",
+      ]
+    },
     {
       "name": "Vue serve",
       "request": "launch",
-      "runtimeArgs": ["run-script", "serve"],
+      "runtimeArgs": [
+        "run-script",
+        "serve"
+      ],
       "runtimeExecutable": "npm",
-      "skipFiles": ["<node_internals>/**"],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "type": "node",
       "env": {
         "NODE_ENV": "development"
@@ -52,7 +70,11 @@
         "LOGGING_LEVEL": "DEBUG",
         "ENVIRONMENT": "development"
       },
-      "args": ["run", "--no-debugger", "--no-reload"],
+      "args": [
+        "run",
+        "--no-debugger",
+        "--no-reload"
+      ],
       "jinja": true,
       "justMyCode": false
     }
