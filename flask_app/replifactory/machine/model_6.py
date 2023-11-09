@@ -13,8 +13,10 @@ from replifactory.util import InvariantContainer
 from replifactory.util import get_fully_qualified_classname as fqcn
 
 
-class Machine(MachineInterface, comm.MachineDeviceCallback):
+logger = logging.getLogger(__name__)
 
+
+class Machine(MachineInterface, comm.MachineDeviceCallback):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
 
@@ -130,26 +132,35 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
     def get_connection_options(cls):
         dev_dscs = FtdiDriver.get_devices_descriptions()
         # ftdi_devices = FtdiDriver.list_devices()
-        device_address_options = {"auto": "AUTO"}
+        device_address_options = {}
         for dev_dsc in dev_dscs:
+            if dev_dsc["is_busy"]:
+                parsed_descriptor = FtdiDriver.parse_device_descriptor((dev_dsc["device"], 2))
+                logger.warning("Device %s is busy", parsed_descriptor.url)
+                continue
+            if dev_dsc["error"]:
+                logger.warning(dev_dsc["error"])
+                continue
             address = f"{dev_dsc['config']['serial']}"
-            device_address_options[address] = f"{dev_dsc['config']['product']} [{address}]"
+            device_address_options[
+                address
+            ] = f"{dev_dsc['config']['product']} [{address}]"
         return {
             "device_address": device_address_options,
             "autoconnect": settings().connection.autoconnect,
         }
 
-    def _parse_device_address(self, device_address: str):
-        parts = device_address.split(":")
-        if len(parts) == 2:
-            try:
-                num1 = int(parts[0])
-                num2 = int(parts[1])
-                return (num1, num2)
-            except ValueError:
-                return None
-        else:
-            return None
+    # def _parse_device_address(self, device_address: str):
+    #     parts = device_address.split(":")
+    #     if len(parts) == 2:
+    #         try:
+    #             num1 = int(parts[0])
+    #             num2 = int(parts[1])
+    #             return (num1, num2)
+    #         except ValueError:
+    #             return None
+    #     else:
+    #         return None
 
     def connect(self, device_address: str, *args, **kwargs):
         """
@@ -240,7 +251,9 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
 
         self._state = state
         self._stateMonitor.set_state(
-            self._dict(text=state_string, flags=self._getStateFlags(), error=error_string)
+            self._dict(
+                text=state_string, flags=self._getStateFlags(), error=error_string
+            )
         )
 
         payload = {

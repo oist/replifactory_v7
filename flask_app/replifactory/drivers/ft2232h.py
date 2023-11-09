@@ -1,19 +1,20 @@
+import errno
 import logging
 import threading
 from dataclasses import dataclass
 from string import printable as printablechars
 from typing import Iterable, Optional, Tuple
 
-from pyftdi.ftdi import Ftdi, UsbDeviceDescriptor
+import usb
+from pyftdi.ftdi import Ftdi, UsbDeviceDescriptor, FtdiError
 from pyftdi.i2c import I2cController as FtdiI2cController
 from pyftdi.i2c import I2cIOError, I2cNackError
 from pyftdi.i2c import I2cPort as FtdiI2cPort
 from pyftdi.spi import SpiController, SpiPort
 from pyftdi.usbtools import UsbTools
-from replifactory.drivers.ftdi import FtdiEeprom
-import usb
 from usb.core import Device as UsbDevice
 
+from replifactory.drivers.ftdi import FtdiEeprom
 from replifactory.util import ArrayOfBytesAsInt
 from replifactory.util import BraceMessage as __
 
@@ -244,14 +245,25 @@ class FtdiDriver:
         return [cls.read_device_description(device) for device in devices] 
     
     @classmethod
-    def read_device_description(cls, device: Tuple[UsbDeviceDescriptor, int]):
-        parsed_descriptor = cls.parse_device_descriptor(device)
-        eeprom = FtdiEeprom()
-        eeprom.open(f"{parsed_descriptor.url}/2")
-        return {
-            "device": device[0],
-            "config": eeprom._config,
+    def read_device_description(cls, device_with_inum: Tuple[UsbDeviceDescriptor, int]):
+        parsed_descriptor = cls.parse_device_descriptor(device_with_inum)
+        device_descriptor, _ = device_with_inum
+        device_description = {
+            "device": device_descriptor,
+            "config": {},
+            "is_busy": False,
+            "error": "",
         }
+        eeprom = FtdiEeprom()
+        try:
+            eeprom.open(f"{parsed_descriptor.url}/2")
+            device_description["config"] = eeprom._config
+        except FtdiError as exc:
+            if exc.errno == errno.EBUSY or [True for arg in exc.args if f"Errno {errno.EBUSY}" in arg]:
+                device_description["is_busy"] = True
+            else:
+                device_description["error"] = exc.strerror if exc.strerror else str(exc.args)
+        return device_description
 
 
     @classmethod
