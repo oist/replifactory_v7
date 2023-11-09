@@ -6,6 +6,7 @@ if "_pyftdi.ftdi" in sys.modules:
 else:
     from pyftdi.ftdi import Ftdi as _Ftdi
     from pyftdi.ftdi import FtdiError as _FtdiError
+from pyftdi.eeprom import FtdiEeprom as _FtdiEeprom
 from replifactory.drivers.at24c256c import EepromDriver
 from pyftdi.i2c import I2cPort, I2cController
 from usb.core import (USBError, Device as UsbDevice)
@@ -77,3 +78,10 @@ class FtdiError(_FtdiError):
 
 class FtdiEepromError(FtdiError):
     """FTDI EEPROM access errors"""
+
+
+class FtdiEeprom(_FtdiEeprom):
+    
+    def __init__(self):
+        super().__init__()
+        self._ftdi = Ftdi()

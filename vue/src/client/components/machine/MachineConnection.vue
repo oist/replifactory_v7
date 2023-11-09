@@ -5,7 +5,7 @@
             <div class="connection-setup">
                 <CForm class="row g-3">
                     <CCol xs="12">
-                        <CFormLabel for="machineSelect">Machine path</CFormLabel>
+                        <CFormLabel for="machineSelect">Machine</CFormLabel>
                         <CFormSelect v-model="selectedMachine" id="machineSelect" aria-label="Select machine"
                             @change="handleMachineSelected" :disabled="isConnected">
                             <option v-for="(value, key) in connectionOptions.device_address" :key="key" :value="key">
@@ -14,11 +14,11 @@
                         </CFormSelect>
                     </CCol>
                     <CCol xs="12">
-                        <CButton v-if="isDisconnected" @click="connectMachine" :disabled="loading" type="submit" color="primary" variant="outline" class="w-100">
+                        <CButton v-if="isDisconnected" @click="connectMachine" :disabled="loading" type="button" color="primary" variant="outline" class="w-100">
                             <CSpinner v-if="loading" size="sm" color="secondary" />
                             Connect
                         </CButton>
-                        <CButton v-else @click="disconnectMachine" :disabled="loading" type="submit" color="danger" variant="outline" class="w-100">
+                        <CButton v-else @click="disconnectMachine" :disabled="loading" type="button" color="danger" variant="outline" class="w-100">
                             <CSpinner v-if="loading" size="sm" color="secondary" />
                             Disconnect
                         </CButton>
@@ -131,12 +131,12 @@ export default {
             // }
         },
         async disconnectMachine() {
-            this.connectCommand({
+            await this.connectCommand({
                 command: "disconnect",
             })
         },
         async connectMachine() {
-            this.connectCommand({
+            await this.connectCommand({
                 command: "connect",
                 device_address: this.selectedMachine,
             })

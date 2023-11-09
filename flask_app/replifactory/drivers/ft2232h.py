@@ -2,14 +2,15 @@ import logging
 import threading
 from dataclasses import dataclass
 from string import printable as printablechars
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 
-from pyftdi.ftdi import Ftdi
+from pyftdi.ftdi import Ftdi, UsbDeviceDescriptor
 from pyftdi.i2c import I2cController as FtdiI2cController
 from pyftdi.i2c import I2cIOError, I2cNackError
 from pyftdi.i2c import I2cPort as FtdiI2cPort
 from pyftdi.spi import SpiController, SpiPort
 from pyftdi.usbtools import UsbTools
+from replifactory.drivers.ftdi import FtdiEeprom
 import usb
 from usb.core import Device as UsbDevice
 
@@ -217,6 +218,13 @@ class FtdiDriver:
 
     @classmethod
     def find_device(cls, **kwargs):
+        if "serial" in kwargs:
+            serial = kwargs["serial"]
+            dev_dscrs = cls.get_devices_descriptions()
+            for dev_dscr in dev_dscrs:
+                if dev_dscr["config"]["serial"] == serial:
+                    return UsbTools.get_device(dev_dscr["device"])
+            return None
         return usb.core.find(**kwargs)
 
     @classmethod
@@ -229,6 +237,22 @@ class FtdiDriver:
             for pid in products:
                 vps.add((vid, products[pid]))
         return Ftdi.find_all(vps, nocache=True)
+    
+    @classmethod
+    def get_devices_descriptions(cls):
+        devices = cls.list_devices()
+        return [cls.read_device_description(device) for device in devices] 
+    
+    @classmethod
+    def read_device_description(cls, device: Tuple[UsbDeviceDescriptor, int]):
+        parsed_descriptor = cls.parse_device_descriptor(device)
+        eeprom = FtdiEeprom()
+        eeprom.open(f"{parsed_descriptor.url}/2")
+        return {
+            "device": device[0],
+            "config": eeprom._config,
+        }
+
 
     @classmethod
     def parse_device_descriptor(cls, descriptor):

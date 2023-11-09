@@ -128,13 +128,12 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
 
     @classmethod
     def get_connection_options(cls):
-        ftdi_devices = FtdiDriver.list_devices()
+        dev_dscs = FtdiDriver.get_devices_descriptions()
+        # ftdi_devices = FtdiDriver.list_devices()
         device_address_options = {"auto": "AUTO"}
-        for device_descriptor, interface_num in ftdi_devices:
-            address = f"{device_descriptor.bus}:{device_descriptor.address}"
-            device_address_options[
-                address
-            ] = f"{device_descriptor.description} [{address}]"
+        for dev_dsc in dev_dscs:
+            address = f"{dev_dsc['config']['serial']}"
+            device_address_options[address] = f"{dev_dsc['config']['product']} [{address}]"
         return {
             "device_address": device_address_options,
             "autoconnect": settings().connection.autoconnect,
@@ -159,7 +158,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         """
         if self._comm is not None:
             return
-        bus, address = self._parse_device_address(device_address) or (None, None)
+        # bus, address = self._parse_device_address(device_address) or (None, None)
         eventManager().fire(Events.CONNECTING)
         # self._printerProfileManager.select(profile)
 
@@ -168,7 +167,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         #     logging.getLogger("SERIAL").info(
         #         "serial.log is currently not enabled, you can enable it via Settings > Serial Connection > Log communication to serial.log"
         #     )
-        usb_device = FtdiDriver.find_device(bus=bus, address=address)
+        usb_device = FtdiDriver.find_device(serial=device_address)
         self._comm = comm.Machine(usb_device=usb_device, callback=self)
         self._comm.start()
 
