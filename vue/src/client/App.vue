@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="container-fluid fixed-top p-0">
+  <div class="container-fluid fixed-top p-0">
     <div id="alerts">
       <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>

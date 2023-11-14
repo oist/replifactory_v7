@@ -39,6 +39,7 @@ class Events:
     DISCONNECTING = "Disconnecting"
     DISCONNECTED = "Disconnected"
     CONNECTIONS_AUTOREFRESHED = "ConnectionsAutorefreshed"
+    CONNECTION_OPTIONS_UPDATED = "ConnectionOptionsUpdated"
 
     # State changes
     MACHINE_STATE_CHANGED = "MachineStateChanged"

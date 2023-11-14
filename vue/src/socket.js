@@ -1,15 +1,17 @@
 import { reactive } from "vue";
 import { io } from "socket.io-client";
-
+import store from "@/client/store";
 export const state = reactive({
   machine: {
     state_id: 0,
     state_string: "Unknown",
   },
   connected: false,
-  usbDeviceConnected: [],
   usbDeviceDisconnected: [],
   connectionOptions: {},
+  currentConnection: {
+    devices: {},
+  },
 });
 
 // export const socket = io(`${window.location.origin}/socket.io/machine`);
@@ -32,18 +34,9 @@ socket.on('reconnect', (attemptNumber) => {
   console.log(`Reconnected after ${attemptNumber} attempts`);
 });
 
-socket.on("UsbListUpdated", (connectionOptions) => {
-  state.connectionOptions = connectionOptions;
+socket.on("ConnectionOptionsUpdated", (options) => {
+  store.commit("machine/updateConnectionOptions", options);
 });
-
-socket.on("usb_device_connected", (...args) => {
-  state.usbDeviceConnected.push(args);
-});
-
-socket.on("usb_device_disconnected", (...args) => {
-  state.usbDeviceDisconnected.push(args);
-});
-
 socket.on("MachineStateChanged", (payload) => {
   state.machine.state_id = payload.state_id
   state.machine.state_string = payload.state_string

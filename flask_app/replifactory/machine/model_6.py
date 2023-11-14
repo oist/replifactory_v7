@@ -6,9 +6,9 @@ from collections import deque
 
 import replifactory.devices.machine as comm
 from replifactory import settings
-from replifactory.drivers.ft2232h import FtdiDriver
 from replifactory.events import Events, eventManager
 from replifactory.machine import MachineCallback, MachineInterface
+from replifactory.usb_manager import usbManager
 from replifactory.util import InvariantContainer
 from replifactory.util import get_fully_qualified_classname as fqcn
 
@@ -52,7 +52,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             experiment_data=self._dict(),
         )
 
-        eventManager().subscribe(Events.CHART_MARKED, self._on_event_ChartMarked)
+        eventManager().subscribe(Events.USB_LIST_UPDATED, self._on_usb_list_updated)
 
     def register_callback(self, callback, *args, **kwargs):
         if not isinstance(callback, MachineCallback):
@@ -125,42 +125,34 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             ready=self.is_ready(),
         )
 
-    def _on_event_ChartMarked(self, event, data):
-        pass
+    def _on_usb_list_updated(self, event, data):
+        payload = self.get_connection_options()
+        eventManager().fire(Events.CONNECTION_OPTIONS_UPDATED, payload)
+
+    def get_current_connection(self):
+        return self._comm.usb_device_id if self._comm else None
 
     @classmethod
     def get_connection_options(cls):
-        dev_dscs = FtdiDriver.get_devices_descriptions()
-        # ftdi_devices = FtdiDriver.list_devices()
-        device_address_options = {}
-        for dev_dsc in dev_dscs:
-            if dev_dsc["is_busy"]:
-                parsed_descriptor = FtdiDriver.parse_device_descriptor((dev_dsc["device"], 2))
-                logger.warning("Device %s is busy", parsed_descriptor.url)
-                continue
-            if dev_dsc["error"]:
-                logger.warning(dev_dsc["error"])
-                continue
-            address = f"{dev_dsc['config']['serial']}"
-            device_address_options[
-                address
-            ] = f"{dev_dsc['config']['product']} [{address}]"
+        devices = usbManager().get_available_devices()
+        devices_options = {}
+        for device_id, device in devices.items():
+            device_data = {}
+            for prop in [
+                "address",
+                "bus",
+                "idProduct",
+                "idVendor",
+                "manufacturer",
+                "product",
+                "serial_number",
+            ]:
+                device_data[prop] = getattr(device, prop, None)
+            devices_options[device_id] = device_data
         return {
-            "device_address": device_address_options,
+            "devices": devices_options,
             "autoconnect": settings().connection.autoconnect,
         }
-
-    # def _parse_device_address(self, device_address: str):
-    #     parts = device_address.split(":")
-    #     if len(parts) == 2:
-    #         try:
-    #             num1 = int(parts[0])
-    #             num2 = int(parts[1])
-    #             return (num1, num2)
-    #         except ValueError:
-    #             return None
-    #     else:
-    #         return None
 
     def connect(self, device_address: str, *args, **kwargs):
         """
@@ -169,16 +161,8 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         """
         if self._comm is not None:
             return
-        # bus, address = self._parse_device_address(device_address) or (None, None)
         eventManager().fire(Events.CONNECTING)
-        # self._printerProfileManager.select(profile)
-
-        # if not logging.getLogger("SERIAL").isEnabledFor(logging.DEBUG):
-        #     # if serial.log is not enabled, log a line to explain that to reduce "serial.log is empty" in tickets...
-        #     logging.getLogger("SERIAL").info(
-        #         "serial.log is currently not enabled, you can enable it via Settings > Serial Connection > Log communication to serial.log"
-        #     )
-        usb_device = FtdiDriver.find_device(serial=device_address)
+        usb_device = usbManager().get_device(device_id=device_address)
         self._comm = comm.Machine(usb_device=usb_device, callback=self)
         self._comm.start()
 
@@ -191,7 +175,6 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             self._comm.close()
         else:
             eventManager().fire(Events.DISCONNECTED)
-        self._firmware_info = None
 
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()

@@ -15,6 +15,7 @@ from replifactory.database import db
 from replifactory.events import Events, eventManager
 from replifactory.machine.model_6 import Machine
 from replifactory.socketio import MachineEventListener, MachineNamespace
+from replifactory.usb_manager import usbManager
 from routes.device_routes import device_routes
 from routes.experiment_routes import experiment_routes
 from routes.service_routes import service_routes
@@ -88,9 +89,7 @@ def create_app():
     global machine
     machine = Machine()
 
-    # import should be after initialize global machine variable
-    from replifactory.usbmonitor import UsbMonitor
-    usb_monitor = UsbMonitor(app)
+    usb_manager = usbManager()
 
     # environment = os.environ.get("ENVIRONMENT", "production")
     # socketio_cors_allowed_origins = "*" if environment == "development" else None
@@ -109,11 +108,11 @@ def create_app():
     def catch_all(path):
         return app.send_static_file("index.html")
 
-    usb_monitor.start_monitoring()
+    usb_manager.start_monitoring()
 
     def on_shutdown():
         log.info("Shutting down...")
-        usb_monitor.stop_monitoring()
+        usb_manager.stop_monitoring()
         # turn off observers and other threads here
         # eventManager.fire(events.Events.SHUTDOWN)
 

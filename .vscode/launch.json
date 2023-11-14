@@ -11,10 +11,7 @@
       "program": "replifactory_ftconf.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": [
-        "ftdi://ftdi:2232:1:d/2",
-        "-d","-o", "-",
-      ]
+      "args": ["ftdi://ftdi:2232:1:d/2", "-d", "-o", "-"]
     },
     {
       "name": "EEPROM Write",
@@ -23,12 +20,7 @@
       "program": "replifactory_ftconf.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": [
-        "ftdi://ftdi:2232:1:d/2",
-        "-i",
-        "data.ini",
-        "-u",
-      ]
+      "args": ["ftdi://ftdi:2232:1:d/2", "-i", "data.ini", "-u"]
     },
     {
       "name": "EEPROM Erase",
@@ -37,26 +29,28 @@
       "program": "replifactory_ftconf.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": [
-        "ftdi://ftdi:2232:1:d/2",
-        "-E",
-        "-u",
-      ]
+      "args": ["ftdi://ftdi:2232:1:d/2", "-E", "-u"]
     },
     {
       "name": "Vue serve",
       "request": "launch",
-      "runtimeArgs": [
-        "run-script",
-        "serve"
-      ],
+      "runtimeArgs": ["run-script", "serve"],
       "runtimeExecutable": "npm",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "env": {
         "NODE_ENV": "development"
+      }
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "vuejs: chrome",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}/src",
+      "breakOnLoad": true,
+      "sourceMapPathOverrides": {
+        "webpack:///vue/src/*": "${webRoot}/*"
       }
     },
     {
@@ -70,11 +64,7 @@
         "LOGGING_LEVEL": "DEBUG",
         "ENVIRONMENT": "development"
       },
-      "args": [
-        "run",
-        "--no-debugger",
-        "--no-reload"
-      ],
+      "args": ["run", "--no-debugger", "--no-reload"],
       "jinja": true,
       "justMyCode": false
     }

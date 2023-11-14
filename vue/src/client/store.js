@@ -1,12 +1,11 @@
-// import Vue from 'vue';
 import { createStore } from "vuex";
-// import Vuex from 'vuex';
 import device from "./deviceStore.js";
 import experiment from "./experimentStore.js";
-// Vue.use(Vuex);
+import machine from "./machineStore.js"
 
 import api from "@/api.js";
 export default createStore({
+  strict: process.env.NODE_ENV !== 'production',
   state: {
     state_string: "Unknown",
     deviceConnected: false,
@@ -17,6 +16,7 @@ export default createStore({
   modules: {
     device,
     experiment,
+    machine,
   },
   mutations: {
     setExperiments(state, experiments) {

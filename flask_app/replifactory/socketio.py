@@ -8,27 +8,41 @@ log = logging.getLogger(__name__)
 
 
 class MachineEventListener:
-
     def __init__(self, app):
         self._app = app
         if not hasattr(app, "extensions"):
             app.extensions = {}  # pragma: no cover
         app.extensions["machine_event_listener"] = self
-        eventManager().subscribe(Events.USB_LIST_UPDATED, self.on_usb_list_updated)
-        eventManager().subscribe(Events.MACHINE_STATE_CHANGED, self.on_machine_state_changed)
+        eventManager().subscribe(Events.CONNECTION_OPTIONS_UPDATED, self._on_connection_options_updated)
+        eventManager().subscribe(
+            Events.MACHINE_STATE_CHANGED, self._on_machine_state_changed
+        )
 
-    def on_usb_list_updated(self, event, payload):
+    def _on_connection_options_updated(self, event, payload):
         with self._app.app_context():
-            emit(Events.USB_LIST_UPDATED, payload, namespace="/machine", broadcast=True)
+            # data = {}
+            # for device_id, device in payload.items():
+            #     device_data = {}
+            #     for prop in [
+            #         "address",
+            #         "bus",
+            #         "idProduct",
+            #         "idVendor",
+            #         "manufacturer",
+            #         "product",
+            #         "serial_number",
+            #     ]:
+            #         device_data[prop] = getattr(device, prop, None)
+            #     data[device_id] = device_data
+            emit(Events.CONNECTION_OPTIONS_UPDATED, payload, namespace="/machine", broadcast=True)
 
-    def on_machine_state_changed(self, event, payload):
+    def _on_machine_state_changed(self, event, payload):
         with self._app.app_context():
             emit(event, payload, namespace="/machine", broadcast=True)
 
 
 class MachineNamespace(Namespace):
-
-    def __init__(self, machine: MachineInterface,  namespace=None):
+    def __init__(self, machine: MachineInterface, namespace=None):
         super(Namespace, self).__init__(namespace)
         self._machine = machine
 

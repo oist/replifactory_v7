@@ -2,9 +2,9 @@ import logging
 import threading
 from time import sleep
 from typing import Iterable, Optional
+from replifactory.usb_manager import usbManager
 
 from usb.core import Device as UsbDevice
-from pyftdi.usbtools import UsbTools
 
 from replifactory.devices import Device
 from replifactory.devices.laser import Laser
@@ -61,7 +61,6 @@ VALVE_CHANGE_STATE_TIME = 1.5
 
 
 class MachineDeviceCallback:
-
     def on_comm_state_change(self, state):
         pass
 
@@ -81,7 +80,7 @@ class Machine(Device):
     STATE_CLOSED = 11
     STATE_ERROR = 12
     STATE_CLOSED_WITH_ERROR = 13
-    # STATE_TRANSFERING_FILE = 14
+    STATE_RECONNECTING = 14
     STATE_CANCELLING = 15
 
     # be sure to add anything here that signifies an operational state
@@ -94,7 +93,6 @@ class Machine(Device):
         STATE_PAUSING,
         STATE_RESUMING,
         STATE_FINISHING,
-        # STATE_TRANSFERING_FILE,
     )
 
     # be sure to add anything here that signifies a working state
@@ -114,17 +112,136 @@ class Machine(Device):
     # od_sensors: List[OpticalDensitySensor]
     # _pwm_driver: PWMDriver
 
-    def __init__(self, usb_device: Optional[UsbDevice] = None, callback: Optional[MachineDeviceCallback] = None, **kwargs):
+    def __init__(
+        self,
+        usb_device: Optional[UsbDevice] = None,
+        callback: Optional[MachineDeviceCallback] = None,
+        reconnect: bool = True,
+        **kwargs,
+    ):
         self._state = None
         self._errorValue = ""
         self._logger = logging.getLogger(__name__)
         self._connection_closing = False
         self._callback = callback or MachineDeviceCallback()
-        usb_device = usb_device or FtdiDriver.find_device(**kwargs)
+        self._usb_device = usb_device
+        self._serial = usb_device.serial_number if usb_device else None
+        self._reconnect = reconnect
         self.log = logging.getLogger(__name__)
+
+        # monitoring thread
+        self._monitoring_active = True
+        self.monitoring_thread = threading.Thread(
+            target=self._monitor, name="machine._monitor"
+        )
+        self.monitoring_thread.daemon = True
+
+    def _monitor(self):
+        self.connect()
+        self._say_hello()
+        while self._monitoring_active:
+            try:
+                if (
+                    self._state in self.OPERATIONAL_STATES
+                    and not self._ftdi_driver._ftdi.is_connected
+                ):
+                    if self._state in self.WORKING_STATES:
+                        self.close(is_error=True)
+                    else:
+                        self.close()
+                sleep(1)
+            except Exception:
+                self._logger.exception(
+                    "Something crashed inside the serial connection loop, please report this in Replifactory's bug tracker:"
+                )
+
+                errorMsg = "See octoprint.log for details"
+                self._logger.error(errorMsg)
+                self._errorValue = errorMsg
+                eventManager().fire(
+                    Events.ERROR, {"error": self.get_error_string(), "reason": "crash"}
+                )
+                self.close(is_error=True)
+        self._logger.info("Connection closed, closing down monitor")
+
+    def _say_hello(self):
+        pass
+
+    def _set_state(self, new_state):
+        self._state = new_state
+        self._callback.on_comm_state_change(new_state)
+
+    def _changeState(self, newState):
+        if self._state == newState:
+            return
+
+        oldState = self.get_state_string()
+        self._state = newState
+
+        text = 'Changing monitoring state from "{}" to "{}"'.format(
+            oldState, self.get_state_string()
+        )
+        # self._log(text)
+        self._logger.info(text)
+        self._callback.on_comm_state_change(newState)
+
+    def get_state_id(self, state=None):
+        if state is None:
+            state = self._state
+
+        possible_states = list(
+            filter(lambda x: x.startswith("STATE_"), self.__class__.__dict__.keys())
+        )
+        for possible_state in possible_states:
+            if getattr(self, possible_state) == state:
+                return possible_state[len("STATE_") :]
+
+        return "UNKNOWN"
+
+    def get_state_string(self, state=None):
+        state = state or self._state
+        if state == self.STATE_NONE:
+            return "Offline"
+        elif state == self.STATE_FINDING_MACHINE:
+            return "Finding connected machine"
+        elif state == self.STATE_CONNECTING:
+            return "Connecting"
+        elif state == self.STATE_SELF_TESTING:
+            return "Self testing"
+        elif state == self.STATE_OPERATIONAL:
+            return "Operational"
+        elif state == self.STATE_STARTING:
+            return "Starting"
+        elif state == self.STATE_WORKING:
+            return "Working"
+        elif state == self.STATE_PAUSED:
+            return "Paused"
+        elif state == self.STATE_PAUSING:
+            return "Pausing"
+        elif state == self.STATE_RESUMING:
+            return "Resuming"
+        elif state == self.STATE_FINISHING:
+            return "Finishing"
+        elif state == self.STATE_CLOSED:
+            return "Closed"
+        elif state == self.STATE_ERROR:
+            return "Error"
+        elif state == self.STATE_CLOSED_WITH_ERROR:
+            return "Offline after error"
+        elif state == self.STATE_CANCELLING:
+            return "Cancelling"
+        return f"Unknown State ({self._state})"
+
+    def get_error_string(self):
+        return self._errorValue
+
+    def connect(self):
+        self._set_state(self.STATE_CONNECTING)
+        self._usb_device = self._usb_device or usbManager().find_device(serial_number=self._serial)
         self._devices = []
+
         ftdi_driver = FtdiDriver(
-            usb_device=usb_device,
+            usb_device=self._usb_device,
             spi_interface=SPI_INTERFACE,
             spi_cs_count=SPI_CS_COUNT,
             spi_freq=SPI_FREQ,
@@ -218,133 +335,37 @@ class Machine(Device):
         ]
         self._devices += self.thermometers
 
-        # monitoring thread
-        self._monitoring_active = True
-        self.monitoring_thread = threading.Thread(
-            target=self._monitor, name="machine._monitor"
-        )
-        self.monitoring_thread.daemon = True
-
-    def _monitor(self):
-        self.connect()
-        self._say_hello()
-        while self._monitoring_active:
-            try:
-                if self._state in self.OPERATIONAL_STATES and not self._ftdi_driver._ftdi.pro:
-                    if self._state in self.WORKING_STATES:
-                        self.close(is_error=True)
-                    else:
-                        self.close()
-                sleep(1)
-            except Exception:
-                self._logger.exception(
-                    "Something crashed inside the serial connection loop, please report this in Replifactory's bug tracker:"
-                )
-
-                errorMsg = "See octoprint.log for details"
-                self._logger.error(errorMsg)
-                self._errorValue = errorMsg
-                eventManager().fire(
-                    Events.ERROR, {"error": self.get_error_string(), "reason": "crash"}
-                )
-                self.close(is_error=True)
-        self._logger.info("Connection closed, closing down monitor")
-
-    def _say_hello(self):
-        pass
-
-    def _set_state(self, new_state):
-        self._state = new_state
-        self._callback.on_comm_state_change(new_state)
-
-    def _changeState(self, newState):
-        if self._state == newState:
-            return
-
-        oldState = self.get_state_string()
-        self._state = newState
-
-        text = 'Changing monitoring state from "{}" to "{}"'.format(
-            oldState, self.get_state_string()
-        )
-        # self._log(text)
-        self._logger.info(text)
-        self._callback.on_comm_state_change(newState)
-
-    def get_state_id(self, state=None):
-        if state is None:
-            state = self._state
-
-        possible_states = list(
-            filter(lambda x: x.startswith("STATE_"), self.__class__.__dict__.keys())
-        )
-        for possible_state in possible_states:
-            if getattr(self, possible_state) == state:
-                return possible_state[len("STATE_") :]
-
-        return "UNKNOWN"
-
-    def get_state_string(self, state=None):
-        state = state or self._state
-        if state == self.STATE_NONE:
-            return "Offline"
-        elif state == self.STATE_FINDING_MACHINE:
-            return "Finding connected machine"
-        elif state == self.STATE_CONNECTING:
-            return "Connecting"
-        elif state == self.STATE_SELF_TESTING:
-            return "Self testing"
-        elif state == self.STATE_OPERATIONAL:
-            return "Operational"
-        elif state == self.STATE_STARTING:
-            return "Starting"
-        elif state == self.STATE_WORKING:
-            return "Working"
-        elif state == self.STATE_PAUSED:
-            return "Paused"
-        elif state == self.STATE_PAUSING:
-            return "Pausing"
-        elif state == self.STATE_RESUMING:
-            return "Resuming"
-        elif state == self.STATE_FINISHING:
-            return "Finishing"
-        elif state == self.STATE_CLOSED:
-            return "Closed"
-        elif state == self.STATE_ERROR:
-            return "Error"
-        elif state == self.STATE_CLOSED_WITH_ERROR:
-            return "Offline after error"
-        elif state == self.STATE_CANCELLING:
-            return "Cancelling"
-        return f"Unknown State ({self._state})"
-
-    def get_error_string(self):
-        return self._errorValue
-
-    def connect(self):
-        self._set_state(self.STATE_CONNECTING)
-        bus = self._ftdi_driver.usb_device.bus
-        address = self._ftdi_driver.usb_device.address
-        self._device_id = f"/dev/bus/usb/{bus:03d}/{address:03d}"
-        eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
         self._ftdi_driver.connect()
+
+        eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+        eventManager().unsubscribe(Events.USB_CONNECTED, self._on_usb_connected)
         # self.configure_all()
         self._set_state(self.STATE_OPERATIONAL)
 
+    @property
+    def usb_device_id(self):
+        if self._usb_device:
+            bus = self._usb_device.bus
+            address = self._usb_device.address
+            return f"/dev/bus/usb/{bus:03d}/{address:03d}"
+        return None
+
     def disconnect(self):
-        eventManager().unsubscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
-        self._ftdi_driver.terminate()
-        self._set_state(self.STATE_CLOSED)
+        self.close()
 
     def _on_usb_disconnected(self, event, payload):
         device_id, device_info = payload
-        if self._device_id != device_id:
+        if self.usb_device_id != device_id:
             return
 
         if self._state in self.WORKING_STATES:
             self.close(is_error=True)
         else:
             self.close()
+
+    def _on_usb_connected(self, event, payload):
+        device_id, device_info = payload
+        # FtdiDriver.find_device(bus=, )
 
     def start(self):
         self.connect()
@@ -361,6 +382,9 @@ class Machine(Device):
         if self._connection_closing:
             return
         self._connection_closing = True
+
+        eventManager().unsubscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+        eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
 
         # if self._temperature_timer is not None:
         #     try:
@@ -382,8 +406,10 @@ class Machine(Device):
         else:
             deactivate_monitoring_and_send_queue()
 
-        self.disconnect()
+        self._ftdi_driver.terminate()
         self._ftdi_driver = None
+        self._usb_device = None
+        self._device_id = None
 
         if is_error:
             self._changeState(self.STATE_CLOSED_WITH_ERROR)

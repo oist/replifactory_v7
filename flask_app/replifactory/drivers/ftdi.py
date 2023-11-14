@@ -31,7 +31,7 @@ class Ftdi(_Ftdi):
         self._i2c_interface = I2C_INTERFACE
         self._i2c_retry_count = 1
 
-    def open_from_device(self, device: UsbDevice, interface: int = 1) -> None:
+    def open_from_device(self, device: UsbDevice, interface: int = 2) -> None:
         super().open_from_device(device, interface)
         self._i2c_controller.set_retry_count(self._i2c_retry_count)
         self._i2c_controller.configure(
@@ -81,7 +81,6 @@ class FtdiEepromError(FtdiError):
 
 
 class FtdiEeprom(_FtdiEeprom):
-    
     def __init__(self):
         super().__init__()
         self._ftdi = Ftdi()
