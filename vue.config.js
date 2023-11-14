@@ -1,4 +1,5 @@
 const path = require("path");
+const publicDir = "vue/public";
 
 module.exports = {
   outputDir: path.join(__dirname, "flask_app", "static", "build"),
@@ -39,6 +40,16 @@ module.exports = {
           },
         };
       });
+    // change the template path for the html plugin
+    config.plugin("html").tap((args) => {
+      args[0].template = path.resolve(publicDir + "/index.html");
+      return args;
+    });
+    // change the from path for the copy plugin
+    // config.plugin("copy").tap(([pathConfigs]) => {
+    //   pathConfigs[0].from = path.resolve(publicDir);
+    //   return [pathConfigs];
+    // });
   },
   devServer: {
     // publicPath: "/",

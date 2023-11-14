@@ -32,4 +32,4 @@ app.directive('click-outside', {
 app.use(CoreuiVue)
 app.use(BootstrapVueNext)
 app.use(store) // This line adds your Vuex store to your Vue app
-app.mount('#app');
+app.mount('#replifactory');
