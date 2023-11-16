@@ -41,3 +41,6 @@ socket.on("MachineStateChanged", (payload) => {
   state.machine.state_id = payload.state_id
   state.machine.state_string = payload.state_string
 });
+socket.on("MachineConnected", (payload) => {
+  store.commit("machine/updateCurrentConnetion", payload)
+})

@@ -19,12 +19,21 @@ class MachineEventListener:
         eventManager().subscribe(
             Events.MACHINE_STATE_CHANGED, self._on_machine_state_changed
         )
+        eventManager().subscribe(Events.MACHINE_CONNECTED, self._on_connected)
 
     def _on_connection_options_updated(self, event, payload):
         with self._app.app_context():
             emit(Events.CONNECTION_OPTIONS_UPDATED, payload, namespace="/machine", broadcast=True)
 
     def _on_machine_state_changed(self, event, payload):
+        with self._app.app_context():
+            emit(event, payload, namespace="/machine", broadcast=True)
+
+    def _on_connected(self, event, comm):
+        device_id = comm.usb_device_id
+        payload = {
+            "device_id": device_id,
+        }
         with self._app.app_context():
             emit(event, payload, namespace="/machine", broadcast=True)
 

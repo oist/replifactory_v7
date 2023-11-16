@@ -234,6 +234,8 @@ class FtdiDriver:
                     device = dev
                 except FtdiError:
                     pass
+                except Exception:
+                    logger.exception("Can't read device serial number")
         return device
 
     @classmethod
@@ -255,12 +257,17 @@ class FtdiDriver:
         devs = set()
         for vid, pid in vps:
             devs.update(UsbTools._find_devices(vid, pid, True))
+        devices_with_serial_number = []
         for dev in devs:
             try:
                 cls._update_device_description_from_replifactory(dev)
             except FtdiError:
                 pass
-        return devs
+            except Exception:
+                logger.exception("Can't read device serial number")
+            else:
+                devices_with_serial_number.append(dev)
+        return devices_with_serial_number
 
     @classmethod
     def read_device_config(cls, device: Union[str, UsbDevice]):

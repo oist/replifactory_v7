@@ -102,6 +102,9 @@ class UsbManager:
             f"Disconnected: {str(device_info)} [{device_id}]"
         )
         with self._lock:
-            usb_device = self._usb_devices.pop(device_id)
-        eventManager().fire(Events.USB_DISCONNECTED, usb_device)
-        eventManager().fire(Events.USB_LIST_UPDATED, self._usb_devices)
+            try:
+                usb_device = self._usb_devices.pop(device_id)
+                eventManager().fire(Events.USB_DISCONNECTED, usb_device)
+                eventManager().fire(Events.USB_LIST_UPDATED, self._usb_devices)
+            except KeyError:
+                logger.warning("Can't disconnect device %s it's not in list: %s", device_id, self._usb_devices.keys())

@@ -161,7 +161,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         """
         if self._comm is not None:
             return
-        eventManager().fire(Events.CONNECTING)
+        eventManager().fire(Events.MACHINE_CONNECTING)
         usb_device = usbManager().get_device(device_id=device_address)
         self._comm = comm.Machine(usb_device=usb_device, callback=self)
         self._comm.start()
@@ -170,11 +170,11 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         """
         Closes the connection to the printer.
         """
-        eventManager().fire(Events.DISCONNECTING)
+        eventManager().fire(Events.MACHINE_DISCONNECTING)
         if self._comm is not None:
             self._comm.close()
         else:
-            eventManager().fire(Events.DISCONNECTED)
+            eventManager().fire(Events.MACHINE_DISCONNECTED)
 
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
@@ -268,7 +268,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         ):
             if self._comm is not None:
                 self._comm = None
-            eventManager().fire(Events.DISCONNECTED)
+            eventManager().fire(Events.MACHINE_DISCONNECTED)
 
         self._set_state(state, state_string=state_string, error_string=error_string)
 

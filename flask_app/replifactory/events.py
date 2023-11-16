@@ -35,11 +35,11 @@ class Events:
     CLIENT_CONNECTED = "ClientConnected"
     CLIENT_DISCONNECTED = "ClientDisconnected"
 
-    # connect/disconnect to printer
-    CONNECTING = "Connecting"
-    CONNECTED = "Connected"
-    DISCONNECTING = "Disconnecting"
-    DISCONNECTED = "Disconnected"
+    # connect/disconnect to replifactory
+    MACHINE_CONNECTING = "MachineConnecting"
+    MACHINE_CONNECTED = "MachineConnected"
+    MACHINE_DISCONNECTING = "MachineDisconnecting"
+    MACHINE_DISCONNECTED = "MachineDisconnected"
     CONNECTIONS_AUTOREFRESHED = "ConnectionsAutorefreshed"
     CONNECTION_OPTIONS_UPDATED = "ConnectionOptionsUpdated"
 

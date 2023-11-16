@@ -230,6 +230,8 @@ class Machine(Device):
             return "Offline after error"
         elif state == self.STATE_CANCELLING:
             return "Cancelling"
+        elif state == self.STATE_RECONNECTING:
+            return "Reconnecting"
         return f"Unknown State ({self._state})"
 
     def get_error_string(self):
@@ -238,6 +240,7 @@ class Machine(Device):
     def connect(self):
         self._set_state(self.STATE_CONNECTING)
         self._usb_device = self._usb_device or usbManager().find_device(serial_number=self._serial)
+        eventManager().fire(Events.MACHINE_CONNECTING, self)
         self._devices = []
 
         ftdi_driver = FtdiDriver(
@@ -338,9 +341,10 @@ class Machine(Device):
         self._ftdi_driver.connect()
 
         eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
-        eventManager().unsubscribe(Events.USB_CONNECTED, self._on_usb_connected)
+        eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
         # self.configure_all()
         self._set_state(self.STATE_OPERATIONAL)
+        eventManager().fire(Events.MACHINE_CONNECTED, self)
 
     @property
     def usb_device_id(self):
@@ -353,68 +357,56 @@ class Machine(Device):
     def disconnect(self):
         self.close()
 
-    def _on_usb_disconnected(self, event, payload):
-        device_id, device_info = payload
-        if self.usb_device_id != device_id:
+    def _on_usb_disconnected(self, event, usb_device):
+        if self._serial != usb_device.serial_number:
             return
 
-        if self._state in self.WORKING_STATES:
-            self.close(is_error=True)
+        if self._reconnect:
+            self._terminate_connection()
+            self._set_state(self.STATE_RECONNECTING)
         else:
-            self.close()
+            self.close(is_error=self._state in self.WORKING_STATES)
 
     def _on_usb_connected(self, event, usb_device):
-        pass
-        # FtdiDriver.find_device(bus=, )
+        if usb_device.serial_number and usb_device.serial_number != self._serial:
+            return
+
+        if self._state == self.STATE_RECONNECTING:
+            self._usb_device = usb_device
+            self.connect()
 
     def start(self):
         self.connect()
-        # self.monitoring_thread.start()
-
-    # def close(self):
-    #     self.disconnect()
 
     def close(self, is_error=False, *args, **kwargs):
         """
         Closes the connection to the printer.
         """
-
         if self._connection_closing:
             return
         self._connection_closing = True
 
         eventManager().unsubscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
-        eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
+        eventManager().unsubscribe(Events.USB_CONNECTED, self._on_usb_connected)
 
-        # if self._temperature_timer is not None:
-        #     try:
-        #         self._temperature_timer.cancel()
-        #     except Exception:
-        #         pass
-
-        def deactivate_monitoring_and_send_queue():
-            self._monitoring_active = False
-            # self._send_queue_active = False
-
-        if self._ftdi_driver is not None:
-            deactivate_monitoring_and_send_queue()
-            try:
-                self._ftdi_driver.close()
-            except Exception:
-                self._logger.exception("Error while trying to close serial port")
-                is_error = True
-        else:
-            deactivate_monitoring_and_send_queue()
-
-        self._ftdi_driver.terminate()
-        self._ftdi_driver = None
-        self._usb_device = None
-        self._device_id = None
-
-        if is_error:
+        self._monitoring_active = False
+        try:
+            self._terminate_connection(raise_exception=True)
+        except Exception:
             self._changeState(self.STATE_CLOSED_WITH_ERROR)
         else:
             self._changeState(self.STATE_CLOSED)
+
+    def _terminate_connection(self, raise_exception=False):
+        if self._ftdi_driver is not None:
+            try:
+                self._ftdi_driver.close()
+            except Exception as exc:
+                self._logger.exception("Error while trying to close serial port")
+                if raise_exception:
+                    raise exc
+            self._ftdi_driver = None
+            self._usb_device = None
 
     def configure_all(self):
         self.configure_pwm()

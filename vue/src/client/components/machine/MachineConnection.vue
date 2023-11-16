@@ -3,9 +3,11 @@
         <CForm class="row g-3">
             <CCol xs="12">
                 <CFormLabel for="machineSelect">Machine</CFormLabel>
-                <CFormSelect v-model="selectedMachine" id="machineSelect" aria-label="Select machine"
+                <CFormSelect v-model="currentConnection.device_id" id="machineSelect" aria-label="Select machine"
                     @change="handleMachineSelected" :disabled="isConnected">
-                    <option v-for="(value, key) in connectionOptions.devices" :key="key" :value="key">
+                    <option v-for="(value, device_id) in connectionOptions.devices"
+                        :key="device_id"
+                        :value="device_id">
                         {{ value.product }} ({{ value.serial_number }})
                     </option>
                 </CFormSelect>
@@ -160,21 +162,6 @@ export default {
                     this.showAlert = true
                 })
         },
-        // async getConnectionOptions() {
-        //     this.loading = true
-        //     this.showAlert = false
-        //     try {
-        //         const response = await api.get('/connection')
-        //         console.debug(response)
-        //         state.connectionOptions = response.data.options
-        //         state.currentConnection = response.data.current
-        //         this.selectedMachine = response.data.current.device_address
-        //     } catch (err) {
-        //         this.error = err.message
-        //         this.showAlert = true
-        //         this.loading = false
-        //     }
-        // },
         onDismissed() {
             // do something when alert is dismissed
         },
