@@ -2,32 +2,32 @@ import logging
 import threading
 from time import sleep
 from typing import Iterable, Optional
-from replifactory.usb_manager import usbManager
+from flask_app.replifactory.usb_manager import usbManager
 
 from usb.core import Device as UsbDevice
 
-from replifactory.devices import Device
-from replifactory.devices.laser import Laser
-from replifactory.devices.optical_desity_sensor import OpticalDensitySensor
-from replifactory.devices.photodiode import Photodiode
-from replifactory.devices.pump import Pump
-from replifactory.devices.step_motor import Motor
-from replifactory.devices.stirrer import Stirrer
-from replifactory.devices.stirrers_group import StirrersGroup
-from replifactory.devices.thermometer import Thermometer
-from replifactory.devices.valve import Valve
-from replifactory.devices.valves_group import ValvesGroup
-from replifactory.drivers.adt75 import REGISTERS_NAMES as ThermometerRegisters
-from replifactory.drivers.adt75 import ThermometerDriver
-from replifactory.drivers.ft2232h import FtdiDriver
-from replifactory.drivers.l6470h import StepMotorDriver
-from replifactory.drivers.mcp3421 import ADCDriver
-from replifactory.drivers.pca9555 import ALL_PINS
-from replifactory.drivers.pca9555 import REGISTERS_NAMES as IORegisters
-from replifactory.drivers.pca9555 import IOPortDriver
-from replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegisters
-from replifactory.drivers.pca9685 import PWMDriver
-from replifactory.events import Events, eventManager
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices.laser import Laser
+from replifactory.devices.optical_density_sensor import OpticalDensitySensor
+from flask_app.replifactory.devices.photodiode import Photodiode
+from flask_app.replifactory.devices.pump import Pump
+from flask_app.replifactory.devices.step_motor import Motor
+from flask_app.replifactory.devices.stirrer import Stirrer
+from flask_app.replifactory.devices.stirrers_group import StirrersGroup
+from flask_app.replifactory.devices.thermometer import Thermometer
+from flask_app.replifactory.devices.valve import Valve
+from flask_app.replifactory.devices.valves_group import ValvesGroup
+from flask_app.replifactory.drivers.adt75 import REGISTERS_NAMES as ThermometerRegisters
+from flask_app.replifactory.drivers.adt75 import ThermometerDriver
+from flask_app.replifactory.drivers.ft2232h import FtdiDriver
+from flask_app.replifactory.drivers.l6470h import StepMotorDriver
+from flask_app.replifactory.drivers.mcp3421 import ADCDriver
+from flask_app.replifactory.drivers.pca9555 import ALL_PINS
+from flask_app.replifactory.drivers.pca9555 import REGISTERS_NAMES as IORegisters
+from flask_app.replifactory.drivers.pca9555 import IOPortDriver
+from flask_app.replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegisters
+from flask_app.replifactory.drivers.pca9685 import PWMDriver
+from flask_app.replifactory.events import Events, eventManager
 
 VAVLE_PWM_CHANNEL_START_ADDR = 8
 VALVES_COUNT = 7
@@ -363,8 +363,8 @@ class Machine(Device):
         else:
             self.close()
 
-    def _on_usb_connected(self, event, payload):
-        device_id, device_info = payload
+    def _on_usb_connected(self, event, usb_device):
+        pass
         # FtdiDriver.find_device(bus=, )
 
     def start(self):

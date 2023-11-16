@@ -1,8 +1,8 @@
 import logging
 import time
 
-from replifactory.devices import Device
-from replifactory.drivers.pca9555 import IOPortDriver
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.drivers.pca9555 import IOPortDriver
 
 LASER_ON = 0
 LASER_OFF = 1

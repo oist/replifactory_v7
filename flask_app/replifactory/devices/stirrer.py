@@ -4,8 +4,8 @@ import time
 from typing import Optional, Union
 
 import replifactory.drivers.pca9685 as pca9685
-from replifactory.devices import Device
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 

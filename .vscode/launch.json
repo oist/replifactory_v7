@@ -5,13 +5,31 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Gunicorn",
+      "type": "python",
+      "request": "launch",
+      "module": "gunicorn",
+      "justMyCode": true,
+      "args": ["-k", "gevent", "-w", "1", "flask_app.app"],
+      "env": {
+        "GEVENT_SUPPORT": "True"
+      }
+    },
+    // {
+    //   "name": "waitress",
+    //   "type": "python",
+    //   "request": "launch",
+    //   "module": "flask_app.server",
+    //   "justMyCode": true
+    // },
+    {
       "name": "EEPROM Read",
       "type": "python",
       "request": "launch",
       "program": "replifactory_ftconf.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": ["ftdi://ftdi:2232:1:d/2", "-d", "-o", "-"]
+      "args": ["ftdi://ftdi:2232:1:3/2", "-d", "-o", "-"]
     },
     {
       "name": "EEPROM Write",
@@ -43,23 +61,12 @@
       }
     },
     {
-      "type": "chrome",
-      "request": "launch",
-      "name": "vuejs: chrome",
-      "url": "http://localhost:8080",
-      "webRoot": "${workspaceFolder}/src",
-      "breakOnLoad": true,
-      "sourceMapPathOverrides": {
-        "webpack:///vue/src/*": "${webRoot}/*"
-      }
-    },
-    {
       "name": "Python: Flask",
       "type": "python",
       "request": "launch",
       "module": "flask",
       "env": {
-        "FLASK_APP": "replifactory",
+        "FLASK_APP": "flask_app.app",
         "FLASK_DEBUG": "1",
         "LOGGING_LEVEL": "DEBUG",
         "ENVIRONMENT": "development"

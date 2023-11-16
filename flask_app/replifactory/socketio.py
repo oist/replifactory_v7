@@ -1,8 +1,10 @@
 import logging
 
-from flask_socketio import Namespace, emit
-from replifactory.events import Events, eventManager
-from replifactory.machine import MachineInterface
+from flask_socketio import emit
+from flask_socketio.namespace import Namespace
+
+from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.machine import MachineInterface
 
 log = logging.getLogger(__name__)
 
@@ -20,20 +22,6 @@ class MachineEventListener:
 
     def _on_connection_options_updated(self, event, payload):
         with self._app.app_context():
-            # data = {}
-            # for device_id, device in payload.items():
-            #     device_data = {}
-            #     for prop in [
-            #         "address",
-            #         "bus",
-            #         "idProduct",
-            #         "idVendor",
-            #         "manufacturer",
-            #         "product",
-            #         "serial_number",
-            #     ]:
-            #         device_data[prop] = getattr(device, prop, None)
-            #     data[device_id] = device_data
             emit(Events.CONNECTION_OPTIONS_UPDATED, payload, namespace="/machine", broadcast=True)
 
     def _on_machine_state_changed(self, event, payload):
@@ -58,10 +46,3 @@ class MachineNamespace(Namespace):
     def on_disconnect(self):
         log.debug("socket.io client disconnected")
         eventManager().fire(Events.CLIENT_DISCONNECTED)
-
-    def on_join(self, data):
-        # Join a room specified by the client
-        room = data.get("room")
-        if room:
-            # join_room(room)
-            print(f"Joined room {room}")

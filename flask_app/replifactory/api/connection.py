@@ -1,8 +1,10 @@
 from flask import abort, jsonify, request
 
-from replifactory import machine, settings
-from replifactory.api import api
-from replifactory.util.flask import NO_CONTENT, get_json_command_from_request
+from flask_app import machine
+from flask_app.replifactory.api import api
+from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
+
+from flask_app import settings
 
 
 @api.route("/connection", methods=["GET"])

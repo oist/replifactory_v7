@@ -2,10 +2,9 @@ import logging
 import threading
 import time
 from typing import Union
-from pyftdi.i2c import I2cNackError
 
-from replifactory.drivers.ft2232h import I2cPort
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.drivers.ft2232h import I2cPort
+from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 

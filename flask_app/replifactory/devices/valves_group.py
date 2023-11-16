@@ -1,5 +1,5 @@
-from replifactory.devices import Device
-from replifactory.devices.valve import Valve
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices.valve import Valve
 
 
 class ValvesGroup(Device):

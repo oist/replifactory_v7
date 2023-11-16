@@ -1,6 +1,6 @@
 from pydantic import BaseModel as PydanticBaseModel
-from replifactory.config.connection import ConnectionConfig
-from replifactory.config.temperature import TemperatureConfig
+from flask_app.replifactory.config.connection import ConnectionConfig
+from flask_app.replifactory.config.temperature import TemperatureConfig
 
 from .folder import FolderConfig
 

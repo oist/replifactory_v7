@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 
 import replifactory.drivers.l6470h as l6470h
-from replifactory.devices import Device
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 

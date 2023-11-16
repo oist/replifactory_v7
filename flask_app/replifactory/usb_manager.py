@@ -7,8 +7,8 @@ import usb._interop as _interop
 from usbmonitor import USBMonitor
 from usbmonitor.__platform_specific_detectors._constants import _SECONDS_BETWEEN_CHECKS
 
-from replifactory.drivers.ft2232h import FtdiDriver
-from replifactory.events import Events, eventManager
+from flask_app.replifactory.drivers.ft2232h import FtdiDriver
+from flask_app.replifactory.events import Events, eventManager
 
 logger = logging.getLogger(__name__)
 _instance = None
@@ -27,7 +27,7 @@ class UsbManager:
         filter_devices: list[dict[str, str]] | tuple[dict[str, str]] | None = None,
     ):
         self._lock = RLock()
-        self._usb_devices = {}
+        self._usb_devices = None
         self._usb_monitor = USBMonitor(
             filter_devices
             or (
@@ -52,6 +52,7 @@ class UsbManager:
         )
 
     def stop_monitoring(self):
+        logger.info("Stopping usb monitoring...")
         self._usb_monitor.monitor.stop_monitoring()
 
     def get_device(self, device_id):
@@ -68,7 +69,7 @@ class UsbManager:
 
     def get_available_devices(self):
         with self._lock:
-            if not self._usb_devices:
+            if self._usb_devices is None:
                 usb_devices = OrderedDict()
                 devices = FtdiDriver.list_devices()
                 for device in devices:
@@ -90,10 +91,11 @@ class UsbManager:
         )
         bus, address = self._parse_devname(device_info["DEVNAME"])
         usb_device = FtdiDriver.find_device(bus=bus, address=address)
-        with self._lock:
-            self._usb_devices[device_id] = usb_device
+        if usb_device:
+            with self._lock:
+                self._usb_devices[device_id] = usb_device
+                eventManager().fire(Events.USB_LIST_UPDATED, self._usb_devices)
         eventManager().fire(Events.USB_CONNECTED, usb_device)
-        eventManager().fire(Events.USB_LIST_UPDATED, self._usb_devices)
 
     def _on_disconnect(self, device_id, device_info):
         logger.info(

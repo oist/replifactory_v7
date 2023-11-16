@@ -4,8 +4,8 @@ import time
 
 from pyftdi.i2c import I2cPort
 
-from replifactory.util import ArrayOfBytesAsInt
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.util import ArrayOfBytesAsInt
+from flask_app.replifactory.util import BraceMessage as __
 
 log = logging.getLogger(__name__)
 

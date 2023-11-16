@@ -6,8 +6,8 @@ from typing import Union
 
 from pyftdi.spi import SpiPort
 
-from replifactory.util import ArrayOfBytesAsInt
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.util import ArrayOfBytesAsInt
+from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 

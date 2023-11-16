@@ -1,8 +1,9 @@
 import logging
 from collections import OrderedDict
-from typing import Optional, Union
+from struct import calcsize as scalc
+from typing import Union
 
-from replifactory.drivers.at24c256c import EepromDriver
+from flask_app.replifactory.drivers.at24c256c import EepromDriver
 
 
 class Eeprom:

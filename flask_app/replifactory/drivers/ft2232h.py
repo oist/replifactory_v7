@@ -6,7 +6,7 @@ from string import printable as printablechars
 from typing import Iterable, Optional, Union
 
 import usb
-from pyftdi.ftdi import Ftdi, UsbDeviceDescriptor, FtdiError
+from pyftdi.ftdi import Ftdi, FtdiError
 from pyftdi.i2c import I2cController as FtdiI2cController
 from pyftdi.i2c import I2cIOError, I2cNackError
 from pyftdi.i2c import I2cPort as FtdiI2cPort
@@ -14,9 +14,9 @@ from pyftdi.spi import SpiController, SpiPort
 from pyftdi.usbtools import UsbTools
 from usb.core import Device as UsbDevice
 
-from replifactory.drivers.ftdi import FtdiEeprom
-from replifactory.util import ArrayOfBytesAsInt
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.drivers.ftdi import FtdiEeprom
+from flask_app.replifactory.util import ArrayOfBytesAsInt
+from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 
@@ -229,8 +229,11 @@ class FtdiDriver:
         else:
             dev = usb.core.find(**kwargs)
             if dev:
-                cls._update_device_description_from_replifactory(dev)
-                device = dev
+                try:
+                    cls._update_device_description_from_replifactory(dev)
+                    device = dev
+                except FtdiError:
+                    pass
         return device
 
     @classmethod
@@ -259,42 +262,26 @@ class FtdiDriver:
                 pass
         return devs
 
-    # @classmethod
-    # def get_devices_descriptions(cls):
-    #     devices = cls.list_devices()
-    #     return [cls.read_device_description(device) for device in devices]
-
-    # @classmethod
-    # def read_device_description(cls, device_with_inum: Tuple[UsbDeviceDescriptor, int]):
-    #     parsed_descriptor = cls.parse_device_descriptor(device_with_inum)
-    #     device_descriptor, _ = device_with_inum
-    #     device_description = {
-    #         "device": device_descriptor,
-    #         "config": {},
-    #         "is_busy": False,
-    #         "error": "",
-    #     }
-    #     try:
-    #         device_description["config"] = cls.read_device_config(f"{parsed_descriptor.url}/2")
-    #     except FtdiError as exc:
-    #         if exc.errno == errno.EBUSY or [True for arg in exc.args if f"Errno {errno.EBUSY}" in arg]:
-    #             device_description["is_busy"] = True
-    #         else:
-    #             device_description["error"] = exc.strerror if exc.strerror else str(exc.args)
-    #     return device_description
-
     @classmethod
     def read_device_config(cls, device: Union[str, UsbDevice]):
+        eeprom = FtdiEeprom()
         try:
-            eeprom = FtdiEeprom()
             eeprom.open(device)
-            return eeprom._config
+            return {
+                "serial": eeprom.serial,
+                "manufacturer": eeprom.manufacturer,
+                "product": eeprom.product,
+            }
         except FtdiError as exc:
-            if exc.errno == errno.EBUSY or [True for arg in exc.args if f"Errno {errno.EBUSY}" in arg]:
-                logger.info(f"Device {device} is busy")
+            if exc.errno == errno.EBUSY or [
+                True for arg in exc.args if f"Errno {errno.EBUSY}" in arg
+            ]:
+                logger.info(f"Device {device._str()} is busy")
             else:
                 logger.exception("Read usb device configuration failed")
             raise exc
+        finally:
+            eeprom.close()
 
     @classmethod
     def parse_device_descriptor(cls, descriptor):

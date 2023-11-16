@@ -1,7 +1,7 @@
 from typing import Optional
 
-from replifactory.devices import Device
-from replifactory.drivers.adt75 import ThermometerDriver
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.drivers.adt75 import ThermometerDriver
 
 
 class Thermometer(Device):

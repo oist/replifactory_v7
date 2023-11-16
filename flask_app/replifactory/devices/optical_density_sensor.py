@@ -6,9 +6,9 @@ from typing import Optional
 import numpy as np
 from scipy.optimize import curve_fit
 
-from replifactory.devices import Device
-from replifactory.devices.laser import Laser
-from replifactory.devices.photodiode import Photodiode
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices.laser import Laser
+from flask_app.replifactory.devices.photodiode import Photodiode
 
 global_lock = threading.RLock()
 

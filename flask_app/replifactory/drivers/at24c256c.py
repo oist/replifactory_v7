@@ -4,7 +4,7 @@ from collections import OrderedDict
 from typing import Optional
 from pyftdi.i2c import I2cPort
 
-from replifactory.util import BraceMessage as __
+from flask_app.replifactory.util import BraceMessage as __
 
 
 class EepromDriver:

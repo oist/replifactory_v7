@@ -5,12 +5,12 @@ import time
 from collections import deque
 
 import replifactory.devices.machine as comm
-from replifactory import settings
-from replifactory.events import Events, eventManager
-from replifactory.machine import MachineCallback, MachineInterface
-from replifactory.usb_manager import usbManager
-from replifactory.util import InvariantContainer
-from replifactory.util import get_fully_qualified_classname as fqcn
+from flask_app import settings
+from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.machine import MachineCallback, MachineInterface
+from flask_app.replifactory.usb_manager import usbManager
+from flask_app.replifactory.util import InvariantContainer
+from flask_app.replifactory.util import get_fully_qualified_classname as fqcn
 
 
 logger = logging.getLogger(__name__)

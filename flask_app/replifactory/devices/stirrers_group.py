@@ -1,7 +1,7 @@
 import logging
 import time
-from replifactory.devices import Device
-from replifactory.devices.stirrer import Stirrer
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices.stirrer import Stirrer
 
 
 class StirrersGroup(Device):

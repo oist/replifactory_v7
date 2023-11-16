@@ -2,12 +2,14 @@
 # singleton
 import collections
 import logging
+from multiprocessing import RLock
 import queue
 import re
 import threading
 
 
 _instance = None
+_instance_lock = RLock()
 
 
 def all_events():
@@ -117,7 +119,9 @@ class Events:
 def eventManager():
     global _instance
     if _instance is None:
-        _instance = EventManager()
+        with _instance_lock:
+            if _instance is None:
+                _instance = EventManager()
     return _instance
 
 

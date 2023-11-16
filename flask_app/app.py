@@ -1,9 +1,5 @@
-import logging
-import os
-import replifactory
+from flask_app import create_app
 
-logging.basicConfig(
-    level=os.environ.get("LOGGING_LEVEL", logging.INFO),
-)
 
-app = replifactory.create_app()
+application = create_app()
+application.run_before_server_started()

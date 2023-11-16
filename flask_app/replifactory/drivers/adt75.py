@@ -1,6 +1,6 @@
 import time
 
-from replifactory.drivers.ft2232h import I2cPort
+from flask_app.replifactory.drivers.ft2232h import I2cPort
 
 REGISTER_TEMPERATURE_VALUE = 0x00
 REGISTER_CONFIGURATION = 0x01

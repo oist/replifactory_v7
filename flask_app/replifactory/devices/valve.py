@@ -3,8 +3,8 @@ import math
 import time
 from typing import Optional
 
-from replifactory.devices import Device
-from replifactory.drivers.pca9685 import PWMDriver
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.drivers.pca9685 import PWMDriver
 
 
 class Valve(Device):

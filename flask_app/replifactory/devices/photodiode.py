@@ -1,9 +1,9 @@
 import logging
 import threading
 
-from replifactory.devices import Device
-from replifactory.drivers.mcp3421 import ADCDriver
-from replifactory.drivers.pca9555 import REGISTER_OUTPUT_PORT_1, IOPortDriver
+from flask_app.replifactory.devices import Device
+from flask_app.replifactory.drivers.mcp3421 import ADCDriver
+from flask_app.replifactory.drivers.pca9555 import REGISTER_OUTPUT_PORT_1, IOPortDriver
 
 global_lock = threading.RLock()
 log = logging.getLogger(__name__)
