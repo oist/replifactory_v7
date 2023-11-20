@@ -10,11 +10,9 @@ from flask_app import settings
 @api.route("/connection", methods=["GET"])
 # @Permissions.STATUS.require(403)
 def connectionState():
-    device_id = machine.get_current_connection()
-    current = {
-        "device_id": device_id,
-    }
-    return jsonify({"current": current, "options": _get_options()})
+    current = machine.get_current_connection()
+    options = _get_options()
+    return jsonify({"current": current, "options": options})
 
 
 @api.route("/connection", methods=["POST"])

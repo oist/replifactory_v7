@@ -346,14 +346,6 @@ class Machine(Device):
         self._set_state(self.STATE_OPERATIONAL)
         eventManager().fire(Events.MACHINE_CONNECTED, self)
 
-    @property
-    def usb_device_id(self):
-        if self._usb_device:
-            bus = self._usb_device.bus
-            address = self._usb_device.address
-            return f"/dev/bus/usb/{bus:03d}/{address:03d}"
-        return None
-
     def disconnect(self):
         self.close()
 

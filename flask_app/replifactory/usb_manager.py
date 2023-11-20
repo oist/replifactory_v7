@@ -6,6 +6,7 @@ from typing import Any
 import usb._interop as _interop
 from usbmonitor import USBMonitor
 from usbmonitor.__platform_specific_detectors._constants import _SECONDS_BETWEEN_CHECKS
+from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.events import Events, eventManager
@@ -54,6 +55,32 @@ class UsbManager:
     def stop_monitoring(self):
         logger.info("Stopping usb monitoring...")
         self._usb_monitor.monitor.stop_monitoring()
+
+    @classmethod
+    def get_device_id(cls, usb_device: UsbDevice):
+        if usb_device:
+            bus = usb_device.bus
+            address = usb_device.address
+            return f"/dev/bus/usb/{bus:03d}/{address:03d}"
+        return None
+
+    @classmethod
+    def get_device_info(cls, usb_device: UsbDevice):
+        device_data = {
+            "id": cls.get_device_id(usb_device),
+        }
+        if usb_device:
+            for prop in [
+                "address",
+                "bus",
+                "idProduct",
+                "idVendor",
+                "manufacturer",
+                "product",
+                "serial_number",
+            ]:
+                device_data[prop] = getattr(usb_device, prop, None)
+        return device_data
 
     def get_device(self, device_id):
         with self._lock:

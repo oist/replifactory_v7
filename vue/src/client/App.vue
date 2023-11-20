@@ -5,9 +5,9 @@
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </BAlert>
     </div>
-    <CContainer>
+    <CContainer fluid="true">
       <CRow>
-        <CCol xs="4">
+        <CCol md="3">
           <CAccordion :active-item-key="1" class="mt-3">
             <CAccordionItem :item-key="1">
               <CAccordionHeader>
@@ -24,7 +24,7 @@
                 State
               </CAccordionHeader>
               <CAccordionBody>
-                <MachineState/>
+                <MachineState />
               </CAccordionBody>
             </CAccordionItem>
           </CAccordion>
@@ -39,7 +39,7 @@
             </CAccordionItem>
           </CAccordion>
         </CCol>
-        <CCol xs="8">
+        <CCol md="9">
           <ul class="nav nav-tabs" id="myTab">
             <li class="nav-item" v-for="tab in tabs" :key="tab">
               <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import { socket, state } from "@/socket";
+import { socket } from "@/socket";
 import { mapState } from 'vuex';
 
 import DeviceControl from './components/DeviceControl/DeviceControl';
@@ -80,13 +80,13 @@ import { CContainer, CRow, CCol, CAccordion, CAccordionItem, CAccordionHeader, C
 export default {
   name: 'App',
   computed: {
-    connected() {
-      return state.connected;
-    },
     backendConnectedAlertVariant() {
-      return state.connected ? "primary" : "danger";
+      return this.connected ? "primary" : "danger";
     },
     ...mapState(['hostname']),
+    ...mapState({
+      connected: state => state.backendConnected,
+    }),
   },
   async mounted() {
     await this.$store.dispatch('fetchHostname');

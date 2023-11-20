@@ -2,6 +2,7 @@ import logging
 
 from flask_socketio import emit
 from flask_socketio.namespace import Namespace
+from replifactory.usb_manager import UsbManager
 
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineInterface
@@ -30,10 +31,8 @@ class MachineEventListener:
             emit(event, payload, namespace="/machine", broadcast=True)
 
     def _on_connected(self, event, comm):
-        device_id = comm.usb_device_id
-        payload = {
-            "device_id": device_id,
-        }
+        usb_device = comm._usb_device
+        payload = UsbManager.get_device_info(usb_device)
         with self._app.app_context():
             emit(event, payload, namespace="/machine", broadcast=True)
 

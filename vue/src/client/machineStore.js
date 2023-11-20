@@ -5,13 +5,13 @@ export default {
   state: {
     connection: {
       current: {
-        deviceId: null,
+        id: null,
       },
       options: {
         devices: {},
       },
     },
-    state: {
+    machineState: {
       id: 0,
       string: "Unknown",
     },
@@ -22,6 +22,9 @@ export default {
     },
     updateCurrentConnetion(state, connection) {
       state.connection.current = connection;
+    },
+    updateMachineState(state, machineState) {
+      state.machineState = machineState
     },
   },
   actions: {

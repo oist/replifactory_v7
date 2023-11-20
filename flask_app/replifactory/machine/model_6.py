@@ -8,7 +8,7 @@ import replifactory.devices.machine as comm
 from flask_app import settings
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback, MachineInterface
-from flask_app.replifactory.usb_manager import usbManager
+from flask_app.replifactory.usb_manager import usbManager, UsbManager
 from flask_app.replifactory.util import InvariantContainer
 from flask_app.replifactory.util import get_fully_qualified_classname as fqcn
 
@@ -32,6 +32,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         self._firmware_info = None
 
         self._comm = None
+        self._current_connection = {}
 
         self._callbacks: list[MachineCallback] = []
 
@@ -130,25 +131,17 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         eventManager().fire(Events.CONNECTION_OPTIONS_UPDATED, payload)
 
     def get_current_connection(self):
-        return self._comm.usb_device_id if self._comm else None
+        return self._current_connection
+
+    def _set_current_connection(self, usb_device):
+        self._current_connection = UsbManager.get_device_info(usb_device)
 
     @classmethod
     def get_connection_options(cls):
         devices = usbManager().get_available_devices()
         devices_options = {}
         for device_id, device in devices.items():
-            device_data = {}
-            for prop in [
-                "address",
-                "bus",
-                "idProduct",
-                "idVendor",
-                "manufacturer",
-                "product",
-                "serial_number",
-            ]:
-                device_data[prop] = getattr(device, prop, None)
-            devices_options[device_id] = device_data
+            devices_options[device_id] = UsbManager.get_device_info(device)
         return {
             "devices": devices_options,
             "autoconnect": settings().connection.autoconnect,
@@ -163,6 +156,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             return
         eventManager().fire(Events.MACHINE_CONNECTING)
         usb_device = usbManager().get_device(device_id=device_address)
+        self._set_current_connection(usb_device)
         self._comm = comm.Machine(usb_device=usb_device, callback=self)
         self._comm.start()
 
@@ -171,6 +165,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
         Closes the connection to the printer.
         """
         eventManager().fire(Events.MACHINE_DISCONNECTING)
+        self._current_connection = {}
         if self._comm is not None:
             self._comm.close()
         else:

@@ -1,17 +1,18 @@
 import { createStore } from "vuex";
 import device from "./deviceStore.js";
 import experiment from "./experimentStore.js";
-import machine from "./machineStore.js"
+import machine from "./machineStore.js";
 
 import api from "@/api.js";
 export default createStore({
-  strict: process.env.NODE_ENV !== 'production',
+  strict: process.env.NODE_ENV !== "production",
   state: {
     state_string: "Unknown",
     deviceConnected: false,
     deviceControlEnabled: true,
     experimentRunning: null,
     hostname: "replifactory_GUI",
+    backendConnected: false,
   },
   modules: {
     device,
@@ -27,6 +28,9 @@ export default createStore({
     },
     setHostname(state, hostname) {
       state.hostname = hostname;
+    },
+    setBackendConnected(state, connected) {
+      state.backendConnected = connected;
     },
   },
   actions: {

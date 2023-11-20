@@ -3,11 +3,9 @@
         <CForm class="row g-3">
             <CCol xs="12">
                 <CFormLabel for="machineSelect">Machine</CFormLabel>
-                <CFormSelect v-model="currentConnection.device_id" id="machineSelect" aria-label="Select machine"
+                <CFormSelect v-model="currentConnection.id" id="machineSelect" aria-label="Select machine"
                     @change="handleMachineSelected" :disabled="isConnected">
-                    <option v-for="(value, device_id) in connectionOptions.devices"
-                        :key="device_id"
-                        :value="device_id">
+                    <option v-for="(value, device_id) in connectionOptions.devices" :key="device_id" :value="device_id">
                         {{ value.product }} ({{ value.serial_number }})
                     </option>
                 </CFormSelect>
@@ -30,11 +28,9 @@
 </template>
 
 <script>
-import { state } from "@/socket";
 import { mapState } from 'vuex';
 import { CFormSelect, CButton, CFormLabel, CForm, CCol, CSpinner, CAlert } from '@coreui/vue';
 import api from '@/api.js';
-
 
 const DISCONNECTED_STATES = [
     "OFFLINE",
@@ -43,14 +39,8 @@ const DISCONNECTED_STATES = [
     "STATE_CLOSED_WITH_ERROR",
 ]
 
-
 export default {
     components: {
-        // PumpControl,
-        // ValveControl,
-        // StirrerControl,
-        // ODControl,
-        // CFormFloating,
         CFormSelect,
         CButton,
         CFormLabel,
@@ -58,31 +48,31 @@ export default {
         CCol,
         CSpinner,
         CAlert,
-        // CFormSwitch,
     },
     computed: {
-        devices() {
-            return state.connectionOptions.devices
-        },
-        // ...mapState(['deviceConnected', 'deviceControlEnabled']),
-        // ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),
-        connectionOptions() {
-            let options = state.connectionOptions
-            console.log(options)
-            return options
-        },
-        state() {
-            return state.machine.state_id
-        },
         isDisconnected() {
-            return DISCONNECTED_STATES.includes(state.machine.state_id)
+            return DISCONNECTED_STATES.includes(this.machineState.id)
         },
         isConnected() {
             return !this.isDisconnected
         },
+        connectionOptions() {
+            let options = {}
+            let stateConnectedOptions = this.$store.state.machine.connection.options;
+            if (this.isConnected && this.currentConnection !== undefined && !(this.currentConnection.id in options)) {
+                options[this.currentConnection.id] = this.currentConnection
+            }
+            const result = {
+                ...stateConnectedOptions,
+                ...{
+                    "devices": options,
+                },
+            };
+            return result;
+        },
         ...mapState('machine', {
-            connectionOptions: state => state.connection.options,
-            currentConnection: state => state.connection.current
+            currentConnection: state => state.connection.current,
+            machineState: state => state.machineState,
         })
     },
     data() {
@@ -107,19 +97,8 @@ export default {
         this.refreshConnectionOptions()
     },
     methods: {
-        // ...mapMutations('device', ['toggleCalibrationMode', 'setDeviceControlEnabled']),
-        // ...mapActions('device', ['getAllDeviceData']),
-        // ...mapActions(['connectDevice']),
         handleMachineSelected(event) {
             this.selectedMachine = event.target.value
-            // if (this.currentExperiment.status === 'running' || this.currentExperiment.status === 'paused') {
-            //     await this.stopExperiment(this.currentExperiment.id);
-            // }
-            // const selectedExperimentId = event.target.value;
-            // if (selectedExperimentId !== this.currentExperimentId) {
-            //     this.currentExperimentId = selectedExperimentId;
-            //     await this.setCurrentExperimentAction(this.currentExperimentId);
-            // }
         },
         async disconnectMachine() {
             await this.connectCommand({
@@ -152,8 +131,8 @@ export default {
             this.$store.dispatch("machine/updateConnection")
                 .then((data) => {
                     this.loading = false
-                    if (data.current.device_id !== null) {
-                        this.selectedMachine = data.current.device_id
+                    if (data.current.id !== null) {
+                        this.selectedMachine = data.current.id
                     }
                 })
                 .catch(err => {

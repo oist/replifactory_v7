@@ -8,17 +8,15 @@
 </template>
 
 <script>
-import { state } from '@/socket';
+import { mapState } from 'vuex';
 
 export default {
     computed: {
-        state_string() {
-            return state.machine.state_string
-        }
+        ...mapState("machine", {
+            state_string: state => state.machineState.string,
+        }),
     },
 };
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
