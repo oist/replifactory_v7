@@ -62,12 +62,12 @@ export default {
   },
   mounted() {
     // if not connected, try to connect
-    if (!this.deviceConnected) {
-      this.connectDevice().then(() => {
-        this.getAllDeviceData().then(() => {
-        });
-      });
-    }
+    // if (!this.deviceConnected) {
+    //   this.connectDevice().then(() => {
+    //     this.getAllDeviceData().then(() => {
+    //     });
+    //   });
+    // }
   },
   methods: {
     ...mapMutations('device',['toggleCalibrationMode', 'setDeviceControlEnabled']),

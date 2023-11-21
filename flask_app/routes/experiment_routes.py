@@ -1,14 +1,10 @@
 # experiment_routes.py
-import sys
+import sqlalchemy.exc
 
-import pandas as pd
-import sqlalchemy
-
-sys.path.insert(0, "../")
 from flask import Blueprint, request, jsonify, current_app, send_file
-from experiment.models import ExperimentModel, CultureData, db, PumpData, CultureGenerationData
-from experiment.experiment import Experiment
-from routes.device_routes import connect_device
+from flask_app.experiment.models import ExperimentModel, CultureData, db, PumpData, CultureGenerationData
+from flask_app.experiment.experiment import Experiment
+from flask_app.routes.device_routes import connect_device
 
 experiment_routes = Blueprint('experiment_routes', __name__)
 
