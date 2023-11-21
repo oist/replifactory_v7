@@ -1,5 +1,17 @@
 import api from "@/api.js";
 
+const DISCONNECTED_STATES = [
+  "OFFLINE",
+  "NONE",
+  "CLOSED",
+  "CLOSED_WITH_ERROR",
+  "UNKNOWN",
+]
+const MANUAL_CONTROL_STATES = [
+  "OPERATIONAL",
+  "PAUSED",
+]
+
 export default {
   namespaced: true,
   state: {
@@ -26,6 +38,17 @@ export default {
     updateMachineState(state, machineState) {
       state.machineState = machineState
     },
+  },
+  getters: {
+    isDisconnected(state) {
+      return DISCONNECTED_STATES.includes(state.machineState.id)
+    },
+    isConnected(state, getters) {
+      return !getters.isDisconnected
+    },
+    isManualControlEnabled(state) {
+      return MANUAL_CONTROL_STATES.includes(state.machineState.id)
+    }
   },
   actions: {
     connect() {},

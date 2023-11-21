@@ -2,14 +2,11 @@
   <div class="pump-data">
     <table>
       <tr>
-
         <th>Calibration Sequence</th>
         <th></th>
         <th>Volume (mL)</th>
-
       </tr>
       <tr v-for="(row, index) in rows" :key="index">
-
         <td>
           <div class="iteration-rotation-wrapper">
             <div class="iteration">{{ row.iterations }}</div>
@@ -17,34 +14,26 @@
             <div class="rotation">{{ row.rotations }} rots</div>
           </div>
         </td>
-
         <td>
-          <button @click="toggleButtonState(index)" :class="{ 'stop-button': isStopButton[index] }">
+          <button @click="toggleButtonState(index)" :class="{ 'stop-button': isStopButton[index] }" :disabled="disabled">
             <span v-if="!isStopButton[index]">Pump</span>
             <span v-else>Stop</span>
           </button>
         </td>
-        <td><input v-model="row.total_ml" @change="onTotalMlInput(row)" type="float" /></td>
-<!--        <td>{{pumps.calibration[pumpId][row.rotations].toFixed(3)}}</td>-->
+        <td><input v-model="row.total_ml" @change="onTotalMlInput(row)" type="float" :disabled="disabled"/></td>
+        <!--        <td>{{pumps.calibration[pumpId][row.rotations].toFixed(3)}}</td>-->
       </tr>
     </table>
-
     <div class="chart-container">
-          <Bar
-            id="pump-calibration-chart"
-            :options="chartOptions"
-            class="pump-calibration-chart"
-            v-if="chartData.datasets[0].data.length > 0"
-            :data="chartData"
-          />
-        </div>
-
+      <Bar id="pump-calibration-chart" :options="chartOptions" class="pump-calibration-chart"
+        v-if="chartData.datasets[0].data.length > 0" :data="chartData" />
+    </div>
   </div>
 </template>
 <script>
 import { mapActions, mapState } from "vuex";
 import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip,  BarElement, CategoryScale, LinearScale } from 'chart.js'
+import { Chart as ChartJS, Title, Tooltip, BarElement, CategoryScale, LinearScale } from 'chart.js'
 
 ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale)
 
@@ -59,10 +48,11 @@ export default {
         responsive: true,
         devicePixelRatio: 4,
         maintainAspectRatio: false,
-        plugins:{
-        legend:{
-          display: false
-        }},
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
         //#008CBA
         backgroundColor: 'rgba(0, 140, 186, 0.3)',
 
@@ -103,6 +93,10 @@ export default {
     pumpId: {
       type: Number,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     }
   },
   computed: {
@@ -140,7 +134,7 @@ export default {
       if (this.isStopButton[index]) {
         this.promptForMl(this.rows[index]);
       } else {
-        this.setPartStateAction({devicePart: 'pumps', partIndex: this.pumpId, newState: 'stopped'});
+        this.setPartStateAction({ devicePart: 'pumps', partIndex: this.pumpId, newState: 'stopped' });
       }
     },
     resetButton(row) {
@@ -177,7 +171,8 @@ export default {
   },
   mounted() {
     if (this.pumpIdCalibrationData) {
-      this.updateChartData();}
+      this.updateChartData();
+    }
     this.rows.forEach((row) => {
       // console.log(this.pumps.calibration[this.pumpId][row.rotations], "pumps.calibration")
       row.total_ml = this.pumps.calibration[this.pumpId][row.rotations] * row.rotations * row.iterations;
@@ -197,15 +192,17 @@ export default {
 
 
 <style scoped>
-
 .pump-data {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   margin-top: 10px;
-  width: 200px; /* setting the width of the container to 250px */
-  border: 1px solid #e3e3e3; /* Sets the color of the border */
-  border-radius: 5px; /* Adjust as needed to create the level of roundness you desire */
+  width: 200px;
+  /* setting the width of the container to 250px */
+  border: 1px solid #e3e3e3;
+  /* Sets the color of the border */
+  border-radius: 5px;
+  /* Adjust as needed to create the level of roundness you desire */
   justify-content: center;
   padding-left: 5px;
   padding-right: 5px;
@@ -214,25 +211,36 @@ export default {
 
 table {
   border-collapse: collapse;
-  width: 100%; /* setting the width of the table to 100% so it fills the container */
+  width: 100%;
+  /* setting the width of the table to 100% so it fills the container */
 }
 
-th, td {
+th,
+td {
   border: none;
-  padding: 4px; /* reduced padding to save space */
+  padding: 4px;
+  /* reduced padding to save space */
   text-align: center;
-  font-size: 0.8rem; /* reduced font size to save space */
+  font-size: 0.8rem;
+  /* reduced font size to save space */
 }
 
 button {
-  padding: 3px 5px; /* reduced padding to save space */
-  background-color: #008CBA; /* Blue background */
-  color: white; /* White text */
-  border: none; /* Remove borders */
-  cursor: pointer; /* Mouse pointer on hover */
+  padding: 3px 5px;
+  /* reduced padding to save space */
+  background-color: #008CBA;
+  /* Blue background */
+  color: white;
+  /* White text */
+  border: none;
+  /* Remove borders */
+  cursor: pointer;
+  /* Mouse pointer on hover */
   border-radius: 8px;
-  font-size: 0.7rem; /* reduced font size to save space */
+  font-size: 0.7rem;
+  /* reduced font size to save space */
 }
+
 button stop-button {
   background-color: #f44336;
 }
@@ -240,24 +248,36 @@ button stop-button {
 button:hover {
   background-color: #007B9A;
 }
-td:nth-child(1), td:nth-child(2){
-  width: 40px; /* set the width of the first 3 columns */
+
+button:disabled {
+  background-color: gray;
+  cursor: default;
+}
+
+td:nth-child(1),
+td:nth-child(2) {
+  width: 40px;
+  /* set the width of the first 3 columns */
 }
 
 td:nth-child(4) {
-  width: 60px; /* set the width of the 4th column */
+  width: 60px;
+  /* set the width of the 4th column */
 }
 
 input[type="float"] {
-  width: 100%; /* make the input fields take up the full width of the cell */
-/*  font size 10*/
+  width: 100%;
+  /* make the input fields take up the full width of the cell */
+  /*  font size 10*/
   font-size: 12px;
 }
+
 .pump-calibration-chart {
   margin-top: 0px;
   width: 190px;
   height: 130px;
 }
+
 .iteration-rotation-wrapper {
   width: 75px;
   display: flex;
@@ -278,6 +298,4 @@ input[type="float"] {
 .rotation {
   width: 40px;
   text-align: left;
-}
-
-</style>
+}</style>

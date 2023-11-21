@@ -16,6 +16,7 @@
           v-model="stirrers.calibration[stirrerId].high"
           @change="onSliderChange('high', $event)"
           @input="onSliderInput('high', $event)"
+          :disabled="disabled"
         />
         <input
           type="range"
@@ -27,6 +28,7 @@
           v-model="stirrers.calibration[stirrerId].low"
           @change="onSliderChange('low', $event)"
           @input="onSliderInput('low', $event)"
+          :disabled="disabled"
         />
 
         <svg class="svg-container">
@@ -57,6 +59,7 @@
           ref="buttonHigh"
           @click="onClick('high')"
           @dblclick="onDoubleClick('high')"
+          :disabled="disabled"
         >
           High
         </button>
@@ -66,6 +69,7 @@
           ref="buttonLow"
           @click="onClick('low')"
           @dblclick="onDoubleClick('low')"
+          :disabled="disabled"
         >
           Low
         </button>
@@ -75,6 +79,7 @@
           ref="buttonOff"
           @click="onClick('stopped')"
           @dblclick="onDoubleClick('stopped')"
+          :disabled="disabled"
         >
           OFF
         </button>
@@ -91,7 +96,11 @@ export default {
     stirrerId: {
       type: Number,
       required: true
-    }
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   watch: {
     calibrationModeEnabled(newVal) {
@@ -312,16 +321,6 @@ export default {
   opacity:60%;
 }
 
-.active {
-  opacity: 100%;
-  color: #fff; /* white text for active buttons */
-  background-color: #3aab40; /* green background for active buttons */
-}
-
-.button-off.active {
-  background-color: #da190b; /* red background for active off button */
-}
-
 .button:hover, .button-off:hover, .active:hover {
   opacity: 100%; /* 100% opacity on hover for all buttons */
 }
@@ -330,6 +329,27 @@ export default {
   display: flex;
   justify-content: space-between;
   flex-direction: column;
+}
+
+.button:disabled, button:disabled {
+  background-color: gray;
+  border-color: gray;
+  color: white;
+  cursor: default;
+  opacity: 100%;
+}
+
+.button.active {
+  background-color: #3aab40; /* green background for active buttons */
+  color: #fff; /* white text for active buttons */
+  opacity: 100%;
+}
+
+.button-off.active {
+  background-color: #da190b; /* red background for active off button */
+}
+.button.active:disabled, .button-off.active {
+  opacity: 60%;
 }
 
 .svg-container {

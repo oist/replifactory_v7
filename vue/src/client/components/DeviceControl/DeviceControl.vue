@@ -1,38 +1,29 @@
 <template>
   <div class="DeviceControl" :class="{ 'device-disconnected': deviceConnected === false }">
-  <div class="disconnected-overlay" v-if="deviceConnected === false"></div>
-    <div v-if="deviceConnected === false" class="centered-text"> device connection not available </div>
-  <div class="experiment-running-overlay" v-if="deviceControlEnabled === false"></div>
-  <div style="text-align: right;">
-    <CFormSwitch
-      label="Calibration Mode"
-      id="formSwitchCheckChecked"
-      v-model="calibrationModeEnabled"
-      @change="toggleCalibrationMode" />
-  </div>
+    <!-- <div class="disconnected-overlay" v-if="deviceConnected === false"></div> -->
+    <!-- <div class="centered-text" v-if="deviceConnected === false"> device connection not available </div> -->
+    <!-- <div class="experiment-running-overlay" v-if="deviceControlEnabled === false"></div> -->
+    <div style="text-align: right;">
+      <CFormSwitch label="Calibration Mode" id="formSwitchCheckChecked" v-model="calibrationModeEnabled"
+        @change="toggleCalibrationMode" />
+    </div>
 
-    <template v-if="deviceControlEnabled || controlsVisible">
-      <PumpControl />
-      <ValveControl />
-      <StirrerControl />
-      <ODControl />
-    </template>
-
-    <template v-else>
-      <p>Device Control Disabled - please pause experiment to control device.</p>
+    <template>
+      <PumpControl :disabled="!deviceControlEnabled"/>
+      <ValveControl :disabled="!deviceControlEnabled"/>
+      <StirrerControl :disabled="!deviceControlEnabled"/>
+      <ODControl :disabled="!deviceControlEnabled"/>
     </template>
   </div>
 </template>
-
 
 <script>
 import PumpControl from './PumpControl';
 import ValveControl from './ValveControl';
 import StirrerControl from './StirrerControl';
 import ODControl from './ODControl';
-import {mapState, mapMutations, mapActions} from 'vuex';
+import { mapState, mapGetters, mapMutations, mapActions } from 'vuex';
 import { CFormSwitch } from '@coreui/vue';
-
 
 
 export default {
@@ -44,22 +35,26 @@ export default {
     CFormSwitch
   },
   computed: {
-    ...mapState(['deviceConnected', 'deviceControlEnabled']),
-    ...mapState('device', ['calibrationModeEnabled','stirrers','pumps','valves','ods'])
+    ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),
+    ...mapGetters("machine", {
+      deviceConnected: "isConnected",
+      deviceControlEnabled: "isManualControlEnabled",
+    }),
   },
   data() {
     return {
-      controlsVisible: false,};
+      controlsVisible: false,
+    };
   },
-  watch: {
-    deviceControlEnabled(newVal) {
-      if (newVal) {
-        this.controlsVisible = true;
-      } else {
-        this.controlsVisible = false;
-      }
-    },
-  },
+  // watch: {
+  //   deviceControlEnabled(newVal) {
+  //     if (newVal) {
+  //       this.controlsVisible = true;
+  //     } else {
+  //       this.controlsVisible = false;
+  //     }
+  //   },
+  // },
   mounted() {
     // if not connected, try to connect
     // if (!this.deviceConnected) {
@@ -70,8 +65,8 @@ export default {
     // }
   },
   methods: {
-    ...mapMutations('device',['toggleCalibrationMode', 'setDeviceControlEnabled']),
-    ...mapActions('device',['getAllDeviceData']),
+    ...mapMutations('device', ['toggleCalibrationMode', 'setDeviceControlEnabled']),
+    ...mapActions('device', ['getAllDeviceData']),
     ...mapActions(['connectDevice']),
   },
 };
@@ -84,18 +79,24 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(128, 128, 128, 0.9); /* gray with 50% opacity */
-  z-index: 1; /* to ensure the overlay is on top */
+  background-color: rgba(128, 128, 128, 0.9);
+  /* gray with 50% opacity */
+  z-index: 1;
+  /* to ensure the overlay is on top */
 }
+
 .experiment-running-overlay {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(250, 1, 59, 0.5); /* gray with 50% opacity */
-  z-index: 1; /* to ensure the overlay is on top */
+  background-color: rgba(250, 1, 59, 0.5);
+  /* gray with 50% opacity */
+  z-index: 1;
+  /* to ensure the overlay is on top */
 }
+
 .centered-text {
   position: fixed;
   top: 50%;
@@ -107,14 +108,13 @@ export default {
   align-items: center;
   /*font-weight: bold;*/
   font-size: 3em;
-  color: rgba(255,255,255, 0.5);
+  color: rgba(255, 255, 255, 0.5);
   z-index: 2;
   transform: translateY(-80%);
 }
 
-
 .device-disconnected {
-  position: relative; /* this is needed to position the overlay correctly */
+  position: relative;
+  /* this is needed to position the overlay correctly */
 }
-
 </style>

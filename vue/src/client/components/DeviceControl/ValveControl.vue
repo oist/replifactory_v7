@@ -1,20 +1,13 @@
 <template>
   <div class="valve-controls">
-    <button
-      class="btn"
-      :class="{
-        'btn-danger': valves.states[i] === 'closed' && !togglingValves[i],
-        'btn-success': valves.states[i] === 'open' && !togglingValves[i],
-        'btn-warning': togglingValves[i]
-      }"
-      v-for="i in 7"
-      :key="i"
-      @click="toggleValve(i)"
-      :disabled="togglingValves[i]"
-    >
+    <button class="btn" :class="{
+      'btn-danger': valves.states[i] === 'closed' && !togglingValves[i],
+      'btn-success': valves.states[i] === 'open' && !togglingValves[i],
+      'btn-warning': togglingValves[i]
+    }" v-for="i in 7" :key="i" @click="toggleValve(i)" :disabled="disabled || togglingValves[i]">
       <!-- Conditionally render spinner or valve number -->
       <div v-if="togglingValves[i]" class="spinner-border spinner-custom" role="status"></div>
-      <span v-else>Valve {{i}}</span>
+      <span v-else>Valve {{ i }}</span>
     </button>
   </div>
 </template>
@@ -24,6 +17,12 @@ import { mapState, mapActions } from 'vuex';
 
 export default {
   name: 'ValveControl',
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false,
+    }
+  },
   computed: mapState('device', ['valves']),
   data() {
     return {
@@ -85,14 +84,16 @@ export default {
 <style scoped>
 .valve-controls {
   display: flex;
-  justify-content: center;
+  /* justify-content: center; */
   flex-wrap: wrap;
   width: 850px;
-  margin: 0 auto;
+  /* margin: 0 auto; */
   /*margin-top: 10px;*/
 }
 
-.btn-danger, .btn-success, .btn-warning{
+.btn-danger,
+.btn-success,
+.btn-warning {
   font-size: 20px;
   padding: 10px;
   width: 90px;
@@ -104,17 +105,21 @@ export default {
   color: black;
 }
 
-.btn-danger, .active{
+.btn-danger,
+.active {
   background-color: transparent;
   color: #960000;
 }
 
-.btn-success, .active{
+.btn-success,
+.active {
   /*background-color: transparent;*/
   color: white;
 }
 
-.btn-danger, .btn-success, .btn-warning:hover {
+.btn-danger,
+.btn-success,
+.btn-warning:hover {
   cursor: pointer;
   opacity: 0.8;
 }
@@ -123,5 +128,11 @@ export default {
   width: 1.5rem;
   height: 1.5rem;
   border-width: 0.2rem;
+}
+button:disabled {
+  background-color: gray;
+  border-color: gray;
+  cursor: default;
+  opacity: 100%;
 }
 </style>

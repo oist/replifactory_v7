@@ -1,16 +1,20 @@
 <template>
   <div class="stirrer-controls">
-      <StirrerCalibration v-for="index in 7" :key="index" :stirrerId="index" />
+    <StirrerCalibration v-for="index in 7" :key="index" :stirrerId="index" :disabled="disabled"/>
   </div>
 </template>
-
-
 
 <script>
 import StirrerCalibration from "@/client/components/DeviceControl/StirrerCalibration";
 
-export default{
+export default {
   name: 'StirrerControl',
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
   components: {
     StirrerCalibration,
   },
@@ -20,10 +24,10 @@ export default{
 <style scoped>
 .stirrer-controls {
   display: flex;
-  justify-content: center;
+  /* justify-content: center; */
   flex-wrap: wrap;
   width: 850px;
-  margin: 0 auto;
+  /* margin: 0 auto; */
 }
 
 .stirrer-control {
@@ -61,5 +65,4 @@ export default{
   --cui-spinner-animation-speed: 2s;
   vertical-align: middle;
 }
-
 </style>

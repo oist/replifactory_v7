@@ -28,17 +28,10 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { CFormSelect, CButton, CFormLabel, CForm, CCol, CSpinner, CAlert } from '@coreui/vue';
 import api from '@/api.js';
 
-const DISCONNECTED_STATES = [
-    "OFFLINE",
-    "STATE_NONE",
-    "STATE_CLOSED",
-    "STATE_CLOSED_WITH_ERROR",
-    "UNKNOWN",
-]
 
 export default {
     components: {
@@ -51,12 +44,6 @@ export default {
         CAlert,
     },
     computed: {
-        isDisconnected() {
-            return DISCONNECTED_STATES.includes(this.machineState.id)
-        },
-        isConnected() {
-            return !this.isDisconnected
-        },
         connectionOptions() {
             let options = {}
             let stateConnectedOptions = this.$store.state.machine.connection.options;
@@ -71,28 +58,22 @@ export default {
             };
             return result;
         },
-        ...mapState('machine', {
+        ...mapState("machine", {
             currentConnection: state => state.connection.current,
             machineState: state => state.machineState,
-        })
+        }),
+        ...mapGetters("machine", [
+            "isDisconnected",
+            "isConnected",
+        ])
     },
     data() {
         return {
-            controlsVisible: false,
             selectedMachine: null,
             loading: false,
             error: '',
             showAlert: false,
         };
-    },
-    watch: {
-        deviceControlEnabled(newVal) {
-            if (newVal) {
-                this.controlsVisible = true;
-            } else {
-                this.controlsVisible = false;
-            }
-        },
     },
     mounted() {
         this.refreshConnectionOptions()

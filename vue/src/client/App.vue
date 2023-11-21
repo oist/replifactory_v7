@@ -1,64 +1,60 @@
 <template>
-  <div class="container-fluid fixed-top p-0">
+  <CContainer fluid="true">
     <div id="alerts">
       <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </BAlert>
     </div>
-    <CContainer fluid="true">
-      <CRow>
-        <CCol md="3">
-          <CAccordion :active-item-key="1" class="mt-3">
-            <CAccordionItem :item-key="1">
-              <CAccordionHeader>
-                Connection
-              </CAccordionHeader>
-              <CAccordionBody>
-                <MachineConnection />
-              </CAccordionBody>
-            </CAccordionItem>
-          </CAccordion>
-          <CAccordion :active-item-key="2" class="mt-3">
-            <CAccordionItem :item-key="2">
-              <CAccordionHeader>
-                State
-              </CAccordionHeader>
-              <CAccordionBody>
-                <MachineState />
-              </CAccordionBody>
-            </CAccordionItem>
-          </CAccordion>
-          <CAccordion :active-item-key="3" class="mt-3">
-            <CAccordionItem :item-key="3">
-              <CAccordionHeader>
-                Experiment Info
-              </CAccordionHeader>
-              <CAccordionBody>
+    <CRow>
+      <CCol md="3">
+        <CAccordion :active-item-key="1" class="mt-3">
+          <CAccordionItem :item-key="1">
+            <CAccordionHeader>
+              Connection
+            </CAccordionHeader>
+            <CAccordionBody>
+              <MachineConnection />
+            </CAccordionBody>
+          </CAccordionItem>
+        </CAccordion>
+        <CAccordion :active-item-key="2" class="mt-3">
+          <CAccordionItem :item-key="2">
+            <CAccordionHeader>
+              State
+            </CAccordionHeader>
+            <CAccordionBody>
+              <MachineState />
+            </CAccordionBody>
+          </CAccordionItem>
+        </CAccordion>
+        <CAccordion :active-item-key="3" class="mt-3">
+          <CAccordionItem :item-key="3">
+            <CAccordionHeader>
+              Experiment Info
+            </CAccordionHeader>
+            <CAccordionBody>
 
-              </CAccordionBody>
-            </CAccordionItem>
-          </CAccordion>
-        </CCol>
-        <CCol md="9">
-          <ul class="nav nav-tabs" id="myTab">
-            <li class="nav-item" v-for="tab in tabs" :key="tab">
-              <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
-            </li>
-          </ul>
-          <div class="tab-content">
-            <!--      <HomeTab v-if="currentTab === 'Home'"/>-->
-            <!-- <MachineTab v-if="currentTab === 'Machine'" /> -->
-            <ExperimentTab v-if="currentTab === 'Experiment'" />
-            <DeviceControl v-if="currentTab === 'Device'" />
-            <NgrokTab v-if="currentTab === 'Remote'" />
-            <HelpTab v-if="currentTab === 'Help'" />
-            <StatusTab v-if="currentTab === 'Status'" />
-            <LogsTab v-if="currentTab === 'Logs'" />
-          </div>
-        </CCol>
-      </CRow>
-    </CContainer>
-  </div>
+            </CAccordionBody>
+          </CAccordionItem>
+        </CAccordion>
+      </CCol>
+      <CCol md="9">
+        <ul class="nav nav-tabs" id="myTab">
+          <li class="nav-item" v-for="tab in tabs" :key="tab">
+            <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <ExperimentTab v-if="currentTab === 'Experiment'" />
+          <DeviceControl v-if="currentTab === 'Device'" />
+          <NgrokTab v-if="currentTab === 'Remote'" />
+          <HelpTab v-if="currentTab === 'Help'" />
+          <StatusTab v-if="currentTab === 'Status'" />
+          <LogsTab v-if="currentTab === 'Logs'" />
+        </div>
+      </CCol>
+    </CRow>
+  </CContainer>
 </template>
 
 <script>
