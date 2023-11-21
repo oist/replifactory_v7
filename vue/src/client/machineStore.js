@@ -12,7 +12,7 @@ export default {
       },
     },
     machineState: {
-      id: 0,
+      id: "UNKNOWN",
       string: "Unknown",
     },
   },

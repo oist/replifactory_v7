@@ -37,6 +37,7 @@ const DISCONNECTED_STATES = [
     "STATE_NONE",
     "STATE_CLOSED",
     "STATE_CLOSED_WITH_ERROR",
+    "UNKNOWN",
 ]
 
 export default {
@@ -63,10 +64,10 @@ export default {
                 options[this.currentConnection.id] = this.currentConnection
             }
             const result = {
-                ...stateConnectedOptions,
                 ...{
                     "devices": options,
                 },
+                ...stateConnectedOptions,
             };
             return result;
         },
