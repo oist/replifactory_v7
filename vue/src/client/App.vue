@@ -1,10 +1,10 @@
 <template>
+  <div id="alerts">
+    <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
+      Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
+    </BAlert>
+  </div>
   <CContainer :fluid="true">
-    <div id="alerts">
-      <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
-        Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
-      </BAlert>
-    </div>
     <CRow>
       <CCol md="3">
         <CAccordion :active-item-key="1" class="mt-3">
@@ -39,18 +39,16 @@
         </CAccordion>
       </CCol>
       <CCol md="9">
-        <ul class="nav nav-tabs" id="myTab">
-          <li class="nav-item" v-for="tab in tabs" :key="tab">
-            <a class="nav-link" :class="{ active: currentTab === tab }" href="#" @click="currentTab = tab">{{ tab }}</a>
-          </li>
+        <ul class="nav nav-tabs">
+          <BootstrapRouterLink to="/experiment">Experiment</BootstrapRouterLink>
+          <BootstrapRouterLink to="/device">Device</BootstrapRouterLink>
+          <BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink>
+          <BootstrapRouterLink to="/help">Help</BootstrapRouterLink>
+          <BootstrapRouterLink to="/status">Status</BootstrapRouterLink>
+          <BootstrapRouterLink to="/logs">Logs</BootstrapRouterLink>
         </ul>
         <div class="tab-content">
-          <ExperimentTab v-if="currentTab === 'Experiment'" />
-          <DeviceControl v-if="currentTab === 'Device'" />
-          <NgrokTab v-if="currentTab === 'Remote'" />
-          <HelpTab v-if="currentTab === 'Help'" />
-          <StatusTab v-if="currentTab === 'Status'" />
-          <LogsTab v-if="currentTab === 'Logs'" />
+          <router-view />
         </div>
       </CCol>
     </CRow>
@@ -61,17 +59,10 @@
 import { socket } from "@/socket";
 import { mapState } from 'vuex';
 
-import DeviceControl from './components/DeviceControl/DeviceControl';
-// import HomeTab from '@/client/components/HomeTab/HomeTab';
-import ExperimentTab from "@/client/components/ExperimentTab/ExperimentTab";
-import NgrokTab from "@/client/components/Remote/NgrokTab";
-import HelpTab from "@/client/components/HelpTab/HelpTab";
-import StatusTab from "@/client/components/StatusTab/StatusTab";
-import LogsTab from "@/client/components/LogsTab/LogsTab";
-// import MachineTab from "@/client/components/MachineTab/MachineTab";
 import MachineConnection from "@/client/components/machine/MachineConnection.vue";
 import MachineState from "@/client/components/machine/MachineState.vue";
 import { CContainer, CRow, CCol, CAccordion, CAccordionItem, CAccordionHeader, CAccordionBody } from '@coreui/vue';
+import BootstrapRouterLink from "@/client/router/BootstrapRouterLink";
 
 export default {
   name: 'App',
@@ -85,20 +76,10 @@ export default {
     }),
   },
   async mounted() {
-    await this.$store.dispatch('fetchHostname');
-    document.title = this.hostname;
-
     socket.connect();
   },
 
   components: {
-    ExperimentTab,
-    DeviceControl,
-    NgrokTab,
-    HelpTab,
-    StatusTab,
-    LogsTab,
-    // MachineTab,
     MachineConnection,
     MachineState,
     CContainer,
@@ -108,6 +89,7 @@ export default {
     CAccordionItem,
     CAccordionHeader,
     CAccordionBody,
+    BootstrapRouterLink,
   },
   data() {
     return {

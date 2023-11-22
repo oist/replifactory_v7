@@ -3,7 +3,7 @@ const publicDir = "vue/public";
 
 module.exports = {
   outputDir: path.join(__dirname, "flask_app", "static", "build"),
-  publicPath: "/static/build/",
+  publicPath: "/",
   configureWebpack: {
     context: path.join(__dirname, "vue"),
     resolve: {
