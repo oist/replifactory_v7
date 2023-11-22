@@ -22,6 +22,10 @@ module.exports = {
       chunkFilename: "[id].js",
       filename: "[name].bundle.js",
     },
+    performance: {
+      maxEntrypointSize: 10000000,
+      maxAssetSize: 5000000,
+    },
     devtool: "source-map",
   },
   productionSourceMap: true,
@@ -32,8 +36,7 @@ module.exports = {
       .tap((options) => {
         return {
           ...options,
-          compilerOptions: {
-          },
+          compilerOptions: {},
         };
       });
     // change the template path for the html plugin
