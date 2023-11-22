@@ -45,7 +45,6 @@
         "@google-cloud/local-auth": "^2.1.0",
         "@ngrok/ngrok": "^0.4.1",
         "@ngrok/ngrok-api": "^0.9.0",
-        "@vue/compat": "^3.3.4",
         "assert": "^2.0.0",
         "axios": "^1.4.0",
         "bootstrap": "^5.3.2",

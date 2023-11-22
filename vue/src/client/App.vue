@@ -1,5 +1,5 @@
 <template>
-  <CContainer fluid="true">
+  <CContainer :fluid="true">
     <div id="alerts">
       <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>

@@ -8,12 +8,10 @@
         @change="toggleCalibrationMode" />
     </div>
 
-    <template>
-      <PumpControl :disabled="!deviceControlEnabled"/>
-      <ValveControl :disabled="!deviceControlEnabled"/>
-      <StirrerControl :disabled="!deviceControlEnabled"/>
-      <ODControl :disabled="!deviceControlEnabled"/>
-    </template>
+    <PumpControl :disabled="!deviceControlEnabled"/>
+    <ValveControl :disabled="!deviceControlEnabled"/>
+    <StirrerControl :disabled="!deviceControlEnabled"/>
+    <ODControl :disabled="!deviceControlEnabled"/>
   </div>
 </template>
 
