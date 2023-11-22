@@ -30,7 +30,7 @@ def connectionCommand():
 
         device_id = data.get("device_id", None)
         if device_id is None or device_id not in connection_options["devices"]:
-            abort(jsonify(description="device_id is invalid"), 400)
+            return "device_id is invalid", 400
         if "save" in data and data["save"]:
             settings().connection.device_address = device_id
         if "autoconnect" in data:

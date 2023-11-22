@@ -49,7 +49,7 @@ export default {
   outline: none;
   opacity: 0.7;
   writing-mode: bt-lr;
-  -webkit-appearance: slider-vertical;
+  /* -webkit-appearance: slider-vertical; */
 }
 
 .stirrer-spinner {

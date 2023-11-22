@@ -3,8 +3,8 @@
         <CForm class="row g-3">
             <CCol xs="12">
                 <CFormLabel for="machineSelect">Machine</CFormLabel>
-                <CFormSelect v-model="currentConnection.id" id="machineSelect" aria-label="Select machine"
-                    @change="handleMachineSelected" :disabled="isConnected">
+                <CFormSelect v-model="selectedMachine" id="machineSelect" aria-label="Select machine"
+                    :disabled="isConnected">
                     <option v-for="(value, device_id) in connectionOptions.devices" :key="device_id" :value="device_id">
                         {{ value.product }} ({{ value.serial_number }})
                     </option>
@@ -49,14 +49,14 @@ export default {
             let stateConnectedOptions = this.$store.state.machine.connection.options;
             if (this.isConnected && this.currentConnection !== undefined && !(this.currentConnection.id in options)) {
                 options[this.currentConnection.id] = this.currentConnection
+                return {
+                    ...stateConnectedOptions,
+                    ...{
+                        "devices": options,
+                    },
+                };
             }
-            const result = {
-                ...{
-                    "devices": options,
-                },
-                ...stateConnectedOptions,
-            };
-            return result;
+            return stateConnectedOptions;
         },
         ...mapState("machine", {
             currentConnection: state => state.connection.current,
@@ -67,9 +67,23 @@ export default {
             "isConnected",
         ])
     },
+    watch: {
+        connectionOptions(newVal) {
+            const options = newVal.devices
+            if (this.isDisconnected && !(this.selectedMachine in options)) {
+                const [firstDeviceId] = Object.keys(options)
+                this.selectedMachine = firstDeviceId
+            }
+        },
+        currentConnection(newVal) {
+            if (newVal != null) {
+                this.selectedMachine = newVal.id
+            }
+        },
+    },
     data() {
         return {
-            selectedMachine: null,
+            selectedMachine: undefined,
             loading: false,
             error: '',
             showAlert: false,
@@ -77,11 +91,9 @@ export default {
     },
     mounted() {
         this.refreshConnectionOptions()
+        this.selectedMachine = this.currentConnection.id
     },
     methods: {
-        handleMachineSelected(event) {
-            this.selectedMachine = event.target.value
-        },
         async disconnectMachine() {
             await this.connectCommand({
                 command: "disconnect",
@@ -99,10 +111,9 @@ export default {
             try {
                 const response = await api.post('/connection', payload)
                 console.log("Connection response: " + response)
-                // do something with response.data
                 this.loading = false
             } catch (err) {
-                this.error = err.message
+                this.error = err.response.data
                 this.showAlert = true
                 this.loading = false
             }
@@ -113,13 +124,16 @@ export default {
             this.$store.dispatch("machine/updateConnection")
                 .then((data) => {
                     this.loading = false
-                    if (data.current.id !== null) {
+                    if (data.current.id != null) {
                         this.selectedMachine = data.current.id
+                    } else {
+                        const [firstDeviceId] = Object.keys(data.options.devices)
+                        this.selectedMachine = firstDeviceId
                     }
                 })
                 .catch(err => {
                     this.loading = false
-                    this.error = err.message
+                    this.error = err.response.data
                     this.showAlert = true
                 })
         },

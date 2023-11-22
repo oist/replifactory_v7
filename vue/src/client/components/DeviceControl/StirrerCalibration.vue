@@ -17,6 +17,7 @@
           @change="onSliderChange('high', $event)"
           @input="onSliderInput('high', $event)"
           :disabled="disabled"
+          orient="vertical"
         />
         <input
           type="range"
@@ -29,6 +30,7 @@
           @change="onSliderChange('low', $event)"
           @input="onSliderInput('low', $event)"
           :disabled="disabled"
+          orient="vertical"
         />
 
         <svg class="svg-container">
@@ -273,7 +275,7 @@ export default {
 }
 
 .slider {
-  -webkit-appearance: slider-vertical;
+  /* -webkit-appearance: slider-vertical; */
   height: 100%;
   margin: 0 3px;
   width: 10px;
