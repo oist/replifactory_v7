@@ -1,17 +1,19 @@
 <template>
+  <div>
+    <button v-bind:class="{ active: activeTab === 'documentation' }"
+      v-on:click="activeTab = 'documentation'">Documentation</button>
+    <button v-bind:class="{ active: activeTab === 'feedback' }" v-on:click="activeTab = 'feedback'">Feedback</button>
+  </div>
   <div class="documentation">
     <!-- Tabbed navigation -->
-    <div>
-      <button v-bind:class="{ active: activeTab === 'documentation' }" v-on:click="activeTab = 'documentation'">Documentation</button>
-      <button v-bind:class="{ active: activeTab === 'feedback' }" v-on:click="activeTab = 'feedback'">Feedback</button>
-    </div>
-
     <!-- Tabbed content -->
     <div v-if="activeTab === 'documentation'">
-      <iframe :src="docUrl" class="documentation-frame"></iframe>
+      <iframe :src="docUrl" class="documentation-frame col-12"></iframe>
     </div>
     <div v-if="activeTab === 'feedback'" class="form-container">
-      <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdScm5LWwZyZjB7B9atJi6om0ldYv7Apjcb6gDFtDJ2HHrBRw/viewform?embedded=true" class="google-form-frame">Loading…</iframe>
+      <iframe
+        src="https://docs.google.com/forms/d/e/1FAIpQLSdScm5LWwZyZjB7B9atJi6om0ldYv7Apjcb6gDFtDJ2HHrBRw/viewform?embedded=true"
+        class="google-form-frame">Loading…</iframe>
     </div>
   </div>
 </template>
@@ -20,7 +22,7 @@
 export default {
   data() {
     return {
-      docUrl: 'sphinx/_build/html/index.html',
+      docUrl: '/help/index.html',
       activeTab: 'documentation', // Set the default tab
     };
   },
@@ -28,11 +30,30 @@ export default {
 </script>
 
 <style scoped>
+/* .iframe-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+}
+
+.iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.iframe-container iframe {
+  height: auto;
+} */
+
 .documentation {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;  /* Make sure that this container takes the full width */
+  /* align-items: center; */
+  width: 100%;
+  /* Make sure that this container takes the full width */
 }
 
 .tabs {
@@ -46,12 +67,14 @@ export default {
   text-align: center;
 }
 
-.tab-content, .form-container {
+.tab-content,
+.form-container {
   width: 100%;
 }
 
 .documentation .documentation-frame {
-  width: 100vw; /* Adjust this to vw so it takes the viewport's width */
+  /* width: 100vw; */
+  /* Adjust this to vw so it takes the viewport's width */
   height: 120vh;
   border: none;
 }
@@ -67,12 +90,12 @@ export default {
 .form-container {
   display: flex;
   justify-content: center;
-  width: 100%; /* Make sure that this container takes the full width */
+  width: 100%;
+  /* Make sure that this container takes the full width */
 }
 
 /* Active tab button style */
 button.active {
   background-color: #007bff;
   color: white;
-}
-</style>
+}</style>

@@ -9,6 +9,7 @@ cache_manifest.json
 __pycache__/
 /flask_app/minimal_device/__pycache__/
 /flask_app/data/
+/flask_app/static/help/
 .venv/
 /flask_app/build/
 /flask_app/dist/

@@ -115,6 +115,13 @@ def create_app():
     def send_report(path):
         return send_from_directory("static", path)
 
+    @app.route("/help", defaults={"path": ""})
+    @app.route("/help/<path:path>")
+    def send_help(path):
+        if path:
+            return send_from_directory("static/help", path)
+        return app.send_static_file("index.html")
+
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def catch_all(path):

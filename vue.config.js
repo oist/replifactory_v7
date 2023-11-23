@@ -58,6 +58,11 @@ module.exports = {
         changeOrigin: true,
         target: "http://localhost:5000",
       },
+      "/help": {
+        ws: true,
+        changeOrigin: true,
+        target: "http://localhost:5000",
+      },
       "/socket.io": {
         ws: true,
         changeOrigin: true,
