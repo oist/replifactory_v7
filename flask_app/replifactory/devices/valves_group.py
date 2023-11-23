@@ -1,16 +1,33 @@
-from flask_app.replifactory.devices import Device
+from typing import Optional
+from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.valve import Valve
 
 
 class ValvesGroup(Device):
-    def __init__(self, valves: list[Valve]):
+    def __init__(
+        self,
+        valves: list[Valve],
+        name: Optional[str] = None,
+        callback: Optional[DeviceCallback] = None,
+    ):
+        super().__init__(name or "Valves Group", callback)
         self.valves = valves
+        for valve in valves:
+            self._devices[valve.name] = valve
+
+    def read_state(self):
+        for valve in self.valves:
+            valve.read_state()
 
     def __getitem__(self, key) -> Valve:
         return self.valves[key]
 
     def __setitem__(self, key: int, value: bool):
         self.valves[key].set_state(value)
+
+    def connect(self, reset_state: bool = True):
+        for valve in self.valves:
+            valve.connect()
 
     # def sync_is_open_to_pwm(self):
     #     for v in range(1, 8):
@@ -45,7 +62,7 @@ class ValvesGroup(Device):
         sets 0 duty cycle for all valves fast
         :return:
         """
-        self.valves[0].driver.reset()
+        self.valves[0]._driver.reset()
         # assert self.pwm_controller.lock.acquire(timeout=10)
         # try:
         #     self.pwm_controller.stop_all()

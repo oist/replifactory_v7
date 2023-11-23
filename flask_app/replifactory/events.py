@@ -46,6 +46,7 @@ class Events:
     # State changes
     MACHINE_STATE_CHANGED = "MachineStateChanged"
     MACHINE_RESET = "MachineReset"
+    DEVICE_STATE_CHANGED = "DevicesStateChanged"
 
     # experiment job
     EXPERIMENT_STARTED = "PrintStarted"

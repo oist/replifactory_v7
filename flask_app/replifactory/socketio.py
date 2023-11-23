@@ -16,15 +16,25 @@ class MachineEventListener:
         if not hasattr(app, "extensions"):
             app.extensions = {}  # pragma: no cover
         app.extensions["machine_event_listener"] = self
-        eventManager().subscribe(Events.CONNECTION_OPTIONS_UPDATED, self._on_connection_options_updated)
+        eventManager().subscribe(
+            Events.CONNECTION_OPTIONS_UPDATED, self._on_connection_options_updated
+        )
         eventManager().subscribe(
             Events.MACHINE_STATE_CHANGED, self._on_machine_state_changed
         )
         eventManager().subscribe(Events.MACHINE_CONNECTED, self._on_connected)
+        eventManager().subscribe(
+            Events.DEVICE_STATE_CHANGED, self._on_device_state_changed
+        )
 
     def _on_connection_options_updated(self, event, payload):
         with self._app.app_context():
-            emit(Events.CONNECTION_OPTIONS_UPDATED, payload, namespace="/machine", broadcast=True)
+            emit(
+                Events.CONNECTION_OPTIONS_UPDATED,
+                payload,
+                namespace="/machine",
+                broadcast=True,
+            )
 
     def _on_machine_state_changed(self, event, payload):
         with self._app.app_context():
@@ -35,6 +45,17 @@ class MachineEventListener:
         payload = UsbManager.get_device_info(usb_device)
         with self._app.app_context():
             emit(event, payload, namespace="/machine", broadcast=True)
+
+    def _on_device_state_changed(self, event, payload):
+        device, state = payload
+        data = {
+            device.id: {
+                "stateId": device.get_state_id(state),
+                "stateString": device.get_state_string(state),
+            }
+        }
+        with self._app.app_context():
+            emit(event, data, namespace="/machine", broadcast=True)
 
 
 class MachineNamespace(Namespace):

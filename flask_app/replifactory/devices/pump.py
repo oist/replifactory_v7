@@ -18,6 +18,9 @@ class Pump(Device):
         super().__init__(name or f"Pump {motor.driver.spi_port.cs}")
         self.motor = motor
 
+    def read_state(self):
+        pass
+
     def pump(self, volume: float, rot_per_sec: float = None):
         """Pump certain amount of liquid
 

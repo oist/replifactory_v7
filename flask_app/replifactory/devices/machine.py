@@ -6,7 +6,7 @@ from flask_app.replifactory.usb_manager import usbManager
 
 from usb.core import Device as UsbDevice
 
-from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.laser import Laser
 from replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from flask_app.replifactory.devices.photodiode import Photodiode
@@ -65,45 +65,7 @@ class MachineDeviceCallback:
         pass
 
 
-class Machine(Device):
-    STATE_NONE = 0
-    STATE_FINDING_MACHINE = 1
-    STATE_CONNECTING = 2
-    STATE_SELF_TESTING = 3
-    STATE_OPERATIONAL = 4
-    STATE_STARTING = 5
-    STATE_WORKING = 6
-    STATE_PAUSED = 7
-    STATE_PAUSING = 8
-    STATE_RESUMING = 9
-    STATE_FINISHING = 10
-    STATE_CLOSED = 11
-    STATE_ERROR = 12
-    STATE_CLOSED_WITH_ERROR = 13
-    STATE_RECONNECTING = 14
-    STATE_CANCELLING = 15
-
-    # be sure to add anything here that signifies an operational state
-    OPERATIONAL_STATES = (
-        STATE_WORKING,
-        STATE_STARTING,
-        STATE_OPERATIONAL,
-        STATE_PAUSED,
-        STATE_CANCELLING,
-        STATE_PAUSING,
-        STATE_RESUMING,
-        STATE_FINISHING,
-    )
-
-    # be sure to add anything here that signifies a working state
-    WORKING_STATES = (
-        STATE_STARTING,
-        STATE_WORKING,
-        STATE_CANCELLING,
-        STATE_PAUSING,
-        STATE_RESUMING,
-        STATE_FINISHING,
-    )
+class Machine(Device, DeviceCallback):
     # stirrers: List[Stirrer]
     # valves: List[Valve]
     # pumps: List[Pump]
@@ -135,6 +97,7 @@ class Machine(Device):
             target=self._monitor, name="machine._monitor"
         )
         self.monitoring_thread.daemon = True
+        self._devices = {}
 
     def _monitor(self):
         self.connect()
@@ -185,55 +148,6 @@ class Machine(Device):
         self._logger.info(text)
         self._callback.on_comm_state_change(newState)
 
-    def get_state_id(self, state=None):
-        if state is None:
-            state = self._state
-
-        possible_states = list(
-            filter(lambda x: x.startswith("STATE_"), self.__class__.__dict__.keys())
-        )
-        for possible_state in possible_states:
-            if getattr(self, possible_state) == state:
-                return possible_state[len("STATE_") :]
-
-        return "UNKNOWN"
-
-    def get_state_string(self, state=None):
-        state = state or self._state
-        if state == self.STATE_NONE:
-            return "Offline"
-        elif state == self.STATE_FINDING_MACHINE:
-            return "Finding connected machine"
-        elif state == self.STATE_CONNECTING:
-            return "Connecting"
-        elif state == self.STATE_SELF_TESTING:
-            return "Self testing"
-        elif state == self.STATE_OPERATIONAL:
-            return "Operational"
-        elif state == self.STATE_STARTING:
-            return "Starting"
-        elif state == self.STATE_WORKING:
-            return "Working"
-        elif state == self.STATE_PAUSED:
-            return "Paused"
-        elif state == self.STATE_PAUSING:
-            return "Pausing"
-        elif state == self.STATE_RESUMING:
-            return "Resuming"
-        elif state == self.STATE_FINISHING:
-            return "Finishing"
-        elif state == self.STATE_CLOSED:
-            return "Closed"
-        elif state == self.STATE_ERROR:
-            return "Error"
-        elif state == self.STATE_CLOSED_WITH_ERROR:
-            return "Offline after error"
-        elif state == self.STATE_CANCELLING:
-            return "Cancelling"
-        elif state == self.STATE_RECONNECTING:
-            return "Reconnecting"
-        return f"Unknown State ({self._state})"
-
     def get_error_string(self):
         return self._errorValue
 
@@ -241,7 +155,7 @@ class Machine(Device):
         self._set_state(self.STATE_CONNECTING)
         self._usb_device = self._usb_device or usbManager().find_device(serial_number=self._serial)
         eventManager().fire(Events.MACHINE_CONNECTING, self)
-        self._devices = []
+        # self._devices = []
 
         ftdi_driver = FtdiDriver(
             usb_device=self._usb_device,
@@ -267,7 +181,7 @@ class Machine(Device):
             )
         ]
         self.stirrers = StirrersGroup(stirrers)
-        self._devices += self.stirrers
+        self._devices[self.stirrers.name] = self.stirrers
         valves = [
             Valve(
                 pwm_channel=pwm_channel,
@@ -276,6 +190,7 @@ class Machine(Device):
                 closed_duty_cycle=VALVE_CLOSED_DUTY_CYCLE,
                 change_state_delay=VALVE_CHANGE_STATE_TIME,
                 name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR}",
+                callback=self,
             )
             for pwm_channel in range(
                 VAVLE_PWM_CHANNEL_START_ADDR,
@@ -283,12 +198,13 @@ class Machine(Device):
             )
         ]
         self.valves = ValvesGroup(valves)
-        self._devices += self.valves
+        self._devices[self.valves.name] = self.valves
         self.pumps = [
             Pump(Motor(StepMotorDriver(ftdi_driver.get_spi_port(cs=cs))))
             for cs in range(PUMPS_COUNT)
         ]
-        self._devices += self.pumps
+        for pump in self.pumps:
+            self._devices[pump.name] = pump
         if isinstance(I2C_PORT_ADC, Iterable):
             try:
                 i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
@@ -320,7 +236,8 @@ class Machine(Device):
             OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
             for i in range(VIALS_COUNT)
         ]
-        self._devices += self.od_sensors
+        for od_sensor in self.od_sensors:
+            self._devices[od_sensor.name] = od_sensor
         # self._io_driver_stirrer = IOPortDriver(
         #     ftdi_driver.get_i2c_port(I2C_PORT_IO_STIRRERS, "IO_STIRRERS", IORegisters)
         # )
@@ -336,18 +253,26 @@ class Machine(Device):
                 I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
             }.items()
         ]
-        self._devices += self.thermometers
+        for thermometer in self.thermometers:
+            self._devices[thermometer.name] = thermometer
 
         self._ftdi_driver.connect()
+
+        for device in self._devices.values():
+            device.connect()
 
         eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
         eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
         # self.configure_all()
         self._set_state(self.STATE_OPERATIONAL)
+        str(self.devices['Valves Group'].devices["Valve 1"])
         eventManager().fire(Events.MACHINE_CONNECTED, self)
 
     def disconnect(self):
         self.close()
+
+    def on_device_state_change(self, device, state):
+        eventManager().fire(Events.DEVICE_STATE_CHANGED, (device, state))
 
     def _on_usb_disconnected(self, event, usb_device):
         if self._serial != usb_device.serial_number:
@@ -408,7 +333,7 @@ class Machine(Device):
 
     def configure_pumps(self):
         for pump in self.pumps:
-            pump.motor.configure()
+            pump.motor.read_state()
 
     def configure_pwm(self):
         self._pwm_driver.reset()
@@ -442,11 +367,11 @@ class Machine(Device):
             except Exception as e:
                 self.log.error(f"Test {device.name}: Fail", exc_info=e)
 
-    def reset(self):
+    def reset_state(self):
         for device in self._devices:
             device.reset()
 
-    def configure(self):
+    def read_state(self):
         self.configure_all()
 
     def isClosedOrError(self):

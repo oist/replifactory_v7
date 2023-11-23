@@ -16,7 +16,7 @@ class Laser(Device):
         self.laser_cs = laser_cs
         self.io_driver = io_driver
 
-    def configure(self):
+    def read_state(self):
         pass
 
     def switch_on(self):

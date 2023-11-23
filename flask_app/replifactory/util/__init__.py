@@ -2,10 +2,12 @@ import contextlib
 import copy
 import os
 import pickle
+import re
 import shutil
 import sys
 import tempfile
 import time
+import unicodedata
 from collections.abc import Set
 from typing import Iterable, Literal, Union
 
@@ -453,3 +455,15 @@ def get_fully_qualified_classname(o):
     if module is None:
         return o.__class__.__name__
     return module + "." + o.__class__.__name__
+
+
+def slugify(value):
+    # split accented characters into their base characters and diacritical marks
+    value = unicodedata.normalize("NFKD", value)
+    # remove all the accents, which happen to be all in the u03xx UNICODE block
+    value = value.encode("ascii", "ignore").decode("ascii").lower()
+    # remove non-alphanumeric characters and replace them with hyphens
+    value = re.sub(r"[^a-z0-9]+", "-", value).strip("-")
+    # remove consecutive hyphens
+    value = re.sub(r"[-]+", "-", value)
+    return value

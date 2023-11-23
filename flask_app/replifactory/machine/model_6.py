@@ -58,7 +58,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
     def register_callback(self, callback, *args, **kwargs):
         if not isinstance(callback, MachineCallback):
             self._logger.warning(
-                "Registering an object as printer callback which doesn't implement the PrinterCallback interface"
+                "Registering an object as printer callback which doesn't implement the MachineCallback interface"
             )
         self._callbacks.append(callback)
 

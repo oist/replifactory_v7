@@ -30,7 +30,7 @@ class Motor(Device):
         self.kval_acc = round(((1 << 8) - 1) * 1)  # 0.57)  # legacy
         self.kval_dec = round(((1 << 8) - 1) * 1)  # 0.3)  # legacy
 
-    def configure(self):
+    def read_state(self):
         logger.debug("Configure")
         self.driver.set_param(l6470h.parameters.FS_SPD, self.full_step_speed)
         self.driver.set_param(l6470h.parameters.STALL_TH, self.stall_threshold)

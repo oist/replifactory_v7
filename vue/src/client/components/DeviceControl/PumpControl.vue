@@ -11,14 +11,14 @@
       <div class="pump-input">
         <div class="form-group">
           <CFormInput id="volume" placeholder="volume (mL)" type="number" size="lg" :value="volume[i]"
-            @input="event => onVolumeInput(event, i)" :disabled="disabled"/>
+            @input="event => onVolumeInput(event, i)" :disabled="disabled" />
         </div>
 
         <div v-if="calibrationModeEnabled" class="form-group">
           <CFormInput id="rotations" placeholder="rotations" type="float" size="sm" :value="rotations[i]"
-            @input="event => onRotationsInput(event, i)" :disabled="disabled"/>
+            @input="event => onRotationsInput(event, i)" :disabled="disabled" />
           <!--          <label for="calibration">Calibration:</label>-->
-          <PumpCalibration :pumpId="i" :disabled="disabled"/>
+          <PumpCalibration :pumpId="i" :disabled="disabled" />
         </div>
 
       </div>
@@ -92,7 +92,11 @@ export default {
         // Handle any errors here
         console.error(error);
       } finally {
-        await this.setPartStateAction({ devicePart: 'pumps', partIndex: pumpId, newState: 'stopped' });
+        try {
+          await this.setPartStateAction({ devicePart: 'pumps', partIndex: pumpId, newState: 'stopped' });
+        } catch (error) {
+          console.error(error);
+        }
       }
     },
     onVolumeInput(event, pumpId) {

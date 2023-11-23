@@ -3,11 +3,23 @@ import math
 import time
 from typing import Optional
 
-from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 
 
 class Valve(Device):
+    STATE_OPENING = 101
+    STATE_OPEN = 102
+    STATE_CLOSING = 103
+    STATE_CLOSE = 104
+    STATE_BEETWEEN = 105
+
+    POSITION_STATE = [
+        STATE_OPEN,
+        STATE_CLOSE,
+        STATE_BEETWEEN,
+    ]
+
     def __init__(
         self,
         pwm_channel: int,
@@ -16,41 +28,56 @@ class Valve(Device):
         closed_duty_cycle: float = 1.0,
         change_state_delay: float = 2.0,
         name: Optional[str] = None,
+        init_state: Optional[bool] = None,
+        callback: Optional[DeviceCallback] = None,
     ):
-        super().__init__(name or f"Valve {pwm_channel}")
-        self.log = logging.getLogger(__name__)
-        self.driver = driver
-        self.pwm_channel = pwm_channel
-        self.open_duty_cycle = open_duty_cycle
-        self.closed_duty_cycle = closed_duty_cycle
-        self.change_state_delay = change_state_delay
-        self._is_open = None
+        super().__init__(name or f"Valve {pwm_channel}", callback)
+        self._log = logging.getLogger(__name__)
+        self._driver = driver
+        self._pwm_channel = pwm_channel
+        self._open_duty_cycle = open_duty_cycle
+        self._closed_duty_cycle = closed_duty_cycle
+        self._change_state_delay = change_state_delay
+        self._state = None
+        self._reset_state_value = init_state
+
+    def reset_state(self):
+        if self._reset_state_value == self.STATE_OPEN:
+            self.open()
+        elif self._reset_state_value == self.STATE_CLOSE:
+            self.close()
 
     @property
     def is_close(self) -> bool:
-        return self.is_open is False
+        if self._state not in self.POSITION_STATE:
+            self.read_state()
+        return self._state == self.STATE_CLOSE
 
     @property
     def is_open(self) -> bool | None:
-        if self._is_open is None:
-            return self.update_state()
-        return self._is_open
+        if self._state not in self.POSITION_STATE:
+            self.read_state()
+        return self._state == self.STATE_OPEN
 
-    @is_open.setter
-    def is_open(self, value: bool):
-        self.set_state(value)
+    # @is_open.setter
+    # def is_open(self, value: bool):
+    #     self.set_state(value)
 
     def open(self, wait: bool = True) -> None:
-        self.driver.set_duty_cycle(self.pwm_channel, self.open_duty_cycle)
+        self._set_state(self.STATE_OPENING)
+        self._driver.set_duty_cycle(self._pwm_channel, self._open_duty_cycle)
         if wait:
-            time.sleep(self.change_state_delay)
+            time.sleep(self._change_state_delay)
         self._is_open = True
+        self._set_state(self.STATE_OPEN)
 
     def close(self, wait: bool = True) -> None:
-        self.driver.set_duty_cycle(self.pwm_channel, self.closed_duty_cycle)
+        self._set_state(self.STATE_CLOSING)
+        self._driver.set_duty_cycle(self._pwm_channel, self._closed_duty_cycle)
         if wait:
-            time.sleep(self.change_state_delay)
+            time.sleep(self._change_state_delay)
         self._is_open = False
+        self._set_state(self.STATE_CLOSED)
 
     def set_state(self, open: bool = False, wait: bool = True) -> None:
         if open is False:
@@ -58,22 +85,30 @@ class Valve(Device):
         else:
             self.open(wait)
 
-    def update_state(self) -> bool | None:
-        duty_cycle = self.driver.get_duty_cycle(self.pwm_channel)
-        if math.isclose(duty_cycle, self.open_duty_cycle, rel_tol=1e-3):
-            self._is_open = True
-        elif math.isclose(duty_cycle, self.closed_duty_cycle, rel_tol=1e-3):
-            self._is_open = False
+    def read_state(self) -> bool | None:
+        duty_cycle = self._driver.get_duty_cycle(self._pwm_channel)
+        if math.isclose(duty_cycle, self._open_duty_cycle, rel_tol=1e-3):
+            self._set_state(self.STATE_OPEN)
+        elif math.isclose(duty_cycle, self._closed_duty_cycle, rel_tol=1e-3):
+            self._set_state(self.STATE_CLOSE)
         else:
-            self._is_open = None
-        return self._is_open
+            self._set_state(self.STATE_BEETWEEN)
 
-    def test(self):
-        try:
-            self.open()
-            self.close()
-            self.open()
-            return True
-        except Exception as e:
-            self.log.exception(e)
-            return False
+    def _test(self):
+        self.open()
+        self.close()
+        self.open()
+
+    def get_state_string(self, state=None):
+        state = state or self._state
+        if state == self.STATE_OPENING:
+            return "Opening"
+        elif state == self.STATE_OPEN:
+            return "Open"
+        elif state == self.STATE_CLOSING:
+            return "Closing"
+        elif state == self.STATE_CLOSE:
+            return "Close"
+        elif state == self.STATE_BEETWEEN:
+            return "Beetwen"
+        return super().get_state_string(state)

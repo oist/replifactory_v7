@@ -10,6 +10,9 @@ class StirrersGroup(Device):
         self.log = logging.getLogger(__name__)
         self._stirrers = stirrers
 
+    def read_state(self):
+        pass
+
     def __getitem__(self, key) -> Stirrer:
         return self._stirrers[key]
 

@@ -34,3 +34,7 @@ socket.on("MachineStateChanged", (payload) => {
 socket.on("MachineConnected", (payload) => {
   store.commit("machine/updateCurrentConnetion", payload);
 });
+
+socket.on("DevicesStateChanged", (payload) => {
+  store.commit("machine/updateDevices", payload);
+});

@@ -31,6 +31,9 @@ class Stirrer(Device):
         self.acceleration_delay = acceleration_delay
         self.accelerate_threshold = accelerate_threshold
 
+    def read_state(self):
+        pass
+
     def get_speed(self) -> float:
         """Return stirrer speed
 
