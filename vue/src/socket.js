@@ -20,21 +20,18 @@ socket.on("reconnect", (attemptNumber) => {
   console.log(`Reconnected after ${attemptNumber} attempts`);
 });
 
+socket.on("current", (data) => {
+  store.commit("machine/updateData", data);
+});
+
+socket.on("history", (data) => {
+  store.commit("machine/updateData", data);
+});
+
 socket.on("ConnectionOptionsUpdated", (options) => {
   store.commit("machine/updateConnectionOptions", options);
 });
 
-socket.on("MachineStateChanged", (payload) => {
-  store.commit("machine/updateMachineState", {
-    id: payload.state_id,
-    string: payload.state_string,
-  });
-});
-
 socket.on("MachineConnected", (payload) => {
   store.commit("machine/updateCurrentConnetion", payload);
-});
-
-socket.on("DevicesStateChanged", (payload) => {
-  store.commit("machine/updateDevices", payload);
 });

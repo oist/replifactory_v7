@@ -153,7 +153,9 @@ class Machine(Device, DeviceCallback):
 
     def connect(self):
         self._set_state(self.STATE_CONNECTING)
-        self._usb_device = self._usb_device or usbManager().find_device(serial_number=self._serial)
+        self._usb_device = self._usb_device or usbManager().find_device(
+            serial_number=self._serial
+        )
         eventManager().fire(Events.MACHINE_CONNECTING, self)
         # self._devices = []
 
@@ -265,7 +267,6 @@ class Machine(Device, DeviceCallback):
         eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
         # self.configure_all()
         self._set_state(self.STATE_OPERATIONAL)
-        str(self.devices['Valves Group'].devices["Valve 1"])
         eventManager().fire(Events.MACHINE_CONNECTED, self)
 
     def disconnect(self):
@@ -411,3 +412,6 @@ class Machine(Device, DeviceCallback):
             or self.isPaused()
             or self._state in (self.STATE_CANCELLING, self.STATE_PAUSING)
         )
+
+    def isManualControl(self):
+        return self._state in (self.STATE_OPERATIONAL, self.STATE_PAUSED)

@@ -1,13 +1,5 @@
 import api from "@/api.js";
 
-const DISCONNECTED_STATES = [
-  "OFFLINE",
-  "NONE",
-  "CLOSED",
-  "CLOSED_WITH_ERROR",
-  "UNKNOWN",
-];
-const MANUAL_CONTROL_STATES = ["OPERATIONAL", "PAUSED"];
 
 export default {
   namespaced: true,
@@ -25,6 +17,14 @@ export default {
       string: "Unknown",
     },
     devices: {},
+    data: {
+      state: {
+        flags: {
+          closedOrError: true,
+        },
+        text: "Offline",
+      },
+    },
   },
   mutations: {
     updateConnectionOptions(state, options) {
@@ -40,16 +40,19 @@ export default {
       const new_value = { ...state.devices, ...devices };
       state.devices = new_value;
     },
+    updateData(state, data) {
+      state.data = data;
+    },
   },
   getters: {
     isDisconnected(state) {
-      return DISCONNECTED_STATES.includes(state.machineState.id);
+      return state.data.state.flags.closedOrError;
     },
     isConnected(state, getters) {
       return !getters.isDisconnected;
     },
     isManualControlEnabled(state) {
-      return MANUAL_CONTROL_STATES.includes(state.machineState.id);
+      return state.data.state.flags.manualControl;
     },
   },
   actions: {

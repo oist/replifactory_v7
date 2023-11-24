@@ -13,7 +13,7 @@ import { mapState } from 'vuex';
 export default {
     computed: {
         ...mapState("machine", {
-            state_string: state => state.machineState.string,
+            state_string: state => state.data.state.text,
         }),
     },
 };

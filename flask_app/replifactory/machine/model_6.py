@@ -69,6 +69,10 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             # not registered
             pass
 
+    def send_initial_callback(self, callback):
+        if callback in self._callbacks:
+            self._sendInitialStateUpdate(callback)
+
     def _sendCurrentDataCallbacks(self, data):
         for callback in self._callbacks:
             try:
@@ -112,10 +116,27 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
     def _updateEnvironmentCallback(self, data):
         pass
 
+    def _sendInitialStateUpdate(self, callback: MachineCallback):
+        try:
+            data = self._stateMonitor.get_current_data()
+            data.update(
+                temps=list(self._temps),
+                logs=list(self._log),
+                messages=list(self._messages),
+            )
+            callback.on_machine_send_initial_data(data)
+        except Exception:
+            self._logger.exception(
+                "Error while pushing initial state update to callback {}".format(
+                    callback
+                ),
+                extra={"callback": fqcn(callback)},
+            )
+
     def _getStateFlags(self):
         return self._dict(
             operational=self.is_operational(),
-            printing=self.is_running(),
+            working=self.is_running(),
             cancelling=self.is_cancelling(),
             pausing=self.is_pausing(),
             resuming=self.is_resuming(),
@@ -124,6 +145,7 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             error=self.is_error(),
             paused=self.is_paused(),
             ready=self.is_ready(),
+            manualControl=self.is_manual_control(),
         )
 
     def _on_usb_list_updated(self, event, data):
@@ -205,6 +227,9 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             # isBusy is true when paused
         )
 
+    def is_manual_control(self, *args, **kwargs):
+        return self._comm is not None and self._comm.isManualControl()
+
     def get_error(self):
         if self._comm is None:
             return ""
@@ -269,6 +294,9 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
 
 
 class StateMonitor:
+    """
+    Machine data to display at UI
+    """
     def __init__(
         self,
         interval=0.5,
@@ -286,6 +314,7 @@ class StateMonitor:
         self._on_change_environment = on_change_environment
 
         self._state = None
+        self._devices_data = None
         self._experiment_data = None
 
         self._change_event = threading.Event()
@@ -299,9 +328,120 @@ class StateMonitor:
     def reset(
         self,
         state=None,
+        devices_data=None,
         experiment_data=None,
     ):
         self.set_state(state)
+        self.set_devices_data(devices_data or {
+            "pump_1": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "pump_2": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "pump_3": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_1": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_2": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_3": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_4": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_5": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_6": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "valve_7": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_1": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_2": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_3": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_4": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_5": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_6": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "stirrer_7": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_1": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_2": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_3": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_4": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_5": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_6": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "od_sensor_7": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "thermometer_1": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "thermometer_2": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+            "thermometer_3": {
+                "state_id": "OFFLINE",
+                "state_string": "Offline",
+            },
+        })
         self.set_experiment_data(experiment_data)
 
     def add_temperature(self, temperature):
@@ -317,11 +457,19 @@ class StateMonitor:
             self._state = state
             self._change_event.set()
 
+    def set_devices_data(self, machine_data):
+        self._devices_data = machine_data
+        self._change_event.set()
+
     def set_experiment_data(self, experiment_data):
         self._experiment_data = experiment_data
         self._change_event.set()
 
     def _work(self):
+        """
+        Every time when something chaged in stateMonitor this worker
+        update self._lust_update time and invoke update_callback passing all data
+        """
         try:
             while True:
                 self._change_event.wait()
@@ -347,6 +495,7 @@ class StateMonitor:
     def get_current_data(self):
         return {
             "state": self._state,
+            "devices": self._devices_data,
             "experiment": self._experiment_data,
         }
 
