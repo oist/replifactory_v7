@@ -9,13 +9,12 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
-from werkzeug.serving import is_running_from_reloader
 
 from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine.model_6 import Machine
-from flask_app.replifactory.socketio import MachineEventListener, MachineNamespace
+from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
 from routes.device_routes import device_routes
 from routes.experiment_routes import experiment_routes
@@ -94,9 +93,8 @@ def create_app():
             # connect_device()  # connect to device on startu
         # socketio_cors_allowed_origins = "*" if environment == "development" else None
         socket_io_async_mode = "threading" if os.environ.get("FLASK_RUN_FROM_CLI") == "true" else "gevent"
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode=socket_io_async_mode)
-        socketio.on_namespace(MachineNamespace(machine=machine, namespace="/machine"))
-        MachineEventListener(app)
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode=socket_io_async_mode, path="socket.io")
+        socketio.on_namespace(MachineNamespace(app=app, machine=machine, namespace="/machine"))
         # socketio.run(app)
         usb_manager.start_monitoring()
 
