@@ -1,7 +1,7 @@
 import logging
 import threading
 from time import sleep
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional
 from flask_app.replifactory.usb_manager import usbManager
 
 from usb.core import Device as UsbDevice
@@ -60,8 +60,11 @@ VALVE_CLOSED_DUTY_CYCLE = 0.12
 VALVE_CHANGE_STATE_TIME = 1.5
 
 
-class MachineDeviceCallback:
+class MachineCallback:
     def on_comm_state_change(self, state):
+        pass
+
+    def on_change_device_data(self, data):
         pass
 
 
@@ -77,7 +80,7 @@ class Machine(Device, DeviceCallback):
     def __init__(
         self,
         usb_device: Optional[UsbDevice] = None,
-        callback: Optional[MachineDeviceCallback] = None,
+        callback: Optional[MachineCallback] = None,
         reconnect: bool = True,
         **kwargs,
     ):
@@ -85,7 +88,7 @@ class Machine(Device, DeviceCallback):
         self._errorValue = ""
         self._logger = logging.getLogger(__name__)
         self._connection_closing = False
-        self._callback = callback or MachineDeviceCallback()
+        self._machine_callback: MachineCallback = callback or MachineCallback()
         self._usb_device = usb_device
         self._serial = usb_device.serial_number if usb_device else None
         self._reconnect = reconnect
@@ -97,7 +100,7 @@ class Machine(Device, DeviceCallback):
             target=self._monitor, name="machine._monitor"
         )
         self.monitoring_thread.daemon = True
-        self._devices = {}
+        self._devices: Dict[str, Device] = {}
 
     def _monitor(self):
         self.connect()
@@ -132,7 +135,7 @@ class Machine(Device, DeviceCallback):
 
     def _set_state(self, new_state):
         self._state = new_state
-        self._callback.on_comm_state_change(new_state)
+        self._machine_callback.on_comm_state_change(new_state)
 
     def _changeState(self, newState):
         if self._state == newState:
@@ -146,13 +149,13 @@ class Machine(Device, DeviceCallback):
         )
         # self._log(text)
         self._logger.info(text)
-        self._callback.on_comm_state_change(newState)
+        self._machine_callback.on_comm_state_change(newState)
 
     def get_error_string(self):
         return self._errorValue
 
     def connect(self):
-        self._set_state(self.STATE_CONNECTING)
+        self._set_state(self.States.STATE_CONNECTING)
         self._usb_device = self._usb_device or usbManager().find_device(
             serial_number=self._serial
         )
@@ -247,7 +250,8 @@ class Machine(Device, DeviceCallback):
             Thermometer(
                 driver=ThermometerDriver(
                     ftdi_driver.get_i2c_port(address, name, ThermometerRegisters)
-                )
+                ),
+                callback=self,
             )
             for address, name in {
                 I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
@@ -266,13 +270,14 @@ class Machine(Device, DeviceCallback):
         eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
         eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
         # self.configure_all()
-        self._set_state(self.STATE_OPERATIONAL)
+        self._set_state(self.States.STATE_OPERATIONAL)
         eventManager().fire(Events.MACHINE_CONNECTED, self)
 
     def disconnect(self):
         self.close()
 
-    def on_device_state_change(self, device, state):
+    def on_device_state_change(self, device: Device, state):
+        self._machine_callback.on_change_device_data(device.get_data())
         eventManager().fire(Events.DEVICE_STATE_CHANGED, (device, state))
 
     def _on_usb_disconnected(self, event, usb_device):
@@ -281,7 +286,7 @@ class Machine(Device, DeviceCallback):
 
         if self._reconnect:
             self._terminate_connection()
-            self._set_state(self.STATE_RECONNECTING)
+            self._set_state(self.States.STATE_RECONNECTING)
         else:
             self.close(is_error=self._state in self.WORKING_STATES)
 
@@ -289,7 +294,7 @@ class Machine(Device, DeviceCallback):
         if usb_device.serial_number and usb_device.serial_number != self._serial:
             return
 
-        if self._state == self.STATE_RECONNECTING:
+        if self._state == self.States.STATE_RECONNECTING:
             self._usb_device = usb_device
             self.connect()
 
@@ -311,9 +316,9 @@ class Machine(Device, DeviceCallback):
         try:
             self._terminate_connection(raise_exception=True)
         except Exception:
-            self._changeState(self.STATE_CLOSED_WITH_ERROR)
+            self._changeState(self.States.STATE_CLOSED_WITH_ERROR)
         else:
-            self._changeState(self.STATE_CLOSED)
+            self._changeState(self.States.STATE_CLOSED)
 
     def _terminate_connection(self, raise_exception=False):
         if self._ftdi_driver is not None:
@@ -377,9 +382,9 @@ class Machine(Device, DeviceCallback):
 
     def isClosedOrError(self):
         return self._state in (
-            self.STATE_ERROR,
-            self.STATE_CLOSED,
-            self.STATE_CLOSED_WITH_ERROR,
+            self.States.STATE_ERROR,
+            self.States.STATE_CLOSED,
+            self.States.STATE_CLOSED_WITH_ERROR,
         )
 
     def isOperational(self):
@@ -389,29 +394,29 @@ class Machine(Device, DeviceCallback):
         return self._state in self.WORKING_STATES
 
     def isCancelling(self):
-        return self._state == self.STATE_CANCELLING
+        return self._state == self.States.STATE_CANCELLING
 
     def isPausing(self):
-        return self._state == self.STATE_PAUSING
+        return self._state == self.States.STATE_PAUSING
 
     def isPaused(self):
-        return self._state == self.STATE_PAUSED
+        return self._state == self.States.STATE_PAUSED
 
     def isResuming(self):
-        return self._state == self.STATE_RESUMING
+        return self._state == self.States.STATE_RESUMING
 
     def isFinishing(self):
-        return self._state == self.STATE_FINISHING
+        return self._state == self.States.STATE_FINISHING
 
     def isError(self):
-        return self._state in (self.STATE_ERROR, self.STATE_CLOSED_WITH_ERROR)
+        return self._state in (self.States.STATE_ERROR, self.States.STATE_CLOSED_WITH_ERROR)
 
     def isBusy(self):
         return (
             self.isWorking()
             or self.isPaused()
-            or self._state in (self.STATE_CANCELLING, self.STATE_PAUSING)
+            or self._state in (self.States.STATE_CANCELLING, self.States.STATE_PAUSING)
         )
 
     def isManualControl(self):
-        return self._state in (self.STATE_OPERATIONAL, self.STATE_PAUSED)
+        return self._state in (self.States.STATE_OPERATIONAL, self.States.STATE_PAUSED)

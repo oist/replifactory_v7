@@ -16,7 +16,7 @@ from flask_app.replifactory.util import get_fully_qualified_classname as fqcn
 logger = logging.getLogger(__name__)
 
 
-class Machine(MachineInterface, comm.MachineDeviceCallback):
+class Machine(MachineInterface, comm.MachineCallback):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
 
@@ -274,23 +274,26 @@ class Machine(MachineInterface, comm.MachineDeviceCallback):
             state_string = self._comm.get_state_string()
             error_string = self._comm.get_error_string()
 
-        if oldState in (comm.Machine.STATE_WORKING,):
+        if oldState in (comm.Machine.States.STATE_WORKING,):
             if state in (
-                comm.Machine.STATE_CLOSED,
-                comm.Machine.STATE_ERROR,
-                comm.Machine.STATE_CLOSED_WITH_ERROR,
+                comm.Machine.States.STATE_CLOSED,
+                comm.Machine.States.STATE_ERROR,
+                comm.Machine.States.STATE_CLOSED_WITH_ERROR,
             ):
                 self._logger.error("Work failed: %s", error_string)
 
         if (
-            state == comm.Machine.STATE_CLOSED
-            or state == comm.Machine.STATE_CLOSED_WITH_ERROR
+            state == comm.Machine.States.STATE_CLOSED
+            or state == comm.Machine.States.STATE_CLOSED_WITH_ERROR
         ):
             if self._comm is not None:
                 self._comm = None
             eventManager().fire(Events.MACHINE_DISCONNECTED)
 
         self._set_state(state, state_string=state_string, error_string=error_string)
+
+    def on_change_device_data(self, data):
+        self._stateMonitor.set_device_data(data["id"], data)
 
 
 class StateMonitor:
@@ -314,7 +317,7 @@ class StateMonitor:
         self._on_change_environment = on_change_environment
 
         self._state = None
-        self._devices_data = None
+        self._devices_data = {}
         self._experiment_data = None
 
         self._change_event = threading.Event()
@@ -332,116 +335,7 @@ class StateMonitor:
         experiment_data=None,
     ):
         self.set_state(state)
-        self.set_devices_data(devices_data or {
-            "pump_1": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "pump_2": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "pump_3": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_1": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_2": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_3": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_4": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_5": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_6": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "valve_7": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_1": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_2": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_3": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_4": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_5": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_6": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "stirrer_7": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_1": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_2": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_3": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_4": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_5": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_6": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "od_sensor_7": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "thermometer_1": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "thermometer_2": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-            "thermometer_3": {
-                "state_id": "OFFLINE",
-                "state_string": "Offline",
-            },
-        })
+        self.set_devices_data(devices_data or {})
         self.set_experiment_data(experiment_data)
 
     def add_temperature(self, temperature):
@@ -459,6 +353,10 @@ class StateMonitor:
 
     def set_devices_data(self, machine_data):
         self._devices_data = machine_data
+        self._change_event.set()
+
+    def set_device_data(self, device_id, data):
+        self._devices_data[device_id] = data
         self._change_event.set()
 
     def set_experiment_data(self, experiment_data):
