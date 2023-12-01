@@ -2,10 +2,12 @@ import contextlib
 import copy
 import os
 import pickle
+import queue
 import re
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import unicodedata
 from collections.abc import Set
@@ -467,3 +469,172 @@ def slugify(value):
     # remove consecutive hyphens
     value = re.sub(r"[-]+", "-", value)
     return value
+
+
+class TypeAlreadyInQueue(Exception):
+    def __init__(self, t, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+        self.type = t
+
+
+class PrependableQueue(queue.Queue):
+    def __init__(self, maxsize=0):
+        queue.Queue.__init__(self, maxsize=maxsize)
+
+    def prepend(self, item, block=True, timeout=True):
+        from time import time as _time
+
+        self.not_full.acquire()
+        try:
+            if self.maxsize > 0:
+                if not block:
+                    if self._qsize() == self.maxsize:
+                        raise queue.Full
+                elif timeout is None:
+                    while self._qsize() >= self.maxsize:
+                        self.not_full.wait()
+                elif timeout < 0:
+                    raise ValueError("'timeout' must be a non-negative number")
+                else:
+                    endtime = _time() + timeout
+                    while self._qsize() == self.maxsize:
+                        remaining = endtime - _time()
+                        if remaining <= 0:
+                            raise queue.Full
+                        self.not_full.wait(remaining)
+            self._prepend(item)
+            self.unfinished_tasks += 1
+            self.not_empty.notify()
+        finally:
+            self.not_full.release()
+
+    def _prepend(self, item):
+        self.queue.appendleft(item)
+
+
+class JobQueue(PrependableQueue):
+    pass
+
+
+class TypedQueue(PrependableQueue):
+    def __init__(self, maxsize=0):
+        PrependableQueue.__init__(self, maxsize=maxsize)
+        self._lookup = set()
+
+    def put(self, item, item_type=None, *args, **kwargs):
+        PrependableQueue.put(self, (item, item_type), *args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        item, _ = PrependableQueue.get(self, *args, **kwargs)
+        return item
+
+    def prepend(self, item, item_type=None, *args, **kwargs):
+        PrependableQueue.prepend(self, (item, item_type), *args, **kwargs)
+
+    def _put(self, item):
+        _, item_type = item
+        if item_type is not None:
+            if item_type in self._lookup:
+                raise TypeAlreadyInQueue(
+                    item_type, f"Type {item_type} is already in queue"
+                )
+            else:
+                self._lookup.add(item_type)
+
+        PrependableQueue._put(self, item)
+
+    def _get(self):
+        item = PrependableQueue._get(self)
+        _, item_type = item
+
+        if item_type is not None:
+            self._lookup.discard(item_type)
+
+        return item
+
+    def _prepend(self, item):
+        _, item_type = item
+        if item_type is not None:
+            if item_type in self._lookup:
+                raise TypeAlreadyInQueue(
+                    item_type, f"Type {item_type} is already in queue"
+                )
+            else:
+                self._lookup.add(item_type)
+
+        PrependableQueue._prepend(self, item)
+
+
+class CountedEvent:
+    def __init__(self, value=0, minimum=0, maximum=None, **kwargs):
+        self._counter = 0
+        self._min = minimum
+        self._max = kwargs.get("max", maximum)
+        self._mutex = threading.RLock()
+        self._event = threading.Event()
+
+        self._internal_set(value)
+
+    @property
+    def min(self):
+        return self._min
+
+    @min.setter
+    def min(self, val):
+        with self._mutex:
+            self._min = val
+
+    @property
+    def max(self):
+        return self._max
+
+    @max.setter
+    def max(self, val):
+        with self._mutex:
+            self._max = val
+
+    @property
+    def is_set(self):
+        return self._event.is_set
+
+    @property
+    def counter(self):
+        with self._mutex:
+            return self._counter
+
+    def set(self):
+        with self._mutex:
+            self._internal_set(self._counter + 1)
+
+    def clear(self, completely=False):
+        with self._mutex:
+            if completely:
+                self._internal_set(0)
+            else:
+                self._internal_set(self._counter - 1)
+
+    def reset(self):
+        self.clear(completely=True)
+
+    def wait(self, timeout=None):
+        self._event.wait(timeout)
+
+    def blocked(self):
+        return self.counter <= 0
+
+    def acquire(self, blocking=1):
+        return self._mutex.acquire(blocking=blocking)
+
+    def release(self):
+        return self._mutex.release()
+
+    def _internal_set(self, value):
+        self._counter = value
+        if self._counter <= 0:
+            if self._min is not None and self._counter < self._min:
+                self._counter = self._min
+            self._event.clear()
+        else:
+            if self._max is not None and self._counter > self._max:
+                self._counter = self._max
+            self._event.set()

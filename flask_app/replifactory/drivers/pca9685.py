@@ -81,6 +81,7 @@ class PWMDriver:
 
     def __init__(self, port: I2cPort = None) -> None:
         self.port = port
+        self._initialized = False
 
     def __reset_and_repeat_on_error(
         func,
@@ -99,13 +100,16 @@ class PWMDriver:
 
         return wrapper
 
-    def reset(self, frequency: float = 50):
+    def reset(self, frequency: float = 50, force = False):
         with self.lock:
+            if self._initialized:
+                return
             logger.debug(__("enter reset(frequency={frequency})", frequency=frequency))
             self.set_frequency(frequency)
             self._write_to_register(REGISTER_ALL_LED_ON_L, [0])
             self._write_to_register(REGISTER_ALL_LED_ON_H, [0])
             self.start_all()
+            self._initialized = True
             logger.debug("exit reset")
 
     def software_reset(self):

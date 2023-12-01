@@ -1,7 +1,8 @@
 import logging
 import time
+from typing import Optional
 
-from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.drivers.pca9555 import IOPortDriver
 
 LASER_ON = 0
@@ -12,7 +13,14 @@ log = logging.getLogger(__name__)
 
 
 class Laser(Device):
-    def __init__(self, laser_cs: int, io_driver: IOPortDriver):
+    def __init__(
+        self,
+        laser_cs: int,
+        io_driver: IOPortDriver,
+        name: Optional[str] = None,
+        callback: Optional[DeviceCallback] = None,
+    ):
+        super().__init__(name or f"Laser {laser_cs}", callback)
         self.laser_cs = laser_cs
         self.io_driver = io_driver
 

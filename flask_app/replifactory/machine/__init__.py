@@ -21,6 +21,12 @@ class MachineInterface:
     def experiment(self, experiment, *args, **kwargs):
         raise NotImplementedError()
 
+    def valve_open(self, device_id, *args, **kwargs):
+        raise NotImplementedError()
+
+    def valve_close(self, device_id, *args, **kwargs):
+        raise NotImplementedError()
+
     def start_experiment(self):
         raise NotImplementedError()
 

@@ -1,6 +1,5 @@
 import api from "@/api.js";
 
-
 export default {
   namespaced: true,
   state: {
@@ -82,6 +81,21 @@ export default {
           })
           .catch((error) => {
             console.error(error);
+            reject(error);
+          });
+      });
+    },
+    runCommand(context, payload) {
+      const { device, deviceId, command, args } = payload;
+      const endpoint = `/machine/${device}`;
+      return new Promise((resolve, reject) => {
+        api
+          .post(endpoint, { deviceId, command, ...args })
+          .then((response) => {
+            resolve(response.data);
+          })
+          .catch((error) => {
+            console.error(`Error updating ${deviceId} state:`, error);
             reject(error);
           });
       });

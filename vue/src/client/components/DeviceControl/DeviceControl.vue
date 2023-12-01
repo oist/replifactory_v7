@@ -8,15 +8,17 @@
         @change="toggleCalibrationMode" />
     </div>
 
-    <PumpControl :disabled="!deviceControlEnabled"/>
-    <ValveControl :disabled="!deviceControlEnabled"/>
-    <StirrerControl :disabled="!deviceControlEnabled"/>
-    <ODControl :disabled="!deviceControlEnabled"/>
+    <PumpControl :disabled="!deviceControlEnabled" />
+    <ValvesGroupControl :disabled="!deviceControlEnabled" />
+    <ValveControl :disabled="!deviceControlEnabled" />
+    <StirrerControl :disabled="!deviceControlEnabled" />
+    <ODControl :disabled="!deviceControlEnabled" />
   </div>
 </template>
 
 <script>
 import PumpControl from './PumpControl';
+import ValvesGroupControl from './ValvesGroupControl';
 import ValveControl from './ValveControl';
 import StirrerControl from './StirrerControl';
 import ODControl from './ODControl';
@@ -27,10 +29,11 @@ import { CFormSwitch } from '@coreui/vue';
 export default {
   components: {
     PumpControl,
+    ValvesGroupControl,
     ValveControl,
     StirrerControl,
     ODControl,
-    CFormSwitch
+    CFormSwitch,
   },
   computed: {
     ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),

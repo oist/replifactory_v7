@@ -193,6 +193,31 @@ class Machine(MachineInterface, comm.MachineCallback):
         else:
             eventManager().fire(Events.MACHINE_DISCONNECTED)
 
+    # def commands(self, commands, tags=None, force=False, *args, **kwargs):
+    #     """
+    #     Sends one or more commands to the machine.
+    #     """
+    #     if self._comm is None:
+    #         return
+
+    #     if not isinstance(commands, (list, tuple)):
+    #         commands = [commands]
+
+    #     if tags is None:
+    #         tags = set()
+    #     tags |= {"trigger:machine.commands"}
+
+    #     for command in commands:
+    #         self._comm.sendCommand(command, tags=tags, force=force)
+
+    def valve_open(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.open_valve(device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.open"})
+
+    def valve_close(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.close_valve(device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"})
+
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
 

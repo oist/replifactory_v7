@@ -31,6 +31,9 @@ class Stirrer(Device):
         self.acceleration_delay = acceleration_delay
         self.accelerate_threshold = accelerate_threshold
 
+    def reset_state(self):
+        self.driver.reset()
+
     def read_state(self):
         pass
 

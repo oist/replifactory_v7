@@ -1,14 +1,13 @@
 import logging
+import queue
 import threading
 from time import sleep
-from typing import Dict, Iterable, Optional
-from flask_app.replifactory.usb_manager import usbManager
+from typing import Dict, Iterable, Optional, Type
 
 from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.laser import Laser
-from replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from flask_app.replifactory.devices.photodiode import Photodiode
 from flask_app.replifactory.devices.pump import Pump
 from flask_app.replifactory.devices.step_motor import Motor
@@ -28,6 +27,10 @@ from flask_app.replifactory.drivers.pca9555 import IOPortDriver
 from flask_app.replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegisters
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.usb_manager import usbManager
+from replifactory.devices.optical_density_sensor import OpticalDensitySensor
+from replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
+from replifactory.util.comm import CommandQueue, QueueMarker, SendQueue, SendQueueMarker
 
 VAVLE_PWM_CHANNEL_START_ADDR = 8
 VALVES_COUNT = 7
@@ -68,6 +71,10 @@ class MachineCallback:
         pass
 
 
+class MachineCommand(SendQueueMarker):
+    pass
+
+
 class Machine(Device, DeviceCallback):
     # stirrers: List[Stirrer]
     # valves: List[Valve]
@@ -94,6 +101,14 @@ class Machine(Device, DeviceCallback):
         self._reconnect = reconnect
         self.log = logging.getLogger(__name__)
 
+        self._job_queue = JobQueue()
+        self._command_queue = CommandQueue()
+        self._send_queue = SendQueue()
+
+        self._sendingLock = threading.RLock()
+
+        self._job_on_hold = CountedEvent()
+
         # monitoring thread
         self._monitoring_active = True
         self.monitoring_thread = threading.Thread(
@@ -101,6 +116,17 @@ class Machine(Device, DeviceCallback):
         )
         self.monitoring_thread.daemon = True
         self._devices: Dict[str, Device] = {}
+
+        self._ack_max = 1  # settings().getInt(["serial", "ackMax"])
+        self._clear_to_send = CountedEvent(
+            name="comm.clear_to_send", minimum=None, maximum=self._ack_max
+        )
+        # sending thread
+        self._send_queue_active = True
+        self.sending_thread = threading.Thread(
+            target=self._send_loop, name="comm.sending_thread"
+        )
+        self.sending_thread.daemon = True
 
     def _monitor(self):
         self.connect()
@@ -129,6 +155,200 @@ class Machine(Device, DeviceCallback):
                 )
                 self.close(is_error=True)
         self._logger.info("Connection closed, closing down monitor")
+
+    def _send_loop(self):
+        """
+        The send loop is responsible of sending commands in ``self._send_queue`` over the line, if it is cleared for
+        sending
+        """
+
+        self._clear_to_send.wait()
+
+        while self._send_queue_active:
+            try:
+                # wait until we have something in the queue
+                try:
+                    entry = self._send_queue.get()
+                except queue.Empty:
+                    # I haven't yet been able to figure out *why* this can happen but according to #3096 and SERVER-2H
+                    # an Empty exception can fly here due to resend_active being True but nothing being in the resend
+                    # queue of the send queue. So we protect against this possibility...
+                    continue
+
+                try:
+                    # make sure we are still active
+                    if not self._send_queue_active:
+                        break
+
+                    # fetch command, command type and optional linenumber and sent callback from queue
+                    command, linenumber, command_type, on_sent, processed, tags = entry
+
+                    if isinstance(command, SendQueueMarker):
+                        command.run()
+                        self._continue_sending()
+                        continue
+
+                    # trigger "sent" phase and use up one "ok"
+                    if on_sent is not None and callable(on_sent):
+                        # we have a sent callback for this specific command, let's execute it now
+                        on_sent()
+                finally:
+                    # no matter _how_ we exit this block, we signal that we
+                    # are done processing the last fetched queue entry
+                    self._send_queue.task_done()
+
+                # now we just wait for the next clear and then start again
+                self._clear_to_send.wait()
+            except Exception:
+                self._logger.exception("Caught an exception in the send loop")
+        self._logger.info("Closing down send loop")
+
+    @property
+    def _active(self):
+        return self._monitoring_active and self._send_queue_active
+
+    @property
+    def job_on_hold(self):
+        return self._job_on_hold.counter > 0
+
+    def _continue_sending(self):
+        # Ensure we have at least one line in the send queue, but don't spam it
+        while self._active and not self._send_queue.qsize():
+            job_active = self._state in (
+                self.States.STATE_STARTING,
+                self.States.STATE_WORKING,
+            )
+
+            if self._send_from_command_queue():
+                # we found something in the command queue to send
+                return True
+
+            elif self.job_on_hold:
+                # job is on hold, that means we must not send from either job queue or file
+                return False
+
+            elif self._send_from_job_queue():
+                # we found something in the job queue to send
+                return True
+
+            # elif job_active and self._send_from_job():
+            #     # we sent the next line from the file
+            #     return True
+
+            elif not job_active:
+                # nothing sent but also no job active, so we can just return false
+                return False
+
+            self._logger.debug(
+                "No command enqueued on ok while working, doing another iteration"
+            )
+
+    def _send_from_job_queue(self):
+        try:
+            line, cmd_type, on_sent, tags = self._job_queue.get_nowait()
+            result = self._sendCommand(
+                line, cmd_type=cmd_type, on_sent=on_sent, tags=tags
+            )
+            if result:
+                # line from script sent, return true
+                return True
+        except queue.Empty:
+            pass
+
+        return False
+
+    def _send_from_command_queue(self):
+        # We loop here to make sure that if we do NOT send the first command
+        # from the queue, we'll send the second (if there is one). We do not
+        # want to get stuck here by throwing away commands.
+        while True:
+            # if self.isStreaming():
+            #     # command queue irrelevant
+            #     return False
+
+            try:
+                entry = self._command_queue.get(block=False)
+            except queue.Empty:
+                # nothing in command queue
+                return False
+
+            try:
+                if isinstance(entry, tuple):
+                    if not len(entry) == 4:
+                        # something with that entry is broken, ignore it and fetch
+                        # the next one
+                        continue
+                    cmd, cmd_type, callback, tags = entry
+                else:
+                    cmd = entry
+                    cmd_type = None
+                    callback = None
+                    tags = None
+
+                if self._sendCommand(
+                    cmd, cmd_type=cmd_type, on_sent=callback, tags=tags
+                ):
+                    # we actually did add this cmd to the send queue, so let's
+                    # return, we are done here
+                    return True
+            finally:
+                self._command_queue.task_done()
+
+    # def _process_registered_message(
+    #     self, line, feedback_matcher, feedback_controls, feedback_errors
+    # ):
+    #     feedback_match = feedback_matcher.search(line)
+    #     if feedback_match is None:
+    #         return
+
+    #     for match_key in feedback_match.groupdict():
+    #         try:
+    #             feedback_key = match_key[len("group") :]
+    #             if (
+    #                 feedback_key not in feedback_controls
+    #                 or feedback_key in feedback_errors
+    #                 or feedback_match.group(match_key) is None
+    #             ):
+    #                 continue
+    #             matched_part = feedback_match.group(match_key)
+
+    #             if feedback_controls[feedback_key]["matcher"] is None:
+    #                 continue
+
+    #             match = feedback_controls[feedback_key]["matcher"].search(matched_part)
+    #             if match is None:
+    #                 continue
+
+    #             outputs = {}
+    #             for template_key, template in feedback_controls[feedback_key][
+    #                 "templates"
+    #             ].items():
+    #                 try:
+    #                     output = template.format(*match.groups())
+    #                 except KeyError:
+    #                     output = template.format(**match.groupdict())
+    #                 except Exception:
+    #                     self._logger.debug(
+    #                         "Could not process template {}: {}".format(
+    #                             template_key, template
+    #                         ),
+    #                         exc_info=1,
+    #                     )
+    #                     output = None
+
+    #                 if output is not None:
+    #                     outputs[template_key] = output
+    #             eventManager().fire(
+    #                 Events.REGISTERED_MESSAGE_RECEIVED,
+    #                 {"key": feedback_key, "matched": matched_part, "outputs": outputs},
+    #             )
+    #         except Exception:
+    #             self._logger.exception(
+    #                 "Error while trying to match feedback control output, disabling key {key}".format(
+    #                     key=match_key
+    #                 )
+    #             )
+    #             feedback_errors.append(match_key)
 
     def _say_hello(self):
         pass
@@ -159,6 +379,9 @@ class Machine(Device, DeviceCallback):
         self._usb_device = self._usb_device or usbManager().find_device(
             serial_number=self._serial
         )
+        if self._usb_device is None:
+            return
+
         eventManager().fire(Events.MACHINE_CONNECTING, self)
         # self._devices = []
 
@@ -186,7 +409,8 @@ class Machine(Device, DeviceCallback):
             )
         ]
         self.stirrers = StirrersGroup(stirrers)
-        self._devices[self.stirrers.name] = self.stirrers
+        for stirrer in stirrers:
+            self._devices[stirrer.id] = stirrer
         valves = [
             Valve(
                 pwm_channel=pwm_channel,
@@ -203,13 +427,24 @@ class Machine(Device, DeviceCallback):
             )
         ]
         self.valves = ValvesGroup(valves)
-        self._devices[self.valves.name] = self.valves
+        for valve in valves:
+            self._devices[valve.id] = valve
+        # self._devices[self.valves.name] = self.valves
         self.pumps = [
             Pump(Motor(StepMotorDriver(ftdi_driver.get_spi_port(cs=cs))))
             for cs in range(PUMPS_COUNT)
         ]
         for pump in self.pumps:
-            self._devices[pump.name] = pump
+            self._devices[pump.id] = pump
+        self._io_driver_laser = IOPortDriver(
+            ftdi_driver.get_i2c_port(I2C_PORT_IO_LASER, "IO_LASERS", IORegisters)
+        )
+        lasers = [
+            Laser(laser_cs=cs, io_driver=self._io_driver_laser)
+            for cs in range(1, VIALS_COUNT * 2, 2)
+        ]
+        for laser in lasers:
+            self._devices[laser.id] = laser
         if isinstance(I2C_PORT_ADC, Iterable):
             try:
                 i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
@@ -218,34 +453,25 @@ class Machine(Device, DeviceCallback):
                 i2c_adc_port = None
         else:
             i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
-        self._adc_driver = ADCDriver(i2c_adc_port)
-        self._io_driver_adc = IOPortDriver(
-            ftdi_driver.get_i2c_port(I2C_PORT_IO_ADC, "IO_ADC", IORegisters)
-        )
-        photodiodes = [
-            Photodiode(
-                diode_cs=cs,
-                adc_driver=self._adc_driver,
-                io_driver=self._io_driver_adc,
+        if i2c_adc_port:
+            self._adc_driver = ADCDriver(i2c_adc_port)
+            self._io_driver_adc = IOPortDriver(
+                ftdi_driver.get_i2c_port(I2C_PORT_IO_ADC, "IO_ADC", IORegisters)
             )
-            for cs in reversed(range(VIALS_COUNT))
-        ]
-        self._io_driver_laser = IOPortDriver(
-            ftdi_driver.get_i2c_port(I2C_PORT_IO_LASER, "IO_LASERS", IORegisters)
-        )
-        lasers = [
-            Laser(laser_cs=cs, io_driver=self._io_driver_laser)
-            for cs in range(1, VIALS_COUNT * 2, 2)
-        ]
-        self.od_sensors = [
-            OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
-            for i in range(VIALS_COUNT)
-        ]
-        for od_sensor in self.od_sensors:
-            self._devices[od_sensor.name] = od_sensor
-        # self._io_driver_stirrer = IOPortDriver(
-        #     ftdi_driver.get_i2c_port(I2C_PORT_IO_STIRRERS, "IO_STIRRERS", IORegisters)
-        # )
+            photodiodes = [
+                Photodiode(
+                    diode_cs=cs,
+                    adc_driver=self._adc_driver,
+                    io_driver=self._io_driver_adc,
+                )
+                for cs in reversed(range(VIALS_COUNT))
+            ]
+            self.od_sensors = [
+                OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
+                for i in range(VIALS_COUNT)
+            ]
+            for od_sensor in self.od_sensors:
+                self._devices[od_sensor.id] = od_sensor
         self.thermometers = [
             Thermometer(
                 driver=ThermometerDriver(
@@ -260,7 +486,7 @@ class Machine(Device, DeviceCallback):
             }.items()
         ]
         for thermometer in self.thermometers:
-            self._devices[thermometer.name] = thermometer
+            self._devices[thermometer.id] = thermometer
 
         self._ftdi_driver.connect()
 
@@ -272,6 +498,7 @@ class Machine(Device, DeviceCallback):
         # self.configure_all()
         self._set_state(self.States.STATE_OPERATIONAL)
         eventManager().fire(Events.MACHINE_CONNECTED, self)
+        self._clear_to_send.set()
 
     def disconnect(self):
         self.close()
@@ -299,6 +526,7 @@ class Machine(Device, DeviceCallback):
             self.connect()
 
     def start(self):
+        self.sending_thread.start()
         self.connect()
 
     def close(self, is_error=False, *args, **kwargs):
@@ -366,16 +594,97 @@ class Machine(Device, DeviceCallback):
         return self.thermometers[index]
 
     def test(self):
-        for device in self._devices:
+        for device in self._devices.values():
             try:
                 test_result = "Ok" if device.test() else "Fail"
                 self.log.info(f"Test {device.name}: {test_result}")
             except Exception as e:
                 self.log.error(f"Test {device.name}: Fail", exc_info=e)
 
+    def sendCommand(
+        self,
+        cmd: QueueMarker,
+        cmd_type=None,
+        part_of_experiment=False,
+        processed=False,
+        force=False,
+        on_sent=None,
+        tags=None,
+    ):
+        if tags is None:
+            tags = set()
+
+        if part_of_experiment:
+            self._job_queue.put((cmd, cmd_type, on_sent, tags | {"source:experiment"}))
+            return True
+        elif (
+            self.isWorking()
+            # and not self.job_on_hold
+            and not force
+        ):
+            try:
+                self._command_queue.put(
+                    (cmd, cmd_type, on_sent, tags), item_type=cmd_type
+                )
+                return True
+            except TypeAlreadyInQueue as e:
+                self._logger.debug("Type already in command queue: " + e.type)
+                return False
+        elif self.isOperational() or force:
+            return self._sendCommand(cmd, cmd_type=cmd_type, on_sent=on_sent, tags=tags)
+
+    def _sendCommand(self, cmd: QueueMarker, cmd_type=None, on_sent=None, tags=None):
+        # Make sure we are only handling one sending job at a time
+        with self._sendingLock:
+            if self._usb_device is None:
+                return False
+
+            self._enqueue_for_sending(
+                cmd, command_type=cmd_type, on_sent=on_sent, tags=tags
+            )
+            return True
+
+    def _enqueue_for_sending(
+        self,
+        command,
+        linenumber=None,
+        command_type=None,
+        on_sent=None,
+        resend=False,
+        tags=None,
+    ):
+        """
+        Enqueues a command and optional linenumber to use for it in the send queue.
+
+        Arguments:
+            command (str or SendQueueMarker): The command to send.
+            linenumber (int): The line number with which to send the command. May be ``None`` in which case the command
+                will be sent without a line number and checksum.
+            command_type (str): Optional command type, if set and command type is already in the queue the
+                command won't be enqueued
+            on_sent (callable): Optional callable to call after command has been sent to printer.
+            resend (bool): Whether this is a resent command
+            tags (set of str or None): Tags to attach to this command
+        """
+
+        try:
+            target = "send"
+            if resend:
+                target = "resend"
+
+            self._send_queue.put(
+                (command, linenumber, command_type, on_sent, False, tags),
+                item_type=command_type,
+                target=target,
+            )
+            return True
+        except TypeAlreadyInQueue as e:
+            self._logger.debug("Type already in send queue: " + e.type)
+            return False
+
     def reset_state(self):
-        for device in self._devices:
-            device.reset()
+        for device in self._devices.values():
+            device.reset_state()
 
     def read_state(self):
         self.configure_all()
@@ -409,7 +718,10 @@ class Machine(Device, DeviceCallback):
         return self._state == self.States.STATE_FINISHING
 
     def isError(self):
-        return self._state in (self.States.STATE_ERROR, self.States.STATE_CLOSED_WITH_ERROR)
+        return self._state in (
+            self.States.STATE_ERROR,
+            self.States.STATE_CLOSED_WITH_ERROR,
+        )
 
     def isBusy(self):
         return (
@@ -420,3 +732,26 @@ class Machine(Device, DeviceCallback):
 
     def isManualControl(self):
         return self._state in (self.States.STATE_OPERATIONAL, self.States.STATE_PAUSED)
+
+    def _get_device(self, device_id: str, device_type: Type[Device]) -> Type:
+        device = self._devices.get(device_id)
+        if device is None:
+            raise ValueError(f"Device {device_id} not found")
+        if not isinstance(device, device_type):
+            raise ValueError(f"Device {device_id} is not {device_type.__name__}")
+        return device
+
+    def _get_valve(self, device_id: str) -> Valve:
+        return self._get_device(device_id, Valve)
+
+    def open_valve(self, device_id: str, *args, **kwargs):
+        def command():
+            self._get_valve(device_id).open()
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
+
+    def close_valve(self, device_id: str, *args, **kwargs):
+        def command():
+            self._get_valve(device_id).close()
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
