@@ -18,6 +18,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import { CButton, CButtonGroup } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue';
 import * as icon from '@coreui/icons'
@@ -50,7 +51,8 @@ export default {
     },
     computed: {
         data() {
-            return this.$store.state.machine.data.devices[this.deviceId];
+            const device = this.getDeviceById(this.deviceId);
+            return device;
         },
         stateText() {
             return this.data != null ? this.data.state_string : "Undefined";
@@ -58,6 +60,9 @@ export default {
         state() {
             return this.data != null ? this.data.state_id : "UNDEFINED";
         },
+        ...mapGetters("machine", [
+            "getDeviceById",
+        ])
     },
     methods: {
         toggle() {

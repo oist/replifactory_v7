@@ -19,12 +19,15 @@ class Ftdi(_Ftdi):
     def __init__(self):
         _Ftdi.__init__(self)
         self._i2c_controller = I2cController()
-        self._eeprom_driver = EepromDriver(
-            I2cPort(
-                controller=self._i2c_controller,
-                address=EEPROM_ADDRESS,
-            )
+        self._eeprom_port = I2cPort(
+            controller=self._i2c_controller,
+            address=EEPROM_ADDRESS,
         )
+
+        def get_port():
+            return self._eeprom_port
+
+        self._eeprom_driver = EepromDriver(get_port=get_port)
         self._i2c_default_freq = I2C_FREQ
         self._i2c_interface = I2C_INTERFACE
         self._i2c_retry_count = 1
@@ -36,6 +39,10 @@ class Ftdi(_Ftdi):
             self._usb_dev,
             frequency=self._i2c_default_freq,
             interface=self._i2c_interface,
+        )
+        self._eeprom_port = I2cPort(
+            controller=self._i2c_controller,
+            address=EEPROM_ADDRESS,
         )
 
     def read_eeprom(

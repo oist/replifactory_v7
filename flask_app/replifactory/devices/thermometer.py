@@ -8,7 +8,7 @@ from flask_app.replifactory.drivers.adt75 import ThermometerDriver
 
 class Thermometer(Device):
     def __init__(self, driver: ThermometerDriver, name: Optional[str] = None, **kwargs):
-        super().__init__(name or f"Thermometer 0x{driver.port.address:02X}", **kwargs)
+        super().__init__(name or "Thermometer", **kwargs)
         self.driver = driver
         self._last_value = 0
 

@@ -47,7 +47,7 @@ class Motor(Device):
 
     def test(self):
         success = False
-        logger.debug(f"Start self test for motor {self.driver.spi_port._cs}")
+        logger.debug(f"Start self test for motor {self.driver._get_port()._cs}")
         self.driver.set_param(l6470h.parameters.OCD_TH, 0)
         self.move(1)
         status = self.driver.status
@@ -84,7 +84,7 @@ class Motor(Device):
         logger.debug(
             __(
                 "Move motor {num} to {revolutions:.4f} revolution with {speed:.4f} revolutoions per second",
-                num=self.driver.spi_port.cs,
+                num=self.driver._get_port().cs,
                 revolutions=n_revolutions,
                 speed=revolution_per_second,
             )

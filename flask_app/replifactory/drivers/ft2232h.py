@@ -105,13 +105,8 @@ class ParsedDescriptor:
 
 
 class FtdiDriver:
-    # usb_device: UsbDevice
-    # i2c_controller: I2cController
-    # spi_controller: SpiController
-
     def __init__(
         self,
-        usb_device: UsbDevice,
         spi_cs_count: int = 1,
         spi_freq: Optional[float] = None,
         spi_mode: int = 0,
@@ -122,24 +117,26 @@ class FtdiDriver:
         i2c_interface: int = 2,
     ):
         self._lock = threading.RLock()
-        self.usb_device = usb_device
-        self.spi_controller = None
-        self.spi_cs_count = spi_cs_count
-        self.spi_default_freq = spi_freq
-        self.spi_default_mode = spi_mode
-        self.spi_interface = spi_interface
-        self.spi_turbo = spi_turbo
+        self._usb_device = None
+        self._spi_controller = None
+        self._spi_cs_count = spi_cs_count
+        self._spi_default_freq = spi_freq
+        self._spi_default_mode = spi_mode
+        self._spi_interface = spi_interface
+        self._spi_turbo = spi_turbo
         self._i2c_controller = None
-        self.i2c_default_freq = i2c_freq
-        self.i2c_interface = i2c_interface
-        self.i2c_retry_count = i2c_retry_count
+        self._i2c_default_freq = i2c_freq
+        self._i2c_interface = i2c_interface
+        self._i2c_retry_count = i2c_retry_count
         self._ftdi = Ftdi()
 
+    @property
     def is_connected(self):
-        return self._ftdi.is_connected
+        return self._usb_device and self._ftdi.is_connected
 
-    def connect(self):
-        self._ftdi.open_from_device(self.usb_device)
+    def connect(self, usb_device: UsbDevice):
+        self._ftdi.open_from_device(usb_device)
+        self._usb_device = usb_device
 
     def close(self):
         self.terminate()
@@ -148,26 +145,35 @@ class FtdiDriver:
         with self._lock:
             if self._i2c_controller is not None:
                 self._i2c_controller.terminate()
-            if self.spi_controller is not None:
-                self.spi_controller.terminate()
+                self._i2c_controller = None
+            if self._spi_controller is not None:
+                self._spi_controller.terminate()
+                self._spi_controller = None
             if self._ftdi is not None:
                 self._ftdi.close()
-            UsbTools.release_device(self.usb_device)
+            if self._usb_device is not None:
+                UsbTools.release_device(self._usb_device)
+                self._usb_device = None
             UsbTools.flush_cache()
 
     @property
     def i2c_controller(self) -> I2cController:
-        if self._i2c_controller is None:
+        if self._i2c_controller is None and self.is_connected:
             with self._lock:
                 if self._i2c_controller is None:
                     self._i2c_controller = I2cController()
-                    self._i2c_controller.set_retry_count(self.i2c_retry_count)
+                    self._i2c_controller.set_retry_count(self._i2c_retry_count)
                     self._i2c_controller.configure(
-                        self.usb_device,
-                        frequency=self.i2c_default_freq,
-                        interface=self.i2c_interface,
+                        self._usb_device,
+                        frequency=self._i2c_default_freq,
+                        interface=self._i2c_interface,
                     )
         return self._i2c_controller
+
+    def get_i2c_port_callback(self, address: int, name: str, registers: dict[int, str] = {}):
+        def callback():
+            return self.get_i2c_port(address, name, registers)
+        return callback
 
     def get_i2c_port(
         self, address: int, name: str, registers: dict[int, str] = {}
@@ -175,28 +181,40 @@ class FtdiDriver:
         port = self.i2c_controller.get_verbose_port(address, name, registers)
         return port
 
+    def get_spi_port_callback(self, cs: int, freq: Optional[float] = None, mode: int = None):
+        def callback():
+            return self.get_spi_port(cs, freq, mode)
+        return callback
+
     def get_spi_port(
         self, cs: int, freq: Optional[float] = None, mode: int = None
     ) -> SpiPort:
+        if not self.is_connected:
+            raise ConnectionError("FTDI not connected")
         with self._lock:
-            if not self.spi_controller:
-                self.spi_controller = SpiController(
-                    cs_count=self.spi_cs_count, turbo=self.spi_turbo
+            if not self._spi_controller:
+                self._spi_controller = SpiController(
+                    cs_count=self._spi_cs_count, turbo=self._spi_turbo
                 )
-                self.spi_controller.configure(
-                    self.usb_device,
-                    frequency=self.spi_default_freq,
-                    interface=self.spi_interface,
+                self._spi_controller.configure(
+                    self._usb_device,
+                    frequency=self._spi_default_freq,
+                    interface=self._spi_interface,
                 )
-        return self.spi_controller.get_port(
+        return self._spi_controller.get_port(
             cs=cs,
-            freq=freq or self.spi_default_freq,
-            mode=mode or self.spi_default_mode,
+            freq=freq or self._spi_default_freq,
+            mode=mode or self._spi_default_mode,
         )
 
     # SMB_READ_RANGE = list(range(0x30, 0x38)) + list(range(0x50, 0x60))
 
     # HIGHEST_I2C_SLAVE_ADDRESS = 0x78
+
+    def get_first_active_i2c_port_callback(self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}):
+        def callback():
+            return self.get_first_active_port(possible_addresses, name, registers)
+        return callback
 
     def get_first_active_port(
         self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}

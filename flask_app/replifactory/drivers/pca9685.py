@@ -1,9 +1,10 @@
 import logging
 import threading
 import time
-from typing import Union
+from typing import Callable, Union
+from pyftdi.i2c import I2cPort
 
-from flask_app.replifactory.drivers.ft2232h import I2cPort
+# from flask_app.replifactory.drivers.ft2232h import I2cPort
 from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
@@ -76,32 +77,33 @@ def get_led_off_registers(led_num: int) -> tuple[int, int]:
 
 
 class PWMDriver:
-    port: I2cPort = None
-    lock = threading.RLock()
+    # port: I2cPort = None
+    # lock = threading.RLock()
 
-    def __init__(self, port: I2cPort = None) -> None:
-        self.port = port
+    def __init__(self, get_port: Callable[[], I2cPort]) -> None:
+        self._get_port = get_port
         self._initialized = False
+        self._lock = threading.RLock()
 
-    def __reset_and_repeat_on_error(
-        func,
-        exception_message: str = "Write to PWM exception",
-        repeat_delay: float = 0.5,
-    ):
-        def wrapper(self, *args):
-            with self.lock:
-                try:
-                    return func(self, *args)
-                except Exception as e:
-                    logger.warn(exception_message, exc_info=e)
-                    time.sleep(repeat_delay)
-                    self.software_reset()
-                    return func(self, *args)
+    # def __reset_and_repeat_on_error(
+    #     func,
+    #     exception_message: str = "Write to PWM exception",
+    #     repeat_delay: float = 0.5,
+    # ):
+    #     def wrapper(self, *args):
+    #         with self.lock:
+    #             try:
+    #                 return func(self, *args)
+    #             except Exception as e:
+    #                 logger.warn(exception_message, exc_info=e)
+    #                 time.sleep(repeat_delay)
+    #                 self.software_reset()
+    #                 return func(self, *args)
 
-        return wrapper
+    #     return wrapper
 
-    def reset(self, frequency: float = 50, force = False):
-        with self.lock:
+    def reset(self, frequency: float = 50):
+        with self._lock:
             if self._initialized:
                 return
             logger.debug(__("enter reset(frequency={frequency})", frequency=frequency))
@@ -113,14 +115,14 @@ class PWMDriver:
             logger.debug("exit reset")
 
     def software_reset(self):
-        with self.lock:
+        with self._lock:
             logger.debug("enter software_reset")
             self._write_to_register(REGISTER_MODE_1, [0])  # reset
             logger.debug("exit software_reset")
 
     # @__reset_and_repeat_on_error
     def sleep_mode(self):
-        with self.lock:
+        with self._lock:
             logger.debug("enter sleep_mode")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_SLEEP_BIT | MODE1_ALLCALL_BIT]
@@ -128,7 +130,7 @@ class PWMDriver:
             logger.debug("exit sleep_mode")
 
     def restart_mode(self):
-        with self.lock:
+        with self._lock:
             logger.debug("enter restart_mode")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_RESTART_BIT | MODE1_ALLCALL_BIT]
@@ -141,7 +143,7 @@ class PWMDriver:
         Args:
             frequency (float): in Hz
         """
-        with self.lock:
+        with self._lock:
             logger.debug(
                 __("enter set_frequency(frequency={frequency})", frequency=frequency)
             )
@@ -162,7 +164,7 @@ class PWMDriver:
         :param led_number:
         :return:
         """
-        with self.lock:
+        with self._lock:
             logger.debug(
                 __(
                     "enter get_duty_cycle(led_number={led_number})",
@@ -186,7 +188,7 @@ class PWMDriver:
             led_number (int): Number of PWM channel from 0 to 15
             duty_cycle (float): Duty cycle from 0 to 1
         """
-        with self.lock:
+        with self._lock:
             logger.debug(
                 __(
                     "enter set_duty_cycle(led_number={led_number}, duty_cycle={duty_cycle})",
@@ -206,7 +208,7 @@ class PWMDriver:
         """
         Stop all PWM signals.
         """
-        with self.lock:
+        with self._lock:
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_SLEEP_BIT | MODE1_ALLCALL_BIT]
             )
@@ -215,7 +217,7 @@ class PWMDriver:
         """
         Start all PWM signals.
         """
-        with self.lock:
+        with self._lock:
             logger.debug("enter start_all")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_ALLCALL_BIT]
@@ -232,38 +234,15 @@ class PWMDriver:
         Returns:
             bool: True - if controller in sleep mode
         """
-        with self.lock:
+        with self._lock:
             mode1_register = self._read_from_register(REGISTER_MODE_1, 1)[0]
             return mode1_register & MODE1_SLEEP_BIT > 0
 
     def _write_to_register(
         self, regaddr: int, data: Union[bytes, bytearray, list[int]]
     ):
-        # logger.debug(
-        #     __(
-        #         "W i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) data: {int_data} [{data}]",
-        #         port_name=self.port._name,
-        #         port_addr=self.port._address,
-        #         regaddr=regaddr,
-        #         regname=get_register_name(regaddr),
-        #         int_data=ArrayOfBytesAsInt(data),
-        #         data=bytearray(data).hex(" ").upper(),
-        #     )
-        # )
-        self.port.write_to(regaddr=regaddr, out=data)
+        self._get_port().write_to(regaddr=regaddr, out=data)
 
     def _read_from_register(self, regaddr: int, readlen: int = 0) -> bytes:
-        result = self.port.read_from(regaddr=regaddr, readlen=readlen)
-        # logger.debug(
-        #     __(
-        #         "R i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) len: {readlen} data: {int_data} [{data}]",
-        #         port_name=self.port._name,
-        #         port_addr=self.port._address,
-        #         regaddr=regaddr,
-        #         regname=get_register_name(regaddr),
-        #         int_data=ArrayOfBytesAsInt(result),
-        #         data=result.hex(" ").upper(),
-        #         readlen=readlen,
-        #     )
-        # )
+        result = self._get_port().read_from(regaddr=regaddr, readlen=readlen)
         return result

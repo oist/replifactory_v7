@@ -1,6 +1,7 @@
 import logging
 import threading
 import time
+from typing import Callable
 
 from pyftdi.i2c import I2cPort
 
@@ -16,18 +17,22 @@ log = logging.getLogger(__name__)
 
 
 class ADCDriver:
-    def __init__(self, port: I2cPort, lock=threading.RLock()) -> None:
-        self.port = port
-        self.lock = lock
+    def __init__(self, get_port: Callable[[], I2cPort], lock=threading.RLock()) -> None:
+        self._get_port = get_port
+        self._lock = lock
         self._gain = 1
         self._bitrate = 12
         self._continous_conversion = True
+
+    @property
+    def port(self):
+        return self._get_port()
 
     def measure(self, gain=8, bitrate=16, continuous_conversion=False):
         log.debug(
             f"enter measure(gain={gain}, bitrate={bitrate}, continuous_conversion={continuous_conversion})"
         )
-        with self.lock:
+        with self._lock:
             self.configure(
                 gain=gain, bitrate=bitrate, continuous_conversion=continuous_conversion
             )
@@ -98,7 +103,7 @@ class ADCDriver:
         configuration = (
             ready_bit | conversion_mode_bit | bitrate_bits[bitrate] | gain_bits[gain]
         )
-        with self.lock:
+        with self._lock:
             self.write(configuration)
             self._gain = gain
             self._bitrate = bitrate

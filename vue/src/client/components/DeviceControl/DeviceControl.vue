@@ -9,6 +9,9 @@
     </div>
 
     <PumpControl :disabled="!deviceControlEnabled" />
+    <CRow>
+      <ReactorControl :disabled="!deviceControlEnabled" v-for="i in 7" :key="i" />
+    </CRow>
     <ValvesGroupControl :disabled="!deviceControlEnabled" />
     <ValveControl :disabled="!deviceControlEnabled" />
     <StirrerControl :disabled="!deviceControlEnabled" />
@@ -22,8 +25,10 @@ import ValvesGroupControl from './ValvesGroupControl';
 import ValveControl from './ValveControl';
 import StirrerControl from './StirrerControl';
 import ODControl from './ODControl';
+// import VialControl from './VialControl';
+import ReactorControl from './ReactorControl';
 import { mapState, mapGetters, mapMutations, mapActions } from 'vuex';
-import { CFormSwitch } from '@coreui/vue';
+import { CRow, CFormSwitch } from '@coreui/vue';
 
 
 export default {
@@ -33,6 +38,9 @@ export default {
     ValveControl,
     StirrerControl,
     ODControl,
+    // VialControl,
+    ReactorControl,
+    CRow,
     CFormSwitch,
   },
   computed: {

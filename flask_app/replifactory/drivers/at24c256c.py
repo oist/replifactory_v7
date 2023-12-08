@@ -1,7 +1,7 @@
 import logging
 import threading
 from collections import OrderedDict
-from typing import Optional
+from typing import Callable, Optional
 from pyftdi.i2c import I2cPort
 
 from flask_app.replifactory.util import BraceMessage as __
@@ -12,14 +12,18 @@ class EepromDriver:
     PAGE_SIZE = 64
     TOTAL_PAGE = EEPROM_SIZE // PAGE_SIZE + (1 if EEPROM_SIZE % PAGE_SIZE > 0 else 0)
 
-    def __init__(self, port: I2cPort):
-        self.port = port
+    def __init__(self, get_port: Callable[[], I2cPort]):
+        self._get_port = get_port
         self.lock = threading.RLock()
         self._eeprom = bytearray()
         self._size = EepromDriver.EEPROM_SIZE
         self._config = OrderedDict()
         self._dirty = set()
         self.log = logging.getLogger(__name__)
+
+    @property
+    def port(self):
+        return self._get_port()
 
     def write(self, address: int, data: bytes | bytearray):
         if self._is_write_overflow(address, data):

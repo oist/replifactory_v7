@@ -1,7 +1,7 @@
 import logging
 import threading
 from dataclasses import dataclass
-from typing import Union
+from typing import Callable, Union
 
 from pyftdi.i2c import I2cPort
 
@@ -88,18 +88,21 @@ def get_register_name(regaddr: int) -> str:
 class IOPortDriver:
     NUM_GPIO = 16
 
-    _input_value = None
-    _output_value = None
-    _config = None
-    _polarity = None
+    def __init__(self, get_port: Callable[[], I2cPort]):
+        self._get_port = get_port
+        self._lock = threading.RLock()
+        self._input_value = None
+        self._output_value = None
+        self._config = None
+        self._polarity = None
 
-    def __init__(self, port: I2cPort):
-        self.port = port
-        self.lock = threading.RLock()
+    @property
+    def port(self):
+        return self._get_port()
 
     @property
     def input_value(self):
-        with self.lock:
+        with self._lock:
             if self._input_value is None:
                 return self.read()
             return self._input_value
@@ -111,7 +114,7 @@ class IOPortDriver:
 
     @property
     def output_value(self):
-        with self.lock:
+        with self._lock:
             if self._output_value is None:
                 data = self.read_from(REGISTER_OUTPUT_PORT_0, 2)
                 self._output_value = int.from_bytes(data, "little")
@@ -123,7 +126,7 @@ class IOPortDriver:
 
     @property
     def config(self):
-        with self.lock:
+        with self._lock:
             if self._config is None:
                 return self.read_config()
             return self._config
@@ -133,7 +136,7 @@ class IOPortDriver:
         self.write_config(value)
 
     def read_config(self):
-        with self.lock:
+        with self._lock:
             config = self.read_from(REGISTER_CONFIGURATION_PORT_0, 2)
             self._config = int.from_bytes(config, "little")
             return self._config
@@ -141,7 +144,7 @@ class IOPortDriver:
     def write_config(self, value: int):
         if value > 0xFFFF:
             raise ValueError("Configuration value {value} bigger than 0xFFFF")
-        with self.lock:
+        with self._lock:
             self.write_to(REGISTER_CONFIGURATION_PORT_0, value.to_bytes(2, "little"))
             self._config = value
 
@@ -152,26 +155,26 @@ class IOPortDriver:
         self.write_config(self.config & ~mask)
 
     def read_polarity(self):
-        with self.lock:
+        with self._lock:
             polarity = self.read_from(REGISTER_POLARITY_INVERSION_PORT_0, 2)
             self._polarity = int.from_bytes(polarity, "little")
             return self._polarity
 
     def write_polarity(self, value: int):
-        with self.lock:
+        with self._lock:
             self.write_to(
                 REGISTER_POLARITY_INVERSION_PORT_0, value.to_bytes(2, "little")
             )
             self._polarity = value
 
     def read(self):
-        with self.lock:
+        with self._lock:
             input = self.read_from(REGISTER_INPUT_PORT_0, 2)
             self._input_value = int.from_bytes(input, "little")
             return self._input_value
 
     def write(self, value: int):
-        with self.lock:
+        with self._lock:
             self.write_to(REGISTER_OUTPUT_PORT_0, value.to_bytes(2, "little"))
             self._input_value = value
 

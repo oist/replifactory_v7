@@ -15,7 +15,7 @@ class Pump(Device):
         max_speed_rps: float = None,
         name: Optional[str] = None,
     ):
-        super().__init__(name or f"Pump {motor.driver.spi_port.cs}")
+        super().__init__(name or "Pump")
         self.motor = motor
 
     def read_state(self):

@@ -2,7 +2,7 @@ import logging
 import math
 import threading
 from dataclasses import dataclass
-from typing import Union
+from typing import Callable, Union
 
 from pyftdi.spi import SpiPort
 
@@ -497,16 +497,15 @@ class CommandName:
 class StepMotorDriver:
     """API for L6470H step motor driver"""
 
-    # steps_per_revolution: int = 200
-    max_steps_per_second = 15610  # page 43 from L6470H datasheet
-    # max_revolution_per_second = max_steps_per_second / steps_per_revolution
-    seconds_per_tick = 0.000000250  # 250ns
-    # minimal_speed_in_steps_per_tick = 2**-18
-    # seconds_per_step = seconds_per_tick / minimal_speed_in_steps_per_tick
-    max_n_microsteps = 2**22 - 1  # 22 bit
-
-    def __init__(self, port: SpiPort):
-        self.spi_port = port
+    def __init__(self, get_port: Callable[[], SpiPort]):
+        self._get_port = get_port
+        # steps_per_revolution: int = 200
+        self.max_steps_per_second = 15610  # page 43 from L6470H datasheet
+        # max_revolution_per_second = max_steps_per_second / steps_per_revolution
+        self.seconds_per_tick = 0.000000250  # 250ns
+        # minimal_speed_in_steps_per_tick = 2**-18
+        # seconds_per_step = seconds_per_tick / minimal_speed_in_steps_per_tick
+        self.max_n_microsteps = 2**22 - 1  # 22 bit
 
     def get_status(self) -> ParameterValue:
         return self.status
@@ -576,7 +575,7 @@ class StepMotorDriver:
         logger.debug(
             __(
                 "Move motor {num} for {steps:d} steps and {direction} direction",
-                num=self.spi_port.cs,
+                num=self._get_port().cs,
                 steps=n_steps,
                 direction=reverse,
             )
@@ -663,7 +662,7 @@ class StepMotorDriver:
         logger.debug(
             __(
                 "Write to SPI (cs={cs}) cmd: {cmd_name} (0x{cmd:02X}) data: {int_data} {data} readlen: {readlen:d}",
-                cs=self.spi_port.cs,
+                cs=self._get_port().cs,
                 cmd=cmd,
                 cmd_name=CommandName(cmd),
                 data=data_bytes,
@@ -684,16 +683,16 @@ class StepMotorDriver:
                 # start = b == 0
                 # stop = readlen <= 0 and b == len(payload) - 1
                 # self.spi_port.write(out=[payload[b]], start=start, stop=stop)
-                self.spi_port.write([payload[b]])
+                self._get_port().write([payload[b]])
             if readlen > 0:
                 for b in range(readlen):
                     # stop = b == readlen - 1
                     # res += self.spi_port.read(readlen=1, start=False, stop=stop)
-                    res += self.spi_port.read(1)
+                    res += self._get_port().read(1)
                 logger.debug(
                     __(
                         "Read from SPI (cs={cs}) {int_data} {data}",
-                        cs=self.spi_port.cs,
+                        cs=self._get_port().cs,
                         data=res,
                         int_data=ArrayOfBytesAsInt(res),
                     )

@@ -53,6 +53,9 @@ export default {
     isManualControlEnabled(state) {
       return state.data.state.flags.manualControl;
     },
+    getDeviceById: (state) => (id) => {
+      return state.data.devices[id]
+    }
   },
   actions: {
     connect() {},

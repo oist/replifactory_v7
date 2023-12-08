@@ -128,6 +128,123 @@ class Machine(Device, DeviceCallback):
         )
         self.sending_thread.daemon = True
 
+        self._ftdi_driver = FtdiDriver(
+            spi_interface=SPI_INTERFACE,
+            spi_cs_count=SPI_CS_COUNT,
+            spi_freq=SPI_FREQ,
+            spi_mode=SPI_MODE,
+            spi_turbo=SPI_TURBO,
+            i2c_interface=I2C_INTERFACE,
+            i2c_freq=I2C_FREQ,
+        )
+
+        pwm_port_callback = self._ftdi_driver.get_i2c_port_callback(
+            I2C_PORT_PWM, "PWM", PwmRegisters
+        )
+        self._pwm_driver = PWMDriver(get_port=pwm_port_callback)
+        stirrers = [
+            Stirrer(pwm_channel=pwm_channel, driver=self._pwm_driver)
+            for pwm_channel in reversed(
+                range(
+                    STIRRER_PWM_CHANNEL_START_ADDR,
+                    STIRRER_PWM_CHANNEL_START_ADDR + STIRRERS_COUNT,
+                )
+            )
+        ]
+        for stirrer in stirrers:
+            self._devices[stirrer.id] = stirrer
+
+        stirrers_group = StirrersGroup(stirrers)
+        self._devices[stirrers_group.id] = stirrers_group
+
+        valves = [
+            Valve(
+                pwm_channel=pwm_channel,
+                driver=self._pwm_driver,
+                open_duty_cycle=VALVE_OPEN_DUTY_CYCLE,
+                closed_duty_cycle=VALVE_CLOSED_DUTY_CYCLE,
+                change_state_delay=VALVE_CHANGE_STATE_TIME,
+                name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR}",
+                callback=self,
+            )
+            for pwm_channel in range(
+                VAVLE_PWM_CHANNEL_START_ADDR,
+                VAVLE_PWM_CHANNEL_START_ADDR + VALVES_COUNT,
+            )
+        ]
+        for valve in valves:
+            self._devices[valve.id] = valve
+
+        valves_group = ValvesGroup(valves)
+        self._devices[valves_group.id] = valves_group
+
+        # self._devices[self.valves.name] = self.valves
+
+        for cs in range(PUMPS_COUNT):
+            spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
+            step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
+            motor = Motor(step_motor_driver)
+            pump = Pump(motor, name=f"Pump {cs}")
+            self._devices[pump.id] = pump
+
+        laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
+            I2C_PORT_IO_LASER, "IO_LASERS", IORegisters
+        )
+        io_driver_laser = IOPortDriver(get_port=laser_port_callback)
+        lasers = [
+            Laser(laser_cs=cs, io_driver=io_driver_laser)
+            for cs in range(1, VIALS_COUNT * 2, 2)
+        ]
+        for laser in lasers:
+            self._devices[laser.id] = laser
+
+        adc_port_callback = self._ftdi_driver.get_first_active_i2c_port_callback(
+            I2C_PORT_ADC, "ADC"
+        )
+        # if isinstance(I2C_PORT_ADC, Iterable):
+        #     try:
+        #         i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
+        #     except ConnectionError as e:
+        #         self.log.error("Failed connection to ADC", exc_info=e)
+        #         i2c_adc_port = None
+        # else:
+        #     i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
+        # if i2c_adc_port:
+        io_port_callback = self._ftdi_driver.get_i2c_port_callback(I2C_PORT_IO_ADC, "IO_ADC", IORegisters)
+        adc_driver = ADCDriver(get_port=adc_port_callback)
+        io_driver_adc = IOPortDriver(get_port=io_port_callback)
+        photodiodes = [
+            Photodiode(
+                diode_cs=cs,
+                adc_driver=adc_driver,
+                io_driver=io_driver_adc,
+            )
+            for cs in reversed(range(VIALS_COUNT))
+        ]
+        od_sensors = [
+            OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
+            for i in range(VIALS_COUNT)
+        ]
+        for od_sensor in od_sensors:
+            self._devices[od_sensor.id] = od_sensor
+
+        thermometers = [
+            Thermometer(
+                driver=ThermometerDriver(
+                    get_port=self._ftdi_driver.get_i2c_port_callback(address, name, ThermometerRegisters)
+                ),
+                name=f"Thermometer 0x{address:02X}",
+                callback=self,
+            )
+            for address, name in {
+                I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
+                I2C_PORT_THERMOMETER_2: "THERMOMETER_2",
+                I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
+            }.items()
+        ]
+        for thermometer in thermometers:
+            self._devices[thermometer.id] = thermometer
+
     def _monitor(self):
         self.connect()
         self._say_hello()
@@ -385,110 +502,7 @@ class Machine(Device, DeviceCallback):
         eventManager().fire(Events.MACHINE_CONNECTING, self)
         # self._devices = []
 
-        ftdi_driver = FtdiDriver(
-            usb_device=self._usb_device,
-            spi_interface=SPI_INTERFACE,
-            spi_cs_count=SPI_CS_COUNT,
-            spi_freq=SPI_FREQ,
-            spi_mode=SPI_MODE,
-            spi_turbo=SPI_TURBO,
-            i2c_interface=I2C_INTERFACE,
-            i2c_freq=I2C_FREQ,
-        )
-        self._ftdi_driver = ftdi_driver
-        self._pwm_driver = PWMDriver(
-            ftdi_driver.get_i2c_port(I2C_PORT_PWM, "PWM", PwmRegisters)
-        )
-        stirrers = [
-            Stirrer(pwm_channel=pwm_channel, driver=self._pwm_driver)
-            for pwm_channel in reversed(
-                range(
-                    STIRRER_PWM_CHANNEL_START_ADDR,
-                    STIRRER_PWM_CHANNEL_START_ADDR + STIRRERS_COUNT,
-                )
-            )
-        ]
-        self.stirrers = StirrersGroup(stirrers)
-        for stirrer in stirrers:
-            self._devices[stirrer.id] = stirrer
-        valves = [
-            Valve(
-                pwm_channel=pwm_channel,
-                driver=self._pwm_driver,
-                open_duty_cycle=VALVE_OPEN_DUTY_CYCLE,
-                closed_duty_cycle=VALVE_CLOSED_DUTY_CYCLE,
-                change_state_delay=VALVE_CHANGE_STATE_TIME,
-                name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR}",
-                callback=self,
-            )
-            for pwm_channel in range(
-                VAVLE_PWM_CHANNEL_START_ADDR,
-                VAVLE_PWM_CHANNEL_START_ADDR + VALVES_COUNT,
-            )
-        ]
-        self.valves = ValvesGroup(valves)
-        for valve in valves:
-            self._devices[valve.id] = valve
-        # self._devices[self.valves.name] = self.valves
-        self.pumps = [
-            Pump(Motor(StepMotorDriver(ftdi_driver.get_spi_port(cs=cs))))
-            for cs in range(PUMPS_COUNT)
-        ]
-        for pump in self.pumps:
-            self._devices[pump.id] = pump
-        self._io_driver_laser = IOPortDriver(
-            ftdi_driver.get_i2c_port(I2C_PORT_IO_LASER, "IO_LASERS", IORegisters)
-        )
-        lasers = [
-            Laser(laser_cs=cs, io_driver=self._io_driver_laser)
-            for cs in range(1, VIALS_COUNT * 2, 2)
-        ]
-        for laser in lasers:
-            self._devices[laser.id] = laser
-        if isinstance(I2C_PORT_ADC, Iterable):
-            try:
-                i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
-            except ConnectionError as e:
-                self.log.error("Failed connection to ADC", exc_info=e)
-                i2c_adc_port = None
-        else:
-            i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
-        if i2c_adc_port:
-            self._adc_driver = ADCDriver(i2c_adc_port)
-            self._io_driver_adc = IOPortDriver(
-                ftdi_driver.get_i2c_port(I2C_PORT_IO_ADC, "IO_ADC", IORegisters)
-            )
-            photodiodes = [
-                Photodiode(
-                    diode_cs=cs,
-                    adc_driver=self._adc_driver,
-                    io_driver=self._io_driver_adc,
-                )
-                for cs in reversed(range(VIALS_COUNT))
-            ]
-            self.od_sensors = [
-                OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
-                for i in range(VIALS_COUNT)
-            ]
-            for od_sensor in self.od_sensors:
-                self._devices[od_sensor.id] = od_sensor
-        self.thermometers = [
-            Thermometer(
-                driver=ThermometerDriver(
-                    ftdi_driver.get_i2c_port(address, name, ThermometerRegisters)
-                ),
-                callback=self,
-            )
-            for address, name in {
-                I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
-                I2C_PORT_THERMOMETER_2: "THERMOMETER_2",
-                I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
-            }.items()
-        ]
-        for thermometer in self.thermometers:
-            self._devices[thermometer.id] = thermometer
-
-        self._ftdi_driver.connect()
+        self._ftdi_driver.connect(self._usb_device)
 
         for device in self._devices.values():
             device.connect()
@@ -549,49 +563,51 @@ class Machine(Device, DeviceCallback):
             self._changeState(self.States.STATE_CLOSED)
 
     def _terminate_connection(self, raise_exception=False):
-        if self._ftdi_driver is not None:
+        if self._usb_device is not None:
             try:
                 self._ftdi_driver.close()
             except Exception as exc:
                 self._logger.exception("Error while trying to close serial port")
                 if raise_exception:
                     raise exc
-            self._ftdi_driver = None
+            # self._ftdi_driver = None
             self._usb_device = None
 
-    def configure_all(self):
-        self.configure_pwm()
-        # self.configure_pumps()
-        self.configure_adc()
-        self.configure_laser()
+    # def configure_all(self):
+    #     self.configure_pwm()
+    #     # self.configure_pumps()
+    #     self.configure_adc()
+    #     self.configure_laser()
 
-    def configure_pumps(self):
-        for pump in self.pumps:
-            pump.motor.read_state()
+    # def configure_pumps(self):
+    #     # for pump in self.pumps:
+    #     #     pump.motor.read_state()
+    #     pass
 
-    def configure_pwm(self):
-        self._pwm_driver.reset()
+    # def configure_pwm(self):
+    #     self._pwm_driver.reset()
 
-    def configure_adc(self):
-        self._io_driver_adc.set_output_mode(ALL_PINS)
+    # def configure_adc(self):
+    #     self._io_driver_adc.set_output_mode(ALL_PINS)
 
-    def configure_laser(self):
-        self._io_driver_laser.set_output_mode(ALL_PINS)
+    # def configure_laser(self):
+    #     self._io_driver_laser.set_output_mode(ALL_PINS)
 
-    def get_pump(self, index: int) -> Pump:
-        return self.pumps[index]
+    # def get_pump(self, index: int) -> Pump:
+    #     # return self.pumps[index]
+    #     pass
 
-    def get_valve(self, index: int) -> Valve:
-        return self.valves[index]
+    # def get_valve(self, index: int) -> Valve:
+    #     return self.valves[index]
 
-    def get_stirrer(self, index: int) -> Stirrer:
-        return self.stirrers[index]
+    # def get_stirrer(self, index: int) -> Stirrer:
+    #     return self.stirrers[index]
 
-    def get_od_sensor(self, index: int) -> OpticalDensitySensor:
-        return self.od_sensors[index]
+    # def get_od_sensor(self, index: int) -> OpticalDensitySensor:
+    #     return self.od_sensors[index]
 
-    def get_thermometer(self, index: int) -> Thermometer:
-        return self.thermometers[index]
+    # def get_thermometer(self, index: int) -> Thermometer:
+    #     return self.thermometers[index]
 
     def test(self):
         for device in self._devices.values():
@@ -687,7 +703,8 @@ class Machine(Device, DeviceCallback):
             device.reset_state()
 
     def read_state(self):
-        self.configure_all()
+        # self.configure_all()
+        pass
 
     def isClosedOrError(self):
         return self._state in (
