@@ -1,15 +1,15 @@
 import logging
 import math
 import time
-from typing import Optional
+from enum import Enum
+from typing import Literal, Optional
 
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 
 
 class Valve(Device):
-
-    class States(Device.States):
+    class States(Device.States, Enum):
         STATE_OPENING = 101
         STATE_OPEN = 102
         STATE_CLOSING = 103
@@ -30,7 +30,7 @@ class Valve(Device):
         closed_duty_cycle: float = 1.0,
         change_state_delay: float = 2.0,
         name: Optional[str] = None,
-        init_state: Optional[bool] = None,
+        init_state: Optional[Literal[States.STATE_OPEN, States.STATE_CLOSE]] = None,
         callback: Optional[DeviceCallback] = None,
     ):
         super().__init__(name or f"Valve {pwm_channel}", callback)
@@ -40,13 +40,12 @@ class Valve(Device):
         self._open_duty_cycle = open_duty_cycle
         self._closed_duty_cycle = closed_duty_cycle
         self._change_state_delay = change_state_delay
-        self._state = None
-        self._reset_state_value = init_state
+        self._state = init_state
 
-    def reset_state(self):
-        if self._reset_state_value == self.States.STATE_OPEN:
+    def reset(self):
+        if self._state == self.States.STATE_OPEN:
             self.open()
-        elif self._reset_state_value == self.States.STATE_CLOSE:
+        elif self._state == self.States.STATE_CLOSE:
             self.close()
 
     @property
@@ -60,10 +59,6 @@ class Valve(Device):
         if self._state not in self.POSITION_STATE:
             self.read_state()
         return self._state == self.States.STATE_OPEN
-
-    # @is_open.setter
-    # def is_open(self, value: bool):
-    #     self.set_state(value)
 
     def open(self, wait: bool = True) -> None:
         self._set_state(self.States.STATE_OPENING)
@@ -89,9 +84,9 @@ class Valve(Device):
 
     def read_state(self) -> bool | None:
         duty_cycle = self._driver.get_duty_cycle(self._pwm_channel)
-        if math.isclose(duty_cycle, self._open_duty_cycle, rel_tol=1e-3):
+        if math.isclose(duty_cycle, self._open_duty_cycle, rel_tol=5e-3):
             self._set_state(self.States.STATE_OPEN)
-        elif math.isclose(duty_cycle, self._closed_duty_cycle, rel_tol=1e-3):
+        elif math.isclose(duty_cycle, self._closed_duty_cycle, rel_tol=5e-3):
             self._set_state(self.States.STATE_CLOSE)
         else:
             self._set_state(self.States.STATE_BEETWEEN)

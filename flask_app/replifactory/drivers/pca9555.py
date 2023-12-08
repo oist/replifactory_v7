@@ -5,6 +5,8 @@ from typing import Callable, Union
 
 from pyftdi.i2c import I2cPort
 
+from replifactory.drivers import Driver
+
 log = logging.getLogger(__name__)
 
 
@@ -85,7 +87,7 @@ def get_register_name(regaddr: int) -> str:
         return "UNKNOWN"
 
 
-class IOPortDriver:
+class IOPortDriver(Driver):
     NUM_GPIO = 16
 
     def __init__(self, get_port: Callable[[], I2cPort]):

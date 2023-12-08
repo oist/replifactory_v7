@@ -7,6 +7,7 @@ from pyftdi.i2c import I2cPort
 
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
+from replifactory.drivers import Driver
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 # C1, C0 - These bits are not effected for the MCP3421
 
 
-class ADCDriver:
+class ADCDriver(Driver):
     def __init__(self, get_port: Callable[[], I2cPort], lock=threading.RLock()) -> None:
         self._get_port = get_port
         self._lock = lock

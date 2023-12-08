@@ -2,12 +2,14 @@ import logging
 import threading
 from collections import OrderedDict
 from typing import Callable, Optional
+
 from pyftdi.i2c import I2cPort
 
 from flask_app.replifactory.util import BraceMessage as __
+from replifactory.drivers import Driver
 
 
-class EepromDriver:
+class EepromDriver(Driver):
     EEPROM_SIZE = 32768
     PAGE_SIZE = 64
     TOTAL_PAGE = EEPROM_SIZE // PAGE_SIZE + (1 if EEPROM_SIZE % PAGE_SIZE > 0 else 0)
@@ -42,7 +44,9 @@ class EepromDriver:
             self.log.debug(
                 __(
                     "W i2c: {port_name} (0x{port_addr:02X}) address: 0x{regaddr:02X} page: {page_num} of {total_pages} data: [{data}]",
-                    port_name=self.port._name if hasattr(self.port, "_name") else "Unknown",
+                    port_name=self.port._name
+                    if hasattr(self.port, "_name")
+                    else "Unknown",
                     port_addr=self.port._address,
                     regaddr=next_address,
                     data=bytearray(next_data).hex(" ").upper(),

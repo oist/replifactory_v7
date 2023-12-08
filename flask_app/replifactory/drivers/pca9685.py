@@ -2,10 +2,12 @@ import logging
 import threading
 import time
 from typing import Callable, Union
+
 from pyftdi.i2c import I2cPort
 
 # from flask_app.replifactory.drivers.ft2232h import I2cPort
 from flask_app.replifactory.util import BraceMessage as __
+from replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 
@@ -76,42 +78,22 @@ def get_led_off_registers(led_num: int) -> tuple[int, int]:
     return low_address, low_address + 1
 
 
-class PWMDriver:
-    # port: I2cPort = None
-    # lock = threading.RLock()
+class PWMDriver(Driver):
 
     def __init__(self, get_port: Callable[[], I2cPort]) -> None:
         self._get_port = get_port
-        self._initialized = False
         self._lock = threading.RLock()
 
-    # def __reset_and_repeat_on_error(
-    #     func,
-    #     exception_message: str = "Write to PWM exception",
-    #     repeat_delay: float = 0.5,
-    # ):
-    #     def wrapper(self, *args):
-    #         with self.lock:
-    #             try:
-    #                 return func(self, *args)
-    #             except Exception as e:
-    #                 logger.warn(exception_message, exc_info=e)
-    #                 time.sleep(repeat_delay)
-    #                 self.software_reset()
-    #                 return func(self, *args)
-
-    #     return wrapper
+    def init(self):
+        self.reset()
 
     def reset(self, frequency: float = 50):
         with self._lock:
-            if self._initialized:
-                return
             logger.debug(__("enter reset(frequency={frequency})", frequency=frequency))
             self.set_frequency(frequency)
             self._write_to_register(REGISTER_ALL_LED_ON_L, [0])
             self._write_to_register(REGISTER_ALL_LED_ON_H, [0])
             self.start_all()
-            self._initialized = True
             logger.debug("exit reset")
 
     def software_reset(self):
@@ -120,7 +102,6 @@ class PWMDriver:
             self._write_to_register(REGISTER_MODE_1, [0])  # reset
             logger.debug("exit software_reset")
 
-    # @__reset_and_repeat_on_error
     def sleep_mode(self):
         with self._lock:
             logger.debug("enter sleep_mode")

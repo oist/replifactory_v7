@@ -8,10 +8,9 @@ import replifactory.devices.machine as comm
 from flask_app import settings
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback, MachineInterface
-from flask_app.replifactory.usb_manager import usbManager, UsbManager
+from flask_app.replifactory.usb_manager import UsbManager, usbManager
 from flask_app.replifactory.util import InvariantContainer
 from flask_app.replifactory.util import get_fully_qualified_classname as fqcn
-
 
 logger = logging.getLogger(__name__)
 
@@ -179,8 +178,8 @@ class Machine(MachineInterface, comm.MachineCallback):
         eventManager().fire(Events.MACHINE_CONNECTING)
         usb_device = usbManager().get_device(device_id=device_address)
         self._set_current_connection(usb_device)
-        self._comm = comm.Machine(usb_device=usb_device, callback=self)
-        self._comm.start()
+        self._comm = comm.Machine(callback=self)
+        self._comm.connect(usb_device=usb_device)
 
     def disconnect(self, *args, **kwargs):
         """
@@ -193,30 +192,17 @@ class Machine(MachineInterface, comm.MachineCallback):
         else:
             eventManager().fire(Events.MACHINE_DISCONNECTED)
 
-    # def commands(self, commands, tags=None, force=False, *args, **kwargs):
-    #     """
-    #     Sends one or more commands to the machine.
-    #     """
-    #     if self._comm is None:
-    #         return
-
-    #     if not isinstance(commands, (list, tuple)):
-    #         commands = [commands]
-
-    #     if tags is None:
-    #         tags = set()
-    #     tags |= {"trigger:machine.commands"}
-
-    #     for command in commands:
-    #         self._comm.sendCommand(command, tags=tags, force=force)
-
     def valve_open(self, device_id, *args, **kwargs):
         if self._comm:
-            self._comm.open_valve(device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.open"})
+            self._comm.open_valve(
+                device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.open"}
+            )
 
     def valve_close(self, device_id, *args, **kwargs):
         if self._comm:
-            self._comm.close_valve(device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"})
+            self._comm.close_valve(
+                device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"}
+            )
 
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
@@ -325,6 +311,7 @@ class StateMonitor:
     """
     Machine data to display at UI
     """
+
     def __init__(
         self,
         interval=0.5,

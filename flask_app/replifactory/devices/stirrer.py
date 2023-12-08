@@ -16,8 +16,8 @@ class Stirrer(Device):
     def __init__(
         self,
         pwm_channel: int,
+        driver: pca9685.PWMDriver,
         name: Optional[str] = None,
-        driver: pca9685.PWMDriver = None,
         low_speed: float = 0.0002,
         fast_speed: float = 1,
         acceleration_delay: float = 0.1,
@@ -31,8 +31,8 @@ class Stirrer(Device):
         self.acceleration_delay = acceleration_delay
         self.accelerate_threshold = accelerate_threshold
 
-    def reset_state(self):
-        self.driver.reset()
+    def reset(self):
+        pass
 
     def read_state(self):
         pass
@@ -44,17 +44,6 @@ class Stirrer(Device):
             float: value from 0 to 1
         """
         return self.driver.get_duty_cycle(self.pwm_channel)
-
-    # def get_speed(self) -> Union[int, float]:
-    #     with self.lock:
-    #         duty_cycle = self.driver.get_duty_cycle(self.pwm_channel)
-    #     if math.isclose(duty_cycle, 0.0, rel_tol=1e-2):
-    #         return 0
-    #     elif math.isclose(duty_cycle, self.slow_speed, rel_tol=1e-2):
-    #         return 1
-    #     elif math.isclose(duty_cycle, self.fast_speed, rel_tol=1e-2):
-    #         return 2
-    #     return duty_cycle
 
     def speed_to_duty_cycle(self, speed: int):
         if speed == 0:
@@ -73,7 +62,7 @@ class Stirrer(Device):
                 accelerate=accelerate,
             )
         )
-        if type(speed) is int:
+        if isinstance(speed, int):
             duty_cycle = self.speed_to_duty_cycle(speed)
         else:
             duty_cycle = speed

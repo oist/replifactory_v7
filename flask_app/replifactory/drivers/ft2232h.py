@@ -17,6 +17,7 @@ from usb.core import Device as UsbDevice
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
+from replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +105,10 @@ class ParsedDescriptor:
     description: str
 
 
-class FtdiDriver:
+class FtdiDriver(Driver):
     def __init__(
         self,
+        usb_device: Optional[UsbDevice] = None,
         spi_cs_count: int = 1,
         spi_freq: Optional[float] = None,
         spi_mode: int = 0,
@@ -117,7 +119,7 @@ class FtdiDriver:
         i2c_interface: int = 2,
     ):
         self._lock = threading.RLock()
-        self._usb_device = None
+        self._usb_device = usb_device
         self._spi_controller = None
         self._spi_cs_count = spi_cs_count
         self._spi_default_freq = spi_freq
@@ -135,11 +137,15 @@ class FtdiDriver:
         return self._usb_device and self._ftdi.is_connected
 
     def connect(self, usb_device: UsbDevice):
-        self._ftdi.open_from_device(usb_device)
-        self._usb_device = usb_device
+        if self._usb_device is None:
+            self._ftdi.open_from_device(usb_device)
+            self._usb_device = usb_device
 
     def close(self):
         self.terminate()
+
+    def reset(self):
+        self._ftdi.reset(usb_reset=True)
 
     def terminate(self):
         with self._lock:
@@ -170,9 +176,12 @@ class FtdiDriver:
                     )
         return self._i2c_controller
 
-    def get_i2c_port_callback(self, address: int, name: str, registers: dict[int, str] = {}):
+    def get_i2c_port_callback(
+        self, address: int, name: str, registers: dict[int, str] = {}
+    ):
         def callback():
             return self.get_i2c_port(address, name, registers)
+
         return callback
 
     def get_i2c_port(
@@ -181,9 +190,12 @@ class FtdiDriver:
         port = self.i2c_controller.get_verbose_port(address, name, registers)
         return port
 
-    def get_spi_port_callback(self, cs: int, freq: Optional[float] = None, mode: int = None):
+    def get_spi_port_callback(
+        self, cs: int, freq: Optional[float] = None, mode: int = None
+    ):
         def callback():
             return self.get_spi_port(cs, freq, mode)
+
         return callback
 
     def get_spi_port(
@@ -211,9 +223,12 @@ class FtdiDriver:
 
     # HIGHEST_I2C_SLAVE_ADDRESS = 0x78
 
-    def get_first_active_i2c_port_callback(self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}):
+    def get_first_active_i2c_port_callback(
+        self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}
+    ):
         def callback():
             return self.get_first_active_port(possible_addresses, name, registers)
+
         return callback
 
     def get_first_active_port(

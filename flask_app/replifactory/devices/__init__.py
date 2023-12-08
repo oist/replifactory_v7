@@ -93,15 +93,15 @@ class Device:
     def __str__(self):
         return f"{self._name} ({self.get_state_string()})"
 
-    def connect(self, reset_state: bool = True):
-        if reset_state:
-            self.reset_state()
+    def connect(self, reset: bool = True):
+        if reset:
+            self.reset()
         self.read_state()
 
     def disconnect(self):
         pass
 
-    def reset_state(self):
+    def reset(self):
         pass
 
     def read_state(self):

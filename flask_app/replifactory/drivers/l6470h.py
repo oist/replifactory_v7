@@ -8,6 +8,7 @@ from pyftdi.spi import SpiPort
 
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
+from replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 
@@ -189,55 +190,55 @@ class StepMotorConfigValue(ParameterValue):
     def raw_to_unit(self):
         value = int.from_bytes(self._raw_value, "big")
         return {
-            'OSC_SEL': value & 0b111,
-            'EXT_CLK': (value >> 3) & 0b1,
-            'SW_MODE': (value >> 4) & 0b1,
-            'EN_VSCOMP': (value >> 5) & 0b1,
-            'OC_SD': (value >> 7) & 0b1,
-            'POW_SR': (value >> 8) & 0b11,
-            'F_PWM_DEC': (value >> 10) & 0b111,
-            'F_PWM_INT': (value >> 13) & 0b111,
+            "OSC_SEL": value & 0b111,
+            "EXT_CLK": (value >> 3) & 0b1,
+            "SW_MODE": (value >> 4) & 0b1,
+            "EN_VSCOMP": (value >> 5) & 0b1,
+            "OC_SD": (value >> 7) & 0b1,
+            "POW_SR": (value >> 8) & 0b11,
+            "F_PWM_DEC": (value >> 10) & 0b111,
+            "F_PWM_INT": (value >> 13) & 0b111,
         }
 
     def __str__(self):
-        if self.value['OSC_SEL'] & 0b100 == 0:
+        if self.value["OSC_SEL"] & 0b100 == 0:
             clock_source_value = "Internal oscillator 16 MHz"
             oscin_value = "Unused"
-            if self.value['EXT_CLK'] == 1:
-                if self.value['OSC_SEL'] == 0b000:
+            if self.value["EXT_CLK"] == 1:
+                if self.value["OSC_SEL"] == 0b000:
                     oscout_value = "Supplies a 2-MHz clock"
-                elif self.value['OSC_SEL'] == 0b001:
+                elif self.value["OSC_SEL"] == 0b001:
                     oscout_value = "Supplies a 4-MHz clock"
-                elif self.value['OSC_SEL'] == 0b010:
+                elif self.value["OSC_SEL"] == 0b010:
                     oscout_value = "Supplies a 8-MHz clock"
                 else:
                     oscout_value = "Supplies a 16-MHz clock"
             else:
                 oscout_value = "Unused"
         else:
-            if self.value['EXT_CLK'] == 1:
+            if self.value["EXT_CLK"] == 1:
                 oscin_value = "Crystal/resonator driving"
                 oscout_value = "Crystal/resonator driving"
-                if self.value['OSC_SEL'] == 0b100:
+                if self.value["OSC_SEL"] == 0b100:
                     clock_source_value = "External crystal or resonator 8 MHz"
-                elif self.value['OSC_SEL'] == 0b101:
+                elif self.value["OSC_SEL"] == 0b101:
                     clock_source_value = "External crystal or resonator 16 MHz"
-                elif self.value['OSC_SEL'] == 0b110:
+                elif self.value["OSC_SEL"] == 0b110:
                     clock_source_value = "External crystal or resonator 24 MHz"
                 else:
                     clock_source_value = "External crystal or resonator 32 MHz"
             else:
                 oscin_value = "Clock source"
                 oscout_value = "Supplies inverted OSCIN signal"
-                if self.value['OSC_SEL'] == 0b100:
+                if self.value["OSC_SEL"] == 0b100:
                     clock_source_value = (
                         "Ext clock source 8 MHz (Crystal/resonator driver disabled)"
                     )
-                elif self.value['OSC_SEL'] == 0b101:
+                elif self.value["OSC_SEL"] == 0b101:
                     clock_source_value = (
                         "Ext clock source 16 MHz (Crystal/resonator driver disabled)"
                     )
-                elif self.value['OSC_SEL'] == 0b110:
+                elif self.value["OSC_SEL"] == 0b110:
                     clock_source_value = (
                         "Ext clock source 24 MHz (Crystal/resonator driver disabled)"
                     )
@@ -249,57 +250,63 @@ class StepMotorConfigValue(ParameterValue):
         clock_source = f"Clock source: {clock_source_value}"
         oscin = f"OSCIN: {oscin_value}"
         oscout = f"OSCOUT: {oscout_value}"
-        sw_value = "HardStop interrupt" if self.value['SW_MODE'] == 0 else "User disposal"
+        sw_value = (
+            "HardStop interrupt" if self.value["SW_MODE"] == 0 else "User disposal"
+        )
         sw_mode = f"External switch act as: {sw_value}"
         oc_sd_value = (
-            "Bridges shut down" if self.value['OC_SD'] == 1 else "Bridges do not shut down"
+            "Bridges shut down"
+            if self.value["OC_SD"] == 1
+            else "Bridges do not shut down"
         )
         oc_sd = f"On overcurrent: {oc_sd_value}"
-        if self.value['POW_SR'] == 0b00:
+        if self.value["POW_SR"] == 0b00:
             pow_sr_value = 320
-        elif self.value['POW_SR'] == 0b01:
+        elif self.value["POW_SR"] == 0b01:
             pow_sr_value = 75
-        elif self.value['POW_SR'] == 0b10:
+        elif self.value["POW_SR"] == 0b10:
             pow_sr_value = 110
         else:
             pow_sr_value = 260
         pow_sr = f"Output slew rate: {pow_sr_value} V/us"
-        en_vscomp_value = "Disabled" if self.value['EN_VSCOMP'] == 0 else "Enabled"
+        en_vscomp_value = "Disabled" if self.value["EN_VSCOMP"] == 0 else "Enabled"
         en_vscomp = f"Motor supply voltage compensation: {en_vscomp_value}"
-        f_pwm_int_value = self.value['F_PWM_INT'] + 1 if self.value['F_PWM_INT'] < 0b111 else ""
+        f_pwm_int_value = (
+            self.value["F_PWM_INT"] + 1 if self.value["F_PWM_INT"] < 0b111 else ""
+        )
         f_pwm_int = f"PWM frequency. Integer division factor: {f_pwm_int_value}"
-        if self.value['F_PWM_DEC'] == 0b000:
+        if self.value["F_PWM_DEC"] == 0b000:
             f_pwm_dec_value = 0.625
-        elif self.value['F_PWM_DEC'] == 0b001:
+        elif self.value["F_PWM_DEC"] == 0b001:
             f_pwm_dec_value = 0.75
-        elif self.value['F_PWM_DEC'] == 0b010:
+        elif self.value["F_PWM_DEC"] == 0b010:
             f_pwm_dec_value = 0.875
-        elif self.value['F_PWM_DEC'] == 0b011:
+        elif self.value["F_PWM_DEC"] == 0b011:
             f_pwm_dec_value = 1
-        elif self.value['F_PWM_DEC'] == 0b100:
+        elif self.value["F_PWM_DEC"] == 0b100:
             f_pwm_dec_value = 1.25
-        elif self.value['F_PWM_DEC'] == 0b101:
+        elif self.value["F_PWM_DEC"] == 0b101:
             f_pwm_dec_value = 1.5
-        elif self.value['F_PWM_DEC'] == 0b110:
+        elif self.value["F_PWM_DEC"] == 0b110:
             f_pwm_dec_value = 1.75
         else:
             f_pwm_dec_value = 2
         f_pwm_dec = f"PWM frequency. Multiplication factor: {f_pwm_dec_value}"
-        if self.value['OSC_SEL'] == 0b100:
-            pwm_freq_value = OSCILATOR_FRIQUENCIES_8_MHZ[self.value['F_PWM_INT']][
-                self.value['F_PWM_DEC']
+        if self.value["OSC_SEL"] == 0b100:
+            pwm_freq_value = OSCILATOR_FRIQUENCIES_8_MHZ[self.value["F_PWM_INT"]][
+                self.value["F_PWM_DEC"]
             ]
-        elif self.value['OSC_SEL'] == 0b101 or self.value['OSC_SEL'] & 0b100 == 0:
-            pwm_freq_value = OSCILATOR_FRIQUENCIES_16_MHZ[self.value['F_PWM_INT']][
-                self.value['F_PWM_DEC']
+        elif self.value["OSC_SEL"] == 0b101 or self.value["OSC_SEL"] & 0b100 == 0:
+            pwm_freq_value = OSCILATOR_FRIQUENCIES_16_MHZ[self.value["F_PWM_INT"]][
+                self.value["F_PWM_DEC"]
             ]
-        elif self.value['OSC_SEL'] == 0b110:
-            pwm_freq_value = OSCILATOR_FRIQUENCIES_24_MHZ[self.value['F_PWM_INT']][
-                self.value['F_PWM_DEC']
+        elif self.value["OSC_SEL"] == 0b110:
+            pwm_freq_value = OSCILATOR_FRIQUENCIES_24_MHZ[self.value["F_PWM_INT"]][
+                self.value["F_PWM_DEC"]
             ]
         else:
-            pwm_freq_value = OSCILATOR_FRIQUENCIES_32_MHZ[self.value['F_PWM_INT']][
-                self.value['F_PWM_DEC']
+            pwm_freq_value = OSCILATOR_FRIQUENCIES_32_MHZ[self.value["F_PWM_INT"]][
+                self.value["F_PWM_DEC"]
             ]
         pwm_freq = f"PWM frequency: {pwm_freq_value} kHz"
         return f"{clock_source}\n{oscin}\n{oscout}\n{sw_mode}\n{oc_sd}\n{pow_sr}\n{en_vscomp}\n{f_pwm_int}\n{f_pwm_dec}\n{pwm_freq}"
@@ -311,53 +318,55 @@ class StepMotorStatusValue(ParameterValue):
 
     def raw_to_unit(self):
         return {
-            'HiZ': (0x01 & self._raw_value[1]),
-            'BUSY': (0x02 & self._raw_value[1]) >> 1,
-            'SW_F': (0x04 & self._raw_value[1]) >> 2,
-            'SW_ENV': (0x08 & self._raw_value[1]) >> 3,
-            'DIR': (0x10 & self._raw_value[1]) >> 4,
-            'MOT_STATUS': (0x60 & self._raw_value[1]) >> 5,
-            'NOTPERF_CMD': (0x80 & self._raw_value[1]) >> 7,
-            'WRONG_CMD': 0x01 & self._raw_value[0],
-            'UVLO': (0x02 & self._raw_value[0]) >> 1,
-            'TH_WRN': (0x04 & self._raw_value[0]) >> 2,
-            'TH_SD': (0x08 & self._raw_value[0]) >> 3,
-            'OCD': (0x10 & self._raw_value[0]) >> 4,
-            'STEP_LOSS_A': (0x20 & self._raw_value[0]) >> 5,
-            'STEP_LOSS_B': (0x40 & self._raw_value[0]) >> 6,
-            'SCK_MOD': (0x80 & self._raw_value[0]) >> 7,
+            "HiZ": (0x01 & self._raw_value[1]),
+            "BUSY": (0x02 & self._raw_value[1]) >> 1,
+            "SW_F": (0x04 & self._raw_value[1]) >> 2,
+            "SW_ENV": (0x08 & self._raw_value[1]) >> 3,
+            "DIR": (0x10 & self._raw_value[1]) >> 4,
+            "MOT_STATUS": (0x60 & self._raw_value[1]) >> 5,
+            "NOTPERF_CMD": (0x80 & self._raw_value[1]) >> 7,
+            "WRONG_CMD": 0x01 & self._raw_value[0],
+            "UVLO": (0x02 & self._raw_value[0]) >> 1,
+            "TH_WRN": (0x04 & self._raw_value[0]) >> 2,
+            "TH_SD": (0x08 & self._raw_value[0]) >> 3,
+            "OCD": (0x10 & self._raw_value[0]) >> 4,
+            "STEP_LOSS_A": (0x20 & self._raw_value[0]) >> 5,
+            "STEP_LOSS_B": (0x40 & self._raw_value[0]) >> 6,
+            "SCK_MOD": (0x80 & self._raw_value[0]) >> 7,
         }
 
     @property
     def is_busy(self):
-        return self.value['BUSY'] == 0
+        return self.value["BUSY"] == 0
 
     @property
     def is_overcurrent(self):
-        return self.value['OCD'] == 0
+        return self.value["OCD"] == 0
 
     def __str__(self):
-        hiz = "High impedance state\n" if self.value['HiZ'] == 1 else ""
-        uvlo = "Undervoltage lockout or reset\n" if self.value['UVLO'] == 0 else ""
-        th_wrn = "Thermal warning\n" if self.value['TH_WRN'] == 0 else ""
-        th_sd = "Thermal shutdown\n" if self.value['TH_SD'] == 0 else ""
+        hiz = "High impedance state\n" if self.value["HiZ"] == 1 else ""
+        uvlo = "Undervoltage lockout or reset\n" if self.value["UVLO"] == 0 else ""
+        th_wrn = "Thermal warning\n" if self.value["TH_WRN"] == 0 else ""
+        th_sd = "Thermal shutdown\n" if self.value["TH_SD"] == 0 else ""
         ocd = "Overcurrent detect\n" if self.is_overcurrent else ""
-        loss_a = "Stall on bridge A\n" if self.value['STEP_LOSS_A'] == 0 else ""
-        loss_b = "Stall on bridge B\n" if self.value['STEP_LOSS_B'] == 0 else ""
-        notpref_cmd = "Command can not be performed\n" if self.value['NOTPERF_CMD'] == 1 else ""
-        wrong_cmd = "Wrong command\n" if self.value['WRONG_CMD'] == 1 else ""
-        sw_f = "External switch is closed\n" if self.value['SW_F'] == 1 else ""
-        sw_evn = "Switch turned on\n" if self.value['SW_ENV'] == 1 else ""
+        loss_a = "Stall on bridge A\n" if self.value["STEP_LOSS_A"] == 0 else ""
+        loss_b = "Stall on bridge B\n" if self.value["STEP_LOSS_B"] == 0 else ""
+        notpref_cmd = (
+            "Command can not be performed\n" if self.value["NOTPERF_CMD"] == 1 else ""
+        )
+        wrong_cmd = "Wrong command\n" if self.value["WRONG_CMD"] == 1 else ""
+        sw_f = "External switch is closed\n" if self.value["SW_F"] == 1 else ""
+        sw_evn = "Switch turned on\n" if self.value["SW_ENV"] == 1 else ""
         busy = "Busy\n" if self.is_busy else ""
-        sck_mod = "Step-clock mode\n" if self.value['SCK_MOD'] == 1 else ""
-        dir = "Forward direction\n" if self.value['DIR'] == 1 else "Reverse direction\n"
-        if self.value['MOT_STATUS'] == 0b00:
+        sck_mod = "Step-clock mode\n" if self.value["SCK_MOD"] == 1 else ""
+        dir = "Forward direction\n" if self.value["DIR"] == 1 else "Reverse direction\n"
+        if self.value["MOT_STATUS"] == 0b00:
             mot_status = "Stopped"
-        elif self.value['MOT_STATUS'] == 0b01:
+        elif self.value["MOT_STATUS"] == 0b01:
             mot_status = "Acceleration"
-        elif self.value['MOT_STATUS'] == 0b10:
+        elif self.value["MOT_STATUS"] == 0b10:
             mot_status = "Deceleration"
-        elif self.value['MOT_STATUS'] == 0b11:
+        elif self.value["MOT_STATUS"] == 0b11:
             mot_status = "Constant speed"
         else:
             mot_status = "Unkonwn motor status"
@@ -494,7 +503,7 @@ class CommandName:
             return str(e)
 
 
-class StepMotorDriver:
+class StepMotorDriver(Driver):
     """API for L6470H step motor driver"""
 
     def __init__(self, get_port: Callable[[], SpiPort]):

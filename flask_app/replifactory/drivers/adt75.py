@@ -2,6 +2,7 @@ import time
 from typing import Callable
 
 from flask_app.replifactory.drivers.ft2232h import I2cPort
+from replifactory.drivers import Driver
 
 REGISTER_TEMPERATURE_VALUE = 0x00
 REGISTER_CONFIGURATION = 0x01
@@ -21,9 +22,11 @@ REGISTERS_NAMES = {
 }
 
 
-class ThermometerDriver:
+class ThermometerDriver(Driver):
     def __init__(
-        self, get_port: Callable[[], I2cPort], one_shot_delay: float = TEMPERATURE_CONVERSION_TIME
+        self,
+        get_port: Callable[[], I2cPort],
+        one_shot_delay: float = TEMPERATURE_CONVERSION_TIME,
     ):
         self._get_port = get_port
         self.one_shot_delay = one_shot_delay

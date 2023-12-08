@@ -1,8 +1,9 @@
 import logging
 import queue
 import threading
+from collections import OrderedDict
 from time import sleep
-from typing import Dict, Iterable, Optional, Type
+from typing import Dict, Optional, Type
 
 from usb.core import Device as UsbDevice
 
@@ -21,7 +22,6 @@ from flask_app.replifactory.drivers.adt75 import ThermometerDriver
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.drivers.l6470h import StepMotorDriver
 from flask_app.replifactory.drivers.mcp3421 import ADCDriver
-from flask_app.replifactory.drivers.pca9555 import ALL_PINS
 from flask_app.replifactory.drivers.pca9555 import REGISTERS_NAMES as IORegisters
 from flask_app.replifactory.drivers.pca9555 import IOPortDriver
 from flask_app.replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegisters
@@ -29,6 +29,7 @@ from flask_app.replifactory.drivers.pca9685 import PWMDriver
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.usb_manager import usbManager
 from replifactory.devices.optical_density_sensor import OpticalDensitySensor
+from replifactory.drivers import Driver
 from replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
 from replifactory.util.comm import CommandQueue, QueueMarker, SendQueue, SendQueueMarker
 
@@ -86,18 +87,22 @@ class Machine(Device, DeviceCallback):
 
     def __init__(
         self,
-        usb_device: Optional[UsbDevice] = None,
+        # usb_device: Optional[UsbDevice] = None,
         callback: Optional[MachineCallback] = None,
         reconnect: bool = True,
+        start: bool = True,
         **kwargs,
     ):
+        self._lock = threading.RLock()
         self._state = None
         self._errorValue = ""
         self._logger = logging.getLogger(__name__)
         self._connection_closing = False
         self._machine_callback: MachineCallback = callback or MachineCallback()
-        self._usb_device = usb_device
-        self._serial = usb_device.serial_number if usb_device else None
+        # self._usb_device = usb_device
+        # self._serial = usb_device.serial_number if usb_device else None
+        self._usb_device = None
+        self._serial = None
         self._reconnect = reconnect
         self.log = logging.getLogger(__name__)
 
@@ -115,7 +120,8 @@ class Machine(Device, DeviceCallback):
             target=self._monitor, name="machine._monitor"
         )
         self.monitoring_thread.daemon = True
-        self._devices: Dict[str, Device] = {}
+        self._devices: Dict[str, Device] = OrderedDict()
+        self._drivers: list[Driver] = []
 
         self._ack_max = 1  # settings().getInt(["serial", "ackMax"])
         self._clear_to_send = CountedEvent(
@@ -138,12 +144,22 @@ class Machine(Device, DeviceCallback):
             i2c_freq=I2C_FREQ,
         )
 
+        # it's important to init pump drivers before valves
+        for cs in range(PUMPS_COUNT):
+            spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
+            step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
+            motor = Motor(step_motor_driver)
+            pump = Pump(motor, name=f"Pump {cs}")
+            self._devices[pump.id] = pump
+            self._drivers += [step_motor_driver]
+
         pwm_port_callback = self._ftdi_driver.get_i2c_port_callback(
             I2C_PORT_PWM, "PWM", PwmRegisters
         )
-        self._pwm_driver = PWMDriver(get_port=pwm_port_callback)
+        pwm_driver = PWMDriver(get_port=pwm_port_callback)
+        self._drivers += [pwm_driver]
         stirrers = [
-            Stirrer(pwm_channel=pwm_channel, driver=self._pwm_driver)
+            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver)
             for pwm_channel in reversed(
                 range(
                     STIRRER_PWM_CHANNEL_START_ADDR,
@@ -160,12 +176,13 @@ class Machine(Device, DeviceCallback):
         valves = [
             Valve(
                 pwm_channel=pwm_channel,
-                driver=self._pwm_driver,
+                driver=pwm_driver,
                 open_duty_cycle=VALVE_OPEN_DUTY_CYCLE,
                 closed_duty_cycle=VALVE_CLOSED_DUTY_CYCLE,
                 change_state_delay=VALVE_CHANGE_STATE_TIME,
                 name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR}",
                 callback=self,
+                init_state=Valve.States.STATE_CLOSE,
             )
             for pwm_channel in range(
                 VAVLE_PWM_CHANNEL_START_ADDR,
@@ -178,19 +195,11 @@ class Machine(Device, DeviceCallback):
         valves_group = ValvesGroup(valves)
         self._devices[valves_group.id] = valves_group
 
-        # self._devices[self.valves.name] = self.valves
-
-        for cs in range(PUMPS_COUNT):
-            spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
-            step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
-            motor = Motor(step_motor_driver)
-            pump = Pump(motor, name=f"Pump {cs}")
-            self._devices[pump.id] = pump
-
         laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
             I2C_PORT_IO_LASER, "IO_LASERS", IORegisters
         )
         io_driver_laser = IOPortDriver(get_port=laser_port_callback)
+        self._drivers += [io_driver_laser]
         lasers = [
             Laser(laser_cs=cs, io_driver=io_driver_laser)
             for cs in range(1, VIALS_COUNT * 2, 2)
@@ -210,9 +219,13 @@ class Machine(Device, DeviceCallback):
         # else:
         #     i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
         # if i2c_adc_port:
-        io_port_callback = self._ftdi_driver.get_i2c_port_callback(I2C_PORT_IO_ADC, "IO_ADC", IORegisters)
+        io_port_callback = self._ftdi_driver.get_i2c_port_callback(
+            I2C_PORT_IO_ADC, "IO_ADC", IORegisters
+        )
         adc_driver = ADCDriver(get_port=adc_port_callback)
+        self._drivers += [adc_driver]
         io_driver_adc = IOPortDriver(get_port=io_port_callback)
+        self._drivers += [io_driver_adc]
         photodiodes = [
             Photodiode(
                 diode_cs=cs,
@@ -228,22 +241,30 @@ class Machine(Device, DeviceCallback):
         for od_sensor in od_sensors:
             self._devices[od_sensor.id] = od_sensor
 
-        thermometers = [
-            Thermometer(
-                driver=ThermometerDriver(
-                    get_port=self._ftdi_driver.get_i2c_port_callback(address, name, ThermometerRegisters)
-                ),
-                name=f"Thermometer 0x{address:02X}",
-                callback=self,
+        thermometers = []
+        for address, name in {
+            I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
+            I2C_PORT_THERMOMETER_2: "THERMOMETER_2",
+            I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
+        }.items():
+            thermometer_driver = ThermometerDriver(
+                get_port=self._ftdi_driver.get_i2c_port_callback(
+                    address, name, ThermometerRegisters
+                )
             )
-            for address, name in {
-                I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
-                I2C_PORT_THERMOMETER_2: "THERMOMETER_2",
-                I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
-            }.items()
-        ]
+            self._drivers += [thermometer_driver]
+            thermometers += [
+                Thermometer(
+                    driver=thermometer_driver,
+                    name=f"Thermometer 0x{address:02X}",
+                    callback=self,
+                )
+            ]
         for thermometer in thermometers:
             self._devices[thermometer.id] = thermometer
+
+        if start:
+            self.start()
 
     def _monitor(self):
         self.connect()
@@ -484,35 +505,41 @@ class Machine(Device, DeviceCallback):
         text = 'Changing monitoring state from "{}" to "{}"'.format(
             oldState, self.get_state_string()
         )
-        # self._log(text)
         self._logger.info(text)
         self._machine_callback.on_comm_state_change(newState)
 
     def get_error_string(self):
         return self._errorValue
 
-    def connect(self):
-        self._set_state(self.States.STATE_CONNECTING)
-        self._usb_device = self._usb_device or usbManager().find_device(
-            serial_number=self._serial
-        )
-        if self._usb_device is None:
-            return
+    def connect(self, usb_device: Optional[UsbDevice] = None):
+        with self._lock:
+            if self._usb_device is not None:
+                return
 
-        eventManager().fire(Events.MACHINE_CONNECTING, self)
-        # self._devices = []
+            self._set_state(self.States.STATE_CONNECTING)
+            usb_device = usb_device or usbManager().find_device(
+                serial_number=self._serial
+            )
+            if usb_device is None:
+                return
 
-        self._ftdi_driver.connect(self._usb_device)
+            eventManager().fire(Events.MACHINE_CONNECTING, self)
 
-        for device in self._devices.values():
-            device.connect()
+            self._ftdi_driver.connect(usb_device)
+            self._usb_device = usb_device
+            self._serial = usb_device.serial_number
+            eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+            eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
 
-        eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
-        eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
-        # self.configure_all()
-        self._set_state(self.States.STATE_OPERATIONAL)
-        eventManager().fire(Events.MACHINE_CONNECTED, self)
-        self._clear_to_send.set()
+            for driver in self._drivers:
+                driver.init()
+
+            for device in self._devices.values():
+                device.connect()
+
+            self._set_state(self.States.STATE_OPERATIONAL)
+            eventManager().fire(Events.MACHINE_CONNECTED, self)
+            self._clear_to_send.set()
 
     def disconnect(self):
         self.close()
@@ -536,12 +563,10 @@ class Machine(Device, DeviceCallback):
             return
 
         if self._state == self.States.STATE_RECONNECTING:
-            self._usb_device = usb_device
-            self.connect()
+            self.connect(usb_device=usb_device)
 
     def start(self):
         self.sending_thread.start()
-        self.connect()
 
     def close(self, is_error=False, *args, **kwargs):
         """
@@ -698,9 +723,9 @@ class Machine(Device, DeviceCallback):
             self._logger.debug("Type already in send queue: " + e.type)
             return False
 
-    def reset_state(self):
+    def reset(self):
         for device in self._devices.values():
-            device.reset_state()
+            device.reset()
 
     def read_state(self):
         # self.configure_all()
