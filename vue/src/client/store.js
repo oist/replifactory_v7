@@ -13,6 +13,7 @@ export default createStore({
     experimentRunning: null,
     hostname: "replifactory_GUI",
     backendConnected: false,
+    messages: [],
   },
   modules: {
     device,
@@ -31,6 +32,9 @@ export default createStore({
     },
     setBackendConnected(state, connected) {
       state.backendConnected = connected;
+    },
+    addMessage(state, message) {
+      state.messages.push(message);
     },
   },
   actions: {
@@ -58,5 +62,44 @@ export default createStore({
         commit("setDeviceConnected", false);
       }
     },
+    notifyInfo({ commit }, {title, content}) {
+      commit("addMessage", {
+        color: "info",
+        title: title,
+        content: content,
+        autohide: true,
+        delay: 5000,
+       });
+    },
+    notifyWarning({ commit }, {title, content}) {
+      commit("addMessage", {
+        color: "warning",
+        title: title != null ? title : "Warning",
+        content: content,
+        autohide: true,
+        delay: 5000,
+       });
+    },
+    notifySuccess({ commit }, {title, content}) {
+      commit("addMessage", {
+        color: "success",
+        title: title,
+        content: content,
+        autohide: true,
+        delay: 5000,
+       });
+    },
+    notifyDanger({ commit }, {title, content}) {
+      commit("addMessage", {
+        color: "danger",
+        title: title,
+        content: content,
+        autohide: true,
+        delay: 5000,
+       });
+    },
+    notify({ commit }, toast) {
+      commit("addMessage", toast);
+    }
   },
 });

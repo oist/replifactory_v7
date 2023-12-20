@@ -204,6 +204,14 @@ class Machine(MachineInterface, comm.MachineCallback):
                 device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"}
             )
 
+    def stirrer_set_speed(self, device_id, speed, *args, **kwargs):
+        if self._comm:
+            self._comm.set_stirrer_speed(
+                device_id,
+                speed,
+                tags=kwargs.get("tags", set()) | {"trigger:stirrer.set_speed"},
+            )
+
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
 

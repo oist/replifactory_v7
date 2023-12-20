@@ -3,7 +3,7 @@ import queue
 import threading
 from collections import OrderedDict
 from time import sleep
-from typing import Dict, Optional, Type
+from typing import Dict, Optional, Type, Union
 
 from usb.core import Device as UsbDevice
 
@@ -159,11 +159,13 @@ class Machine(Device, DeviceCallback):
         pwm_driver = PWMDriver(get_port=pwm_port_callback)
         self._drivers += [pwm_driver]
         stirrers = [
-            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver)
-            for pwm_channel in reversed(
-                range(
-                    STIRRER_PWM_CHANNEL_START_ADDR,
-                    STIRRER_PWM_CHANNEL_START_ADDR + STIRRERS_COUNT,
+            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver, name=f"Stirrer {i+1}")
+            for i, pwm_channel in enumerate(
+                reversed(
+                    range(
+                        STIRRER_PWM_CHANNEL_START_ADDR,
+                        STIRRER_PWM_CHANNEL_START_ADDR + STIRRERS_COUNT,
+                    )
                 )
             )
         ]
@@ -180,7 +182,7 @@ class Machine(Device, DeviceCallback):
                 open_duty_cycle=VALVE_OPEN_DUTY_CYCLE,
                 closed_duty_cycle=VALVE_CLOSED_DUTY_CYCLE,
                 change_state_delay=VALVE_CHANGE_STATE_TIME,
-                name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR}",
+                name=f"Valve {pwm_channel - VAVLE_PWM_CHANNEL_START_ADDR + 1}",
                 callback=self,
                 init_state=Valve.States.STATE_CLOSE,
             )
@@ -786,6 +788,9 @@ class Machine(Device, DeviceCallback):
     def _get_valve(self, device_id: str) -> Valve:
         return self._get_device(device_id, Valve)
 
+    def _get_stirrer(self, device_id: str) -> Stirrer:
+        return self._get_device(device_id, Stirrer)
+
     def open_valve(self, device_id: str, *args, **kwargs):
         def command():
             self._get_valve(device_id).open()
@@ -795,5 +800,13 @@ class Machine(Device, DeviceCallback):
     def close_valve(self, device_id: str, *args, **kwargs):
         def command():
             self._get_valve(device_id).close()
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
+
+    def set_stirrer_speed(
+        self, device_id: str, speed: Union[int, float], *args, **kwargs
+    ):
+        def command():
+            self._get_stirrer(device_id).set_speed(speed)
 
         self._sendCommand(MachineCommand(command), *args, **kwargs)

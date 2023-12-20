@@ -15,7 +15,6 @@ export default {
       id: "UNKNOWN",
       string: "Unknown",
     },
-    devices: {},
     data: {
       state: {
         flags: {
@@ -23,6 +22,7 @@ export default {
         },
         text: "Offline",
       },
+      devices: {},
     },
   },
   mutations: {
@@ -54,7 +54,7 @@ export default {
       return state.data.state.flags.manualControl;
     },
     getDeviceById: (state) => (id) => {
-      return state.data.devices[id]
+      return Object.hasOwn(state.data.devices, id) ? state.data.devices[id] : {}
     }
   },
   actions: {
@@ -89,7 +89,7 @@ export default {
       });
     },
     runCommand(context, payload) {
-      const { device, deviceId, command, args } = payload;
+      const { device, deviceId, command, ...args } = payload;
       const endpoint = `/machine/${device}`;
       return new Promise((resolve, reject) => {
         api

@@ -14,7 +14,7 @@ def get_json_command_from_request(request, valid_commands):
 
     command = data["command"]
     if any(map(lambda x: x not in data, valid_commands[command])):
-        flask.abort(400, description="Mandatory parameters missing")
+        flask.abort(400, description=f"Mandatory parameters missing: {valid_commands[command]}")
 
     return command, data, None
 

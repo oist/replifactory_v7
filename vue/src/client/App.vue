@@ -1,7 +1,11 @@
 <template>
   <div id="alerts">
-    <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0">
-      Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
+
+    <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between">
+      <div>
+        Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
+      </div>
+      <MachineNotification/>
     </BAlert>
   </div>
   <CContainer :fluid="true">
@@ -61,6 +65,7 @@ import { mapState } from 'vuex';
 
 import MachineConnection from "@/client/components/machine/MachineConnection.vue";
 import MachineState from "@/client/components/machine/MachineState.vue";
+import MachineNotification from "@/client/components/machine/MachineNotification.vue";
 import { CContainer, CRow, CCol, CAccordion, CAccordionItem, CAccordionHeader, CAccordionBody } from '@coreui/vue';
 import BootstrapRouterLink from "@/client/router/BootstrapRouterLink";
 
@@ -82,6 +87,7 @@ export default {
   components: {
     MachineConnection,
     MachineState,
+    MachineNotification,
     CContainer,
     CRow,
     CCol,

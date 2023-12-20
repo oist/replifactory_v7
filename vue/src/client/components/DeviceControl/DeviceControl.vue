@@ -10,10 +10,10 @@
 
     <PumpControl :disabled="!deviceControlEnabled" />
     <CRow>
-      <ReactorControl :disabled="!deviceControlEnabled" v-for="i in 7" :key="i" />
+      <ReactorControl :disabled="!deviceControlEnabled" v-for="i in 7" :key="i" :id="i" />
     </CRow>
-    <ValvesGroupControl :disabled="!deviceControlEnabled" />
-    <ValveControl :disabled="!deviceControlEnabled" />
+    <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
+    <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
     <StirrerControl :disabled="!deviceControlEnabled" />
     <ODControl :disabled="!deviceControlEnabled" />
   </div>
@@ -21,8 +21,8 @@
 
 <script>
 import PumpControl from './PumpControl';
-import ValvesGroupControl from './ValvesGroupControl';
-import ValveControl from './ValveControl';
+// import ValvesGroupControl from './ValvesGroupControl';
+// import ValveControl from './ValveControl';
 import StirrerControl from './StirrerControl';
 import ODControl from './ODControl';
 // import VialControl from './VialControl';
@@ -34,8 +34,8 @@ import { CRow, CFormSwitch } from '@coreui/vue';
 export default {
   components: {
     PumpControl,
-    ValvesGroupControl,
-    ValveControl,
+    // ValvesGroupControl,
+    // ValveControl,
     StirrerControl,
     ODControl,
     // VialControl,

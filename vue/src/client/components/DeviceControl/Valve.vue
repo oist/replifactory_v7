@@ -87,13 +87,6 @@ export default {
             })
                 .then((data) => {
                     console.debug(data)
-                    // this.loading = false
-                    // if (data.current.id != null) {
-                    //     this.selectedMachine = data.current.id
-                    // } else {
-                    //     const [firstDeviceId] = Object.keys(data.options.devices)
-                    //     this.selectedMachine = firstDeviceId
-                    // }
                 })
                 .catch(err => {
                     this.loading = false
