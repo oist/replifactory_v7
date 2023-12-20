@@ -24,10 +24,17 @@ class ADCDriver(Driver):
         self._gain = 1
         self._bitrate = 12
         self._continous_conversion = True
+        self._port = None
 
     @property
     def port(self):
-        return self._get_port()
+        with self._lock:
+            if self._port is None:
+                self.init()
+            return self._port
+
+    def init(self):
+        self._port = self._get_port()
 
     def measure(self, gain=8, bitrate=16, continuous_conversion=False):
         log.debug(

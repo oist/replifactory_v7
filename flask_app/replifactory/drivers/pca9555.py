@@ -90,13 +90,19 @@ def get_register_name(regaddr: int) -> str:
 class IOPortDriver(Driver):
     NUM_GPIO = 16
 
-    def __init__(self, get_port: Callable[[], I2cPort]):
+    def __init__(self, get_port: Callable[[], I2cPort], init_config: int = 0x0000):
         self._get_port = get_port
         self._lock = threading.RLock()
         self._input_value = None
         self._output_value = None
-        self._config = None
+        self._config = init_config
         self._polarity = None
+
+    def init(self):
+        self.reset()
+
+    def reset(self):
+        self.write_config(self._config)
 
     @property
     def port(self):

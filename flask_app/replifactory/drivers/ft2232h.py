@@ -239,7 +239,7 @@ class FtdiDriver(Driver):
         for addr in possible_addresses:
             port = i2c.get_verbose_port(addr, name, registers)
             try:
-                port.read(0)
+                port.read(4)  # TODO: move to mcp3421 driver
                 return port
             except I2cNackError:
                 pass

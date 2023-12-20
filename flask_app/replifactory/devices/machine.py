@@ -237,7 +237,7 @@ class Machine(Device, DeviceCallback):
             for cs in reversed(range(VIALS_COUNT))
         ]
         od_sensors = [
-            OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i])
+            OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i], callback=self, name=f"Optical Density Sensor {i+1}")
             for i in range(VIALS_COUNT)
         ]
         for od_sensor in od_sensors:

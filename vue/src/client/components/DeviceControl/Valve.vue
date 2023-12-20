@@ -84,7 +84,7 @@ export default {
         },
         ...mapGetters("machine", [
             "getDeviceById",
-        ])
+        ]),
     },
     methods: {
         toggle() {

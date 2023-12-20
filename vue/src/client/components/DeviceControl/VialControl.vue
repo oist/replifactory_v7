@@ -2,13 +2,13 @@
     <div class="progress progress-bar-vertical">
         <div class="progress-bar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"
             style="height: 30%;">
-            <span class="sr-only">30% Complete</span>
+            <span class="sr-only">OD: {{ od }}</span>
         </div>
     </div>
 </template>
 
 <script>
-
+import { mapGetters } from 'vuex';
 export default {
     name: 'ValvesGroupControl',
     props: {
@@ -23,18 +23,55 @@ export default {
         height: {
             type: String,
             default: "160px",
-        }
+        },
+        odSensorId: {
+            type: String,
+            default: null,
+        },
     },
     components: {
 
+    },
+    computed: {
+        data() {
+            const device = this.getDeviceById(this.odSensorId);
+            return device;
+        },
+        ...mapGetters("machine", ["getDeviceById"]),
+        od() {
+            const value = this.data.value;
+            if (value != null) {
+                return value.toPrecision(3);
+            } else {
+                return "N/A";
+            }
+        },
+    },
+    methods: {
+        updateOpticalDensity(event) {
+            console.debug(event);
+            this.$store.dispatch("machine/runCommand", {
+                device: "odsensor",
+                command: "read",
+                deviceId: this.ODSensorId,
+            })
+                .then((data) => {
+                    console.debug(data)
+                })
+                .catch(err => {
+                    this.$store.dispatch("notifyWarning", {
+                        content: err.response.data
+                    })
+                })
+        },
     },
 }
 </script>
 
 <style>
 .progress-bar-vertical {
-    width: 20px;
-    min-height: 100px;
+    width: 100%;
+    min-height: 20rem;
     display: flex;
     align-items: flex-end;
     margin-right: 20px;

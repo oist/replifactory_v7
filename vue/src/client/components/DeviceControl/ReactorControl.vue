@@ -8,7 +8,7 @@
             </CCardText> -->
             <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
             <Valve class="my-1" :deviceId="valve.id" :key="valve.id" :title="valve.title" :disabled="disabled" />
-            <VialControl :ODSensorId="odsensor-0" :disabled="disabled" class="my-2"/>
+            <VialControl :odSensorId="odSensor.id" :disabled="disabled" class="my-2"/>
             <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
             <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
             <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->
@@ -83,6 +83,14 @@ export default {
             type: String,
             default: null,
         },
+        odSensorId: {
+            type: String,
+            default: null,
+        },
+        odSensorTitle: {
+            type: String,
+            default: null,
+        },
     },
     computed: {
         reactor() {
@@ -102,6 +110,12 @@ export default {
             return {
                 id: this.stirrerId != null ? this.stirrerId : `stirrer-${this.id}`,
                 title: this.stirrerTitle != null ? this.stirrerTitle : `Stirrer ${this.id}`,
+            }
+        },
+        odSensor() {
+            return {
+                id: this.odSensorId != null ? this.odSensorId : `optical-density-sensor-${this.id}`,
+                title: this.odSensorTitle != null ? this.odSensorTitle : `Optical Density Sensor ${this.id}`,
             }
         },
     }
