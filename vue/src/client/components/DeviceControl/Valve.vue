@@ -1,17 +1,15 @@
 <template>
-    <CButtonGroup class="valve-buttons" vertical size="sm" role="group" aria-label="Valve control buttons">
-        <CButton color="danger" class="rounded-top-5" :class="state === 'CLOSE' ? 'active' : ''" :disabled="disabled"
-            v-c-tooltip="{ content: 'Close', placement: 'right' }"
-            @click="close">
+    <CButtonGroup class="valve-buttons" :vertical="vertical" size="sm" role="group" aria-label="Valve control buttons">
+        <CButton color="danger" :class="closeButtonClasses" :disabled="disabled"
+            v-c-tooltip="{ content: 'Close', placement: 'top' }" @click="close" variant="outline">
             <CIcon :icon="icon.cilX" size="xl" />
         </CButton>
-        <CButton color="warning" :class="['BEETWEEN', 'OPENING', 'CLOSING'].includes(state) ? 'active' : ''" :disabled="disabled"
-            v-c-tooltip="{ content: 'Beetween', placement: 'right' }">
+        <CButton color="warning" :class="['BEETWEEN', 'OPENING', 'CLOSING'].includes(state) ? 'active' : ''"
+            :disabled="disabled" v-c-tooltip="{ content: 'Beetween', placement: 'top' }" variant="outline">
             <CIcon :icon="icon.cilLoopCircular" size="xl" />
         </CButton>
-        <CButton color="success" class="rounded-bottom-5" :class="state === 'OPEN' ? 'active' : ''" :disabled="disabled"
-            v-c-tooltip="{ content: 'Open', placement: 'right' }"
-            @click="open">
+        <CButton color="success" :class="openButtonClasses" :disabled="disabled"
+            v-c-tooltip="{ content: 'Open', placement: 'top' }" @click="open" variant="outline">
             <CIcon :icon="icon.cilCheckAlt" size="xl" />
         </CButton>
     </CButtonGroup>
@@ -27,6 +25,10 @@ export default {
     name: 'ValveControl',
     props: {
         disabled: {
+            type: Boolean,
+            default: false,
+        },
+        vertical: {
             type: Boolean,
             default: false,
         },
@@ -50,6 +52,26 @@ export default {
         }
     },
     computed: {
+        closeButtonClasses() {
+            let classes = ""
+            if (this.vertical) {
+                classes += "rounded-top-5"
+            }
+            if (this.state === "CLOSE") {
+                classes += " active"
+            }
+            return classes
+        },
+        openButtonClasses() {
+            let classes = ""
+            if (this.vertical) {
+                classes += "rounded-bottom-5"
+            }
+            if (this.state === "OPEN") {
+                classes += " active"
+            }
+            return classes
+        },
         data() {
             const device = this.getDeviceById(this.deviceId);
             return device;

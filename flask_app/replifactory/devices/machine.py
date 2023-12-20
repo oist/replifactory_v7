@@ -61,7 +61,7 @@ I2C_PORT_THERMOMETER_3 = 0x4A  # ADT75
 
 VALVE_OPEN_DUTY_CYCLE = 0.03
 VALVE_CLOSED_DUTY_CYCLE = 0.12
-VALVE_CHANGE_STATE_TIME = 1.5
+VALVE_CHANGE_STATE_TIME = 0.5
 
 
 class MachineCallback:
@@ -159,7 +159,7 @@ class Machine(Device, DeviceCallback):
         pwm_driver = PWMDriver(get_port=pwm_port_callback)
         self._drivers += [pwm_driver]
         stirrers = [
-            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver, name=f"Stirrer {i+1}")
+            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver, name=f"Stirrer {i+1}", callback=self,)
             for i, pwm_channel in enumerate(
                 reversed(
                     range(

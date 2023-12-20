@@ -14,7 +14,7 @@
     </CRow>
     <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
     <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
-    <StirrerControl :disabled="!deviceControlEnabled" />
+    <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->
     <ODControl :disabled="!deviceControlEnabled" />
   </div>
 </template>
@@ -23,7 +23,7 @@
 import PumpControl from './PumpControl';
 // import ValvesGroupControl from './ValvesGroupControl';
 // import ValveControl from './ValveControl';
-import StirrerControl from './StirrerControl';
+// import StirrerControl from './StirrerControl';
 import ODControl from './ODControl';
 // import VialControl from './VialControl';
 import ReactorControl from './ReactorControl';
@@ -36,7 +36,7 @@ export default {
     PumpControl,
     // ValvesGroupControl,
     // ValveControl,
-    StirrerControl,
+    // StirrerControl,
     ODControl,
     // VialControl,
     ReactorControl,

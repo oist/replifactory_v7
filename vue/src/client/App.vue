@@ -10,7 +10,7 @@
   </div>
   <CContainer :fluid="true">
     <CRow>
-      <CCol md="3">
+      <CCol md="2">
         <CAccordion :active-item-key="1" class="mt-3">
           <CAccordionItem :item-key="1">
             <CAccordionHeader>
@@ -42,7 +42,7 @@
           </CAccordionItem>
         </CAccordion>
       </CCol>
-      <CCol md="9">
+      <CCol md="10">
         <ul class="nav nav-tabs">
           <BootstrapRouterLink to="/experiment">Experiment</BootstrapRouterLink>
           <BootstrapRouterLink to="/device">Device</BootstrapRouterLink>

@@ -28,7 +28,7 @@ class Valve(Device):
         driver: PWMDriver,
         open_duty_cycle: float = 0.0,
         closed_duty_cycle: float = 1.0,
-        change_state_delay: float = 2.0,
+        change_state_delay: float = 0.5,
         name: Optional[str] = None,
         init_state: Optional[Literal[States.STATE_OPEN, States.STATE_CLOSE]] = None,
         callback: Optional[DeviceCallback] = None,

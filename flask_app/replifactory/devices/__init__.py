@@ -124,8 +124,8 @@ class Device:
         self.read_state()
         return True
 
-    def _set_state(self, new_state):
-        if self._state != new_state:
+    def _set_state(self, new_state, force=False):
+        if force or self._state != new_state:
             self._state = new_state
             self._callback.on_device_state_change(self, new_state)
 

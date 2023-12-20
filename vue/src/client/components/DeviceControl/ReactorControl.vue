@@ -1,5 +1,5 @@
 <template>
-    <CCard style="width: 18rem" class="m-2">
+    <CCard style="width: 11rem" class="m-2">
         <CCardBody>
             <CCardTitle>{{ reactor.title }}</CCardTitle>
             <CCardSubtitle class="mb-2 text-muted">{{ reactor.subtitle }}</CCardSubtitle>
@@ -7,8 +7,8 @@
                 Some quick example text to build on the card title and make up the bulk of the card's content.
             </CCardText> -->
             <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
-            <VialControl :disabled="disabled" />
-            <Valve class="mx-4 my-1" :deviceId="valve.id" :key="valve.id" :title="valve.title" :disabled="disabled" />
+            <Valve class="my-1" :deviceId="valve.id" :key="valve.id" :title="valve.title" :disabled="disabled" />
+            <VialControl :ODSensorId="odsensor-0" :disabled="disabled" class="my-2"/>
             <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
             <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
             <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->

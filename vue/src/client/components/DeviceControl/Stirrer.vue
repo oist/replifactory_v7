@@ -6,6 +6,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import { CFormRange } from '@coreui/vue';
 
 export default {
@@ -25,11 +26,21 @@ export default {
     },
     data() {
         return {
-            value: 0,
+            // value: 0,
             min: 0,
             max: 100,
             step: 1,
         };
+    },
+    computed: {
+        data() {
+            const device = this.getDeviceById(this.deviceId);
+            return device;
+        },
+        value() {
+            return (this.data.speed * 100) | 0;
+        },
+        ...mapGetters("machine", ["getDeviceById"]),
     },
     methods: {
         handleChange(event) {
