@@ -5,7 +5,7 @@
       <div class="flex-fill">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </div>
-      <CFormSwitch :v-model="debug" label="Debug" id="switchDebug" @input="debugHandleSwitchChange"/>
+      <CFormSwitch v-model="debug" label="Debug" id="switchDebug" @input="debugHandleSwitchChange"/>
       <MachineNotification/>
     </BAlert>
   </div>
@@ -109,6 +109,12 @@ export default {
       tabs: ['Experiment', 'Device', 'Remote', 'Help', 'Status', 'Logs']
     };
   },
+  beforeCreate() {
+    this.$store.commit("initialiseStore")
+    this.$store.subscribe((mutation, state) => {
+        localStorage.setItem('store', JSON.stringify(state));
+    });
+  }
 };
 </script>
 

@@ -22,6 +22,12 @@ export default createStore({
     machine,
   },
   mutations: {
+    initialiseStore() {
+      if(localStorage.getItem('store')) {
+        const store = JSON.parse(localStorage.getItem('store'))
+        this.commit('setDebug', store.debug)
+			}
+    },
     setExperiments(state, experiments) {
       state.experiments = experiments;
     },
