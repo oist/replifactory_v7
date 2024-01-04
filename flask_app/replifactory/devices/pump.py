@@ -5,8 +5,6 @@ from flask_app.replifactory.devices.step_motor import Motor
 
 
 class Pump(Device):
-    motor: Motor
-    max_speed_rps: float
 
     def __init__(
         self,
@@ -17,6 +15,7 @@ class Pump(Device):
     ):
         super().__init__(name or "Pump", callback=callback)
         self.motor = motor
+        self.max_speed_rps = max_speed_rps or motor.max_speed_rps
         self.coefficients = {
             1: 10,
             5: 9.5,
@@ -48,9 +47,14 @@ class Pump(Device):
     def is_idle(self):
         return self.motor.is_idle
 
+    def get_data(self):
+        return super().get_data() | {
+            "max_speed_rps": self.max_speed_rps,
+        }
+
     def run(self, forward: bool = True, rot_per_sec: Optional[float] = None):
         self._set_state(self.States.STATE_WORKING)
-        self.motor.run(forward, rot_per_sec)
+        self.motor.run(forward, rot_per_sec or self.max_speed_rps)
 
     def pump(self, volume: float, rot_per_sec: Optional[float] = None):
         """Pump certain amount of liquid

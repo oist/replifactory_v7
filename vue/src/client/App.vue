@@ -2,9 +2,10 @@
   <div id="alerts">
 
     <BAlert :model-value="true" :variant="backendConnectedAlertVariant" class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between">
-      <div>
+      <div class="flex-fill">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </div>
+      <CFormSwitch :v-model="debug" label="Debug" id="switchDebug" @input="debugHandleSwitchChange"/>
       <MachineNotification/>
     </BAlert>
   </div>
@@ -61,7 +62,7 @@
 
 <script>
 import { socket } from "@/socket";
-import { mapState } from 'vuex';
+import { mapState, mapMutations } from 'vuex';
 
 import MachineConnection from "@/client/components/machine/MachineConnection.vue";
 import MachineState from "@/client/components/machine/MachineState.vue";
@@ -75,7 +76,7 @@ export default {
     backendConnectedAlertVariant() {
       return this.connected ? "primary" : "danger";
     },
-    ...mapState(['hostname']),
+    ...mapState(['hostname', 'debug']),
     ...mapState({
       connected: state => state.backendConnected,
     }),
@@ -83,7 +84,12 @@ export default {
   async mounted() {
     socket.connect();
   },
-
+  methods: {
+    ...mapMutations(['setDebug']),
+    debugHandleSwitchChange(event) {
+      this.setDebug(event.target.checked);
+    },
+  },
   components: {
     MachineConnection,
     MachineState,
@@ -117,5 +123,8 @@ export default {
 }
 .icon {
   vertical-align: none !important;
+}
+.form-switch > label {
+  margin: 0 !important;
 }
 </style>

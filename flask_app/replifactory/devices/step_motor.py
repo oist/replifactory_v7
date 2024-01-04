@@ -23,7 +23,7 @@ class Motor(Device):
         self.full_step_speed = 0b1100110  # legacy 10-bit * 0.1
         self.stall_threshold = 0b100000  # half of max 0b111111
         self.min_speed_rps = 0.01
-        self.max_speed_rps = 40
+        self.max_speed_rps = 3
         self.acceleration = round(((1 << 12) - 1) * 0.01)  # legacy
         self.deceleration = round(((1 << 12) - 1) * 0.01)  # legacy
         self.kval_hold = 0

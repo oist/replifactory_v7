@@ -104,7 +104,7 @@ def machinePumpCommand():
             except ValueError:
                 flask.abort(400, description=f"Wrong volume value: {data['volume']}")
         speed = None
-        if "speed" in data:
+        if "speed" in data and data["speed"]:
             try:
                 speed = float(data["speed"])
             except ValueError:

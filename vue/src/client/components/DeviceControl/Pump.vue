@@ -1,5 +1,5 @@
 <template>
-    <CCard style="width: 16rem" class="m-2">
+    <CCard :style="debug ? 'width: 24rem' : 'width: 16rem'" class="m-2">
         <CCardBody>
             <CCardTitle>{{ label }}</CCardTitle>
             <CInputGroup class="mb-3">
@@ -11,9 +11,12 @@
                     :class="state == 'WORKING' ? 'active' : ''" :disabled="disabled">
                     <CIcon :icon="icon.cilShower" size="xl" />
                 </CButton>
-                <CFormInput v-model="inputValue" :id="deviceId + '-volume'" placeholder="&infin;" aria-label="Volume"
-                    :aria-describedby="deviceId + '-inputText'" :disabled="disabled" />
-                <CInputGroupText :id="deviceId + '-inputText'">ml</CInputGroupText>
+                <CFormInput v-model="inputVolume" :id="deviceId + '-volume'" placeholder="&infin;" aria-label="Volume"
+                    :aria-describedby="deviceId + '-inputVolumeText'" :disabled="disabled" />
+                <CInputGroupText :id="deviceId + '-inputVolumeText'">ml</CInputGroupText>
+                <CFormInput v-if="debug" v-model="inputSpeed" :id="deviceId + '-speed'" :placeholder="data.max_speed_rps" aria-label="Speed"
+                    :aria-describedby="deviceId + '-inputSpeedText'" :disabled="disabled" />
+                <CInputGroupText v-if="debug" :id="deviceId + '-inputSpeedText'">rps</CInputGroupText>
             </CInputGroup>
         </CCardBody>
     </CCard>
@@ -23,7 +26,7 @@
 import { CCard, CCardBody, CInputGroup, CButton, CFormInput, CInputGroupText, CCardTitle } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
 import * as icon from '@coreui/icons'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 
 export default {
     name: 'PumpControl',
@@ -58,7 +61,8 @@ export default {
     },
     data() {
         return {
-            inputValue: "",
+            inputVolume: "",
+            inputSpeed: "",
         }
     },
     computed: {
@@ -75,6 +79,7 @@ export default {
         ...mapGetters("machine", [
             "getDeviceById",
         ]),
+        ...mapState(["debug"]),
     },
     methods: {
         handlePumpButtonClick() {
@@ -82,7 +87,8 @@ export default {
                 device: "pump",
                 command: "pump",
                 deviceId: this.deviceId,
-                volume: this.inputValue,
+                volume: this.inputVolume,
+                speed: this.inputSpeed,
             })
                 .then((data) => {
                     console.debug(data)

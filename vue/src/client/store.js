@@ -14,6 +14,7 @@ export default createStore({
     hostname: "replifactory_GUI",
     backendConnected: false,
     messages: [],
+    debug: false,
   },
   modules: {
     device,
@@ -36,6 +37,9 @@ export default createStore({
     addMessage(state, message) {
       state.messages.push(message);
     },
+    setDebug(state, debug) {
+      state.debug = debug;
+    }
   },
   actions: {
     fetchHostname({ commit }) {
