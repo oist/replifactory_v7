@@ -30,6 +30,7 @@ pid_file_path = os.path.join(base_dir, "data/flask_app.pid")
 logging.basicConfig(
     level=os.environ.get("LOGGING_LEVEL", logging.INFO),
 )
+logging.getLogger("pyftdi.eeprom").setLevel(logging.DEBUG)
 
 log = logging.getLogger(__name__)
 

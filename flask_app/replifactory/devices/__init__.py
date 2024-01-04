@@ -81,6 +81,10 @@ class Device:
     def name(self):
         return self._name
 
+    @property
+    def state(self):
+        return self._state
+
     def get_data(self):
         return {
             "id": self.id,
@@ -128,6 +132,10 @@ class Device:
         if force or self._state != new_state:
             self._state = new_state
             self._callback.on_device_state_change(self, new_state)
+
+    def _set_error(self, error):
+        self._error = error
+        self._set_state(self.States.STATE_ERROR)
 
     @property
     def state_id(self):

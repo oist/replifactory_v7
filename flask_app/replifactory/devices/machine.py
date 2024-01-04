@@ -3,7 +3,9 @@ import queue
 import threading
 from collections import OrderedDict
 from time import sleep
-from typing import Dict, Optional, Type, Union
+import time
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
+from flask_app.replifactory.devices.vial import Vial
 
 from usb.core import Device as UsbDevice
 
@@ -31,7 +33,13 @@ from flask_app.replifactory.usb_manager import usbManager
 from replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from replifactory.drivers import Driver
 from replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
-from replifactory.util.comm import CommandQueue, QueueMarker, SendQueue, SendQueueMarker
+from replifactory.util.comm import (
+    AwaitConditionQueueMarker,
+    CommandQueue,
+    QueueMarker,
+    SendQueue,
+    SendQueueMarker,
+)
 
 VAVLE_PWM_CHANNEL_START_ADDR = 8
 VALVES_COUNT = 7
@@ -70,6 +78,10 @@ class MachineCallback:
 
     def on_change_device_data(self, data):
         pass
+
+
+class LongtimeMachineCommand(AwaitConditionQueueMarker):
+    pass
 
 
 class MachineCommand(SendQueueMarker):
@@ -128,6 +140,7 @@ class Machine(Device, DeviceCallback):
             name="comm.clear_to_send", minimum=None, maximum=self._ack_max
         )
         # sending thread
+        self._cancel_await_condition = False
         self._send_queue_active = True
         self.sending_thread = threading.Thread(
             target=self._send_loop, name="comm.sending_thread"
@@ -144,12 +157,14 @@ class Machine(Device, DeviceCallback):
             i2c_freq=I2C_FREQ,
         )
 
+        self._pumps: list[Pump] = []
         # it's important to init pump drivers before valves
         for cs in range(PUMPS_COUNT):
             spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
             step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
             motor = Motor(step_motor_driver)
-            pump = Pump(motor, name=f"Pump {cs}")
+            pump = Pump(motor, name=f"Pump {cs + 1}", callback=self)
+            self._pumps.append(pump)
             self._devices[pump.id] = pump
             self._drivers += [step_motor_driver]
 
@@ -159,7 +174,12 @@ class Machine(Device, DeviceCallback):
         pwm_driver = PWMDriver(get_port=pwm_port_callback)
         self._drivers += [pwm_driver]
         stirrers = [
-            Stirrer(pwm_channel=pwm_channel, driver=pwm_driver, name=f"Stirrer {i+1}", callback=self,)
+            Stirrer(
+                pwm_channel=pwm_channel,
+                driver=pwm_driver,
+                name=f"Stirrer {i+1}",
+                callback=self,
+            )
             for i, pwm_channel in enumerate(
                 reversed(
                     range(
@@ -191,6 +211,7 @@ class Machine(Device, DeviceCallback):
                 VAVLE_PWM_CHANNEL_START_ADDR + VALVES_COUNT,
             )
         ]
+        self._valves = valves
         for valve in valves:
             self._devices[valve.id] = valve
 
@@ -237,11 +258,32 @@ class Machine(Device, DeviceCallback):
             for cs in reversed(range(VIALS_COUNT))
         ]
         od_sensors = [
-            OpticalDensitySensor(photodiode=photodiodes[i], laser=lasers[i], callback=self, name=f"Optical Density Sensor {i+1}")
+            OpticalDensitySensor(
+                photodiode=photodiodes[i],
+                laser=lasers[i],
+                callback=self,
+                name=f"Optical Density Sensor {i+1}",
+            )
             for i in range(VIALS_COUNT)
         ]
         for od_sensor in od_sensors:
             self._devices[od_sensor.id] = od_sensor
+
+        self._vials = []
+        for i in range(VIALS_COUNT):
+            num = i + 1
+            vial = Vial(
+                name=f"Vial {num}",
+                valve=self._get_valve(f"valve-{num}"),
+                stirrer=self._get_stirrer(f"stirrer-{num}"),
+                od_sensor=self._get_od_sensor(f"optical-density-sensor-{num}"),
+                media_pump=self._get_pump("pump-1"),
+                drug_pump=self._get_pump("pump-2"),
+                waste_pump=self._get_pump("pump-4"),
+                callback=self,
+            )
+            self._devices[vial.id] = vial
+            self._vials.append(vial)
 
         thermometers = []
         for address, name in {
@@ -323,7 +365,30 @@ class Machine(Device, DeviceCallback):
                     # fetch command, command type and optional linenumber and sent callback from queue
                     command, linenumber, command_type, on_sent, processed, tags = entry
 
-                    if isinstance(command, SendQueueMarker):
+                    if isinstance(command, AwaitConditionQueueMarker):
+                        command.run()
+                        timeout_time = (
+                            time.monotonic() + command.timeout if command.timeout else 0
+                        )
+                        wait_time = command.interval
+
+                        while self._send_queue_active and not command.done():
+                            if self._cancel_await_condition:
+                                self._cancel_await_condition = False
+                                command.cancel()
+                                break
+                            if command.timeout:
+                                now = time.monotonic()
+                                if now > timeout_time:
+                                    command.on_timeout()
+                                    break
+                                if now + command.interval > timeout_time:
+                                    wait_time = timeout_time - now
+                            time.sleep(wait_time)
+                        self._continue_sending()
+                        continue
+
+                    elif isinstance(command, SendQueueMarker):
                         command.run()
                         self._continue_sending()
                         continue
@@ -687,6 +752,23 @@ class Machine(Device, DeviceCallback):
             )
             return True
 
+    def _sendCommands(
+        self,
+        commands: List[
+            Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]
+        ],
+    ):
+        # Make sure we are only handling one sending job at a time
+        with self._sendingLock:
+            if self._usb_device is None:
+                return False
+
+            for cmd, cmd_type, on_sent, tags in commands:
+                self._enqueue_for_sending(
+                    cmd, command_type=cmd_type, on_sent=on_sent, tags=tags
+                )
+            return True
+
     def _enqueue_for_sending(
         self,
         command,
@@ -791,6 +873,18 @@ class Machine(Device, DeviceCallback):
     def _get_stirrer(self, device_id: str) -> Stirrer:
         return self._get_device(device_id, Stirrer)
 
+    def _get_thermometer(self, device_id: str) -> Thermometer:
+        return self._get_device(device_id, Thermometer)
+
+    def _get_od_sensor(self, device_id: str) -> OpticalDensitySensor:
+        return self._get_device(device_id, OpticalDensitySensor)
+
+    def _get_pump(self, device_id: str) -> Pump:
+        return self._get_device(device_id, Pump)
+
+    def _get_vial(self, device_id: str) -> Vial:
+        return self._get_device(device_id, Vial)
+
     def open_valve(self, device_id: str, *args, **kwargs):
         def command():
             self._get_valve(device_id).open()
@@ -810,3 +904,119 @@ class Machine(Device, DeviceCallback):
             self._get_stirrer(device_id).set_speed(speed)
 
         self._sendCommand(MachineCommand(command), *args, **kwargs)
+
+    def measure_temperature(self, device_id: str, *args, **kwargs):
+        def command():
+            self._get_thermometer(device_id).measure()
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
+
+    def measure_od(self, device_id: str, *args, **kwargs):
+        def command():
+            self._get_od_sensor(device_id).measure_od()
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
+
+    def pump_command(self, device_id: str, command: Callable, *args, **kwargs):
+        pump = self._get_pump(device_id)
+
+        def condition():
+            return pump.is_idle
+
+        return LongtimeMachineCommand(
+            callback=command,
+            condition=kwargs["condition"] if "condition" in kwargs else condition,
+            *args,
+            **kwargs,
+        )
+
+    def pump_command_entry(
+        self, device_id: str, command: Callable, *args, **kwargs
+    ) -> Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]:
+        return (
+            self.pump_command(device_id, command, *args, **kwargs),  # command
+            None,  # command_type
+            None,  # on_sent
+            kwargs["tags"],  # tags
+        )
+
+    def machine_command_entry(
+        self, command: Callable, *args, **kwargs
+    ) -> Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]:
+        return (
+            MachineCommand(command),  # command
+            None,  # command_type
+            None,  # on_sent
+            kwargs["tags"],  # tags
+        )
+
+    def pump_pump(self, device_id: str, volume: float, speed: float, *args, **kwargs):
+        # stop other pumps
+        commands = [
+            self.pump_command_entry(device_id, lambda: pump.stop(), *args, **kwargs)
+            for pump in self._pumps
+            if pump.id != device_id
+        ]
+        if volume:
+            commands += [
+                self.pump_command_entry(
+                    device_id, lambda: self._get_pump(device_id).pump(volume, speed), *args, **kwargs
+                ),
+            ]
+        else:
+            commands += [
+                self.machine_command_entry(lambda: self._get_pump(device_id).run(rot_per_sec=speed), *args, **kwargs),
+            ]
+        self._sendCommands(commands)
+
+    def _vial_pump(
+        self, vial: Vial, vial_pump: Pump, volume: float, speed: float, *args, **kwargs
+    ):
+        vial_valve = vial._valve
+
+        # stop all pumps
+        commands = [
+            self.pump_command_entry(pump.id, lambda: pump.stop(), *args, **kwargs)
+            for pump in self._pumps
+        ]
+        # open vial valve
+        commands += [self.machine_command_entry(lambda: vial_valve.open(), *args, **kwargs)]
+        # close all valves except vial valve
+        commands += [
+            (
+                self.machine_command_entry(lambda: valve.close(), *args, **kwargs)
+                for valve in self._valves
+                if valve.id != vial_valve.id
+            )
+        ]
+        # run media pump
+        commands += [
+            self.pump_command_entry(vial_pump.id, lambda: vial_pump.pump(volume, speed), *args, **kwargs)
+        ]
+
+        self._sendCommands(commands)
+
+    def vial_add_media(
+        self, device_id: str, volume: float, speed: float, *args, **kwargs
+    ):
+        vial = self._get_vial(device_id)
+        media_pump = vial._media_pump
+        return self._vial_pump(vial, media_pump, volume, speed, *args, **kwargs)
+
+    def vial_add_drug(
+        self, device_id: str, volume: float, speed: float, *args, **kwargs
+    ):
+        vial = self._get_vial(device_id)
+        drug_pump = vial._drug_pump
+        return self._vial_pump(vial, drug_pump, volume, speed, *args, **kwargs)
+
+    def vial_waste(self, device_id: str, volume: float, speed: float, *args, **kwargs):
+        vial = self._get_vial(device_id)
+        waste_pump = vial._waste_pump
+        return self._vial_pump(vial, waste_pump, volume, speed, *args, **kwargs)
+
+    def pump_stop(self, device_id: str, *args, **kwargs):
+        def command():
+            self._get_pump(device_id).stop()
+
+        self._sendCommand(self.pump_command(device_id, command), *args, **kwargs)

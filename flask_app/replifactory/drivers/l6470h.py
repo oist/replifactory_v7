@@ -343,6 +343,10 @@ class StepMotorStatusValue(ParameterValue):
     def is_overcurrent(self):
         return self.value["OCD"] == 0
 
+    @property
+    def is_thermal_shutdown(self):
+        return self.value["TH_SD"] == 0
+
     def __str__(self):
         hiz = "High impedance state\n" if self.value["HiZ"] == 1 else ""
         uvlo = "Undervoltage lockout or reset\n" if self.value["UVLO"] == 0 else ""
@@ -516,7 +520,7 @@ class StepMotorDriver(Driver):
         # seconds_per_step = seconds_per_tick / minimal_speed_in_steps_per_tick
         self.max_n_microsteps = 2**22 - 1  # 22 bit
 
-    def get_status(self) -> ParameterValue:
+    def get_status(self) -> StepMotorStatusValue:
         return self.status
         # return StepMotorStatusValue(self._get_status())
 
@@ -528,7 +532,7 @@ class StepMotorDriver(Driver):
         return StepMotorConfigValue(self.get_param(parameters.CONFIG))
 
     @property
-    def status(self) -> ParameterValue:
+    def status(self) -> StepMotorStatusValue:
         return StepMotorStatusValue(self.get_param(parameters.STATUS))
 
     @property
@@ -569,8 +573,11 @@ class StepMotorDriver(Driver):
         )
         self._command(cmd, data_bytes)
 
-    def soft_stop(self):
+    def soft_stop(self, wait: bool = True):
         self._command(commands.SOFT_STOP.address)
+        status = self.get_status()
+        while wait and status.is_busy:
+            status = self.get_status()
 
     def hard_stop(self):
         self._command(commands.HARD_STOP.address)
@@ -579,7 +586,7 @@ class StepMotorDriver(Driver):
         self,
         n_steps: int,
         reverse: bool = False,
-        wait: bool = True,
+        wait: bool = False,
     ):
         logger.debug(
             __(

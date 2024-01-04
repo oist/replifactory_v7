@@ -1,19 +1,20 @@
 import logging
+from typing import Optional
 
 import pandas as pd
 
 import replifactory.drivers.l6470h as l6470h
-from flask_app.replifactory.devices import Device
+from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.util import BraceMessage as __
 
 logger = logging.getLogger(__name__)
 
 
 class Motor(Device):
-    driver: l6470h.StepMotorDriver
 
-    def __init__(self, driver: l6470h.StepMotorDriver = None):
-        self.driver = driver
+    def __init__(self, driver: l6470h.StepMotorDriver, callback: Optional[DeviceCallback] = None,):
+        super().__init__(name="Motor", callback=callback)
+        self.driver: l6470h.StepMotorDriver = driver
         self.steps_per_revolution: int = 200  # nema-17 step motor datasheet
         self.max_revolution_per_second = (
             driver.max_steps_per_second / self.steps_per_revolution
@@ -30,8 +31,22 @@ class Motor(Device):
         self.kval_acc = round(((1 << 8) - 1) * 1)  # 0.57)  # legacy
         self.kval_dec = round(((1 << 8) - 1) * 1)  # 0.3)  # legacy
 
-    def read_state(self):
+    @property
+    def is_moving(self):
+        return self.driver.get_status().is_busy
+
+    @property
+    def is_idle(self):
+        return not self.is_moving
+
+    @property
+    def is_error(self):
+        return self.driver.get_status().is_overcurrent or self.driver.get_status().is_thermal_shutdown
+
+    def reset(self):
         logger.debug("Configure")
+        self.driver.hard_stop()
+
         self.driver.set_param(l6470h.parameters.FS_SPD, self.full_step_speed)
         self.driver.set_param(l6470h.parameters.STALL_TH, self.stall_threshold)
 
@@ -44,6 +59,16 @@ class Motor(Device):
         self.set_max_speed(self.max_speed_rps)
         self.driver.set_param(l6470h.parameters.ACC, self.acceleration)
         self.driver.set_param(l6470h.parameters.DEC, self.deceleration)
+
+    def read_state(self):
+        motor_status = self.driver.get_status()
+        if motor_status.is_busy:
+            self._set_state(self.States.STATE_WORKING)
+        elif motor_status.is_overcurrent:
+            self._set_error("Overcurrent")
+        else:
+            self._set_state(self.States.STATE_OPERATIONAL)
+        return self._state
 
     def test(self):
         success = False
@@ -59,19 +84,24 @@ class Motor(Device):
             success = False
         return success
 
-    def run(self, forward: bool = True, revolutions_per_second: float = None):
+    def run(self, forward: bool = True, revolutions_per_second: Optional[float] = None):
         steps_per_second = self.convert_revolutions_per_second_to_steps_per_second(
-            revolutions_per_second
+            revolutions_per_second or self.max_speed_revolution_per_second
         )
+        self.driver.set_step_mode(l6470h.STEP_MODE_128)
         self.driver.run(forward=forward, steps_per_second=steps_per_second)
 
     def stop(self):
+        # self._set_state(self.States.STATE_STOPING)
         self.driver.soft_stop()
+        self._set_state(self.States.STATE_OPERATIONAL)
 
     def emergency_stop(self):
+        # self._set_state(self.States.STATE_STOPING)
         self.driver.hard_stop()
+        self._set_state(self.States.STATE_OPERATIONAL)
 
-    def move(self, n_revolutions: float = 1, revolution_per_second: float = None):
+    def move(self, n_revolutions: float = 1, revolution_per_second: Optional[float] = None):
         """Move the given number of revolutions
         By default uses 1/128 microstepping to minimize noise and vibration.
         If number of required microsteps can not fit in the register (> 2^22),
@@ -89,7 +119,7 @@ class Motor(Device):
                 speed=revolution_per_second,
             )
         )
-        n_microsteps = (
+        n_microsteps = round(
             abs(n_revolutions)
             * self.steps_per_revolution
             * l6470h.STEP_MODE_128.microsteps_per_step

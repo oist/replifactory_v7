@@ -8,7 +8,7 @@
             </CCardText> -->
             <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
             <Valve class="my-1" :deviceId="valve.id" :key="valve.id" :title="valve.title" :disabled="disabled" />
-            <VialControl :odSensorId="odSensor.id" :disabled="disabled" class="my-2"/>
+            <VialControl :odSensorId="odSensor.id" :disabled="disabled" class="my-2 mx-0"/>
             <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
             <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
             <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->

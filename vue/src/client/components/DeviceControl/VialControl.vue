@@ -1,5 +1,5 @@
 <template>
-    <div class="progress progress-bar-vertical">
+    <div class="progress progress-bar-vertical update-button" @click="updateOpticalDensity" :class="disabled ? 'disabled': ''">
         <div class="progress-bar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"
             style="height: 30%;">
             <span class="sr-only">OD: {{ od }}</span>
@@ -52,8 +52,8 @@ export default {
             console.debug(event);
             this.$store.dispatch("machine/runCommand", {
                 device: "odsensor",
-                command: "read",
-                deviceId: this.ODSensorId,
+                command: "measure",
+                deviceId: this.odSensorId,
             })
                 .then((data) => {
                     console.debug(data)
@@ -69,6 +69,25 @@ export default {
 </script>
 
 <style>
+.update-button {
+    cursor: pointer;
+}
+.update-button:hover {
+    /* background-color: lightgray; */
+    opacity: 80%;
+}
+.update-button:active {
+    opacity: 90%;
+}
+.update-button.disabled,
+.update-button.disabled .progress-bar {
+    background-color: gray;
+    border-color: gray;
+    color: white;
+    cursor: default;
+    opacity: 80%;
+}
+
 .progress-bar-vertical {
     width: 100%;
     min-height: 20rem;

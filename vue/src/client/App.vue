@@ -115,4 +115,7 @@ export default {
   margin: 0 auto;
   max-width: 1024px;
 }
+.icon {
+  vertical-align: none !important;
+}
 </style>

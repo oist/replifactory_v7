@@ -212,6 +212,73 @@ class Machine(MachineInterface, comm.MachineCallback):
                 tags=kwargs.get("tags", set()) | {"trigger:stirrer.set_speed"},
             )
 
+    def thermometer_measure(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.measure_temperature(
+                device_id,
+                tags=kwargs.get("tags", set()) | {"trigger:thermometer.measure"},
+            )
+
+    def odsensor_measure(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.measure_od(
+                device_id,
+                tags=kwargs.get("tags", set()) | {"trigger:odsensor.measure"},
+            )
+
+    def pump_pump(self, device_id, volume, speed, *args, **kwargs):
+        if self._comm:
+            self._comm.pump_pump(
+                device_id,
+                volume,
+                speed,
+                tags=kwargs.get("tags", set()) | {"trigger:pump.pump"},
+            )
+
+    # def pump_pump_to_vial(self, device_id, vial_id, volume, speed, *args, **kwargs):
+    #     if self._comm:
+    #         self._comm.pump_pump_to_vial(
+    #             device_id,
+    #             vial_id,
+    #             volume,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:pump.pump_to_vial"},
+    #         )
+
+    def pump_stop(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.pump_stop(
+                device_id,
+                tags=kwargs.get("tags", set()) | {"trigger:pump.stop"},
+            )
+
+    def vial_add_media(self, device_id, volume, speed, *args, **kwargs):
+        if self._comm:
+            self._comm.vial_add_media(
+                device_id,
+                volume,
+                speed,
+                tags=kwargs.get("tags", set()) | {"trigger:vial.add_media"},
+            )
+
+    def vial_add_drug(self, device_id, volume, speed, *args, **kwargs):
+        if self._comm:
+            self._comm.vial_add_drug(
+                device_id,
+                volume,
+                speed,
+                tags=kwargs.get("tags", set()) | {"trigger:vial.add_drug"},
+            )
+
+    def vial_waste(self, device_id, volume, speed, *args, **kwargs):
+        if self._comm:
+            self._comm.vial_waste(
+                device_id,
+                volume,
+                speed,
+                tags=kwargs.get("tags", set()) | {"trigger:vial.waste"},
+            )
+
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
 

@@ -20,6 +20,37 @@ class QueueMarker:
                 _logger.exception("Error while running callback of QueueMarker")
 
 
+class AwaitConditionQueueMarker(QueueMarker):
+    def __init__(self, callback, condition, cancel=None, interval=0.5, timeout_callback=None, timeout=None, *args, **kwargs):
+        super().__init__(callback)
+        self.timeout = timeout
+        self.interval = interval
+        self.condition_callback = condition
+        self.cancel_callback = cancel
+        self.timeout_callback = timeout_callback
+
+    def done(self):
+        if callable(self.condition_callback):
+            try:
+                return self.condition_callback()
+            except Exception:
+                _logger.exception("Error while checking condition of AwaitConditionQueueMarker")
+
+    def cancel(self):
+        if callable(self.cancel_callback):
+            try:
+                return self.cancel_callback()
+            except Exception:
+                _logger.exception("Error while canceling AwaitConditionQueueMarker")
+
+    def on_timeout(self):
+        if callable(self.timeout_callback):
+            try:
+                return self.timeout_callback()
+            except Exception:
+                _logger.exception("Error while running timeout callback of AwaitConditionQueueMarker")
+
+
 class SendQueueMarker(QueueMarker):
     pass
 
