@@ -36,6 +36,7 @@ class Pump(Device):
             self._set_state(motor_state)
 
     def stop(self):
+        self._log.debug(f"Stoping {self.name}")
         self.motor.stop()
         self._set_state(self.States.STATE_OPERATIONAL)
 

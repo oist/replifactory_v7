@@ -950,13 +950,18 @@ class Machine(Device, DeviceCallback):
             kwargs["tags"],  # tags
         )
 
+    def create_stop_command(self, pump: Pump):
+        return lambda: pump.stop()
+
     def pump_pump(self, device_id: str, volume: float, speed: float, *args, **kwargs):
         # stop other pumps
-        commands = [
-            self.pump_command_entry(device_id, lambda: pump.stop(), *args, **kwargs)
-            for pump in self._pumps
-            if pump.id != device_id
-        ]
+        commands = []
+
+        for pump in self._pumps:
+            stop_command = self.create_stop_command(pump)
+            command_entry = self.pump_command_entry(pump.id, stop_command, *args, **kwargs)
+            commands += [command_entry]
+
         if volume:
             commands += [
                 self.pump_command_entry(
@@ -976,7 +981,7 @@ class Machine(Device, DeviceCallback):
 
         # stop all pumps
         commands = [
-            self.pump_command_entry(pump.id, lambda: pump.stop(), *args, **kwargs)
+            self.pump_command_entry(pump.id, self.create_stop_command(pump), *args, **kwargs)
             for pump in self._pumps
         ]
         # open vial valve

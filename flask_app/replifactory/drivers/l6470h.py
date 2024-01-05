@@ -573,7 +573,7 @@ class StepMotorDriver(Driver):
         )
         self._command(cmd, data_bytes)
 
-    def soft_stop(self, wait: bool = True):
+    def soft_stop(self, wait: bool = False):
         self._command(commands.SOFT_STOP.address)
         status = self.get_status()
         while wait and status.is_busy:
