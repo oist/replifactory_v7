@@ -2,6 +2,7 @@ import contextlib
 import logging
 import queue
 import threading
+from flask_app.replifactory.events import Events, eventManager
 
 from replifactory.util import PrependableQueue, TypeAlreadyInQueue, TypedQueue
 
@@ -21,7 +22,17 @@ class QueueMarker:
 
 
 class AwaitConditionQueueMarker(QueueMarker):
-    def __init__(self, callback, condition, cancel=None, interval=0.5, timeout_callback=None, timeout=None, *args, **kwargs):
+    def __init__(
+        self,
+        callback,
+        condition,
+        cancel=None,
+        interval=0.5,
+        timeout_callback=None,
+        timeout=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(callback)
         self.timeout = timeout
         self.interval = interval
@@ -34,7 +45,9 @@ class AwaitConditionQueueMarker(QueueMarker):
             try:
                 return self.condition_callback()
             except Exception:
-                _logger.exception("Error while checking condition of AwaitConditionQueueMarker")
+                _logger.exception(
+                    "Error while checking condition of AwaitConditionQueueMarker"
+                )
 
     def cancel(self):
         if callable(self.cancel_callback):
@@ -48,7 +61,9 @@ class AwaitConditionQueueMarker(QueueMarker):
             try:
                 return self.timeout_callback()
             except Exception:
-                _logger.exception("Error while running timeout callback of AwaitConditionQueueMarker")
+                _logger.exception(
+                    "Error while running timeout callback of AwaitConditionQueueMarker"
+                )
 
 
 class SendQueueMarker(QueueMarker):
@@ -77,11 +92,15 @@ class CommandQueue(TypedQueue):
 
     def get(self, *args, **kwargs):
         self._unblocked.wait()
-        return TypedQueue.get(self, *args, **kwargs)
+        result = TypedQueue.get(self, *args, **kwargs)
+        self._queue_changed()
+        return result
 
     def put(self, *args, **kwargs):
         self._unblocked.wait()
-        return TypedQueue.put(self, *args, **kwargs)
+        result = TypedQueue.put(self, *args, **kwargs)
+        self._queue_changed()
+        return result
 
     def clear(self):
         cleared = []
@@ -91,7 +110,13 @@ class CommandQueue(TypedQueue):
                 TypedQueue.task_done(self)
             except queue.Empty:
                 break
+        self._queue_changed()
         return cleared
+
+    def _queue_changed(self):
+        eventManager().fire(
+            Events.COMMAND_QUEUE_UPDATED, {"size": self.qsize()}
+        )
 
 
 class SendQueue(PrependableQueue):
@@ -135,16 +160,19 @@ class SendQueue(PrependableQueue):
         PrependableQueue.prepend(
             self, (item, item_type, target), block=block, timeout=timeout
         )
+        self._queue_changed()
 
     def put(self, item, item_type=None, target=None, block=True, timeout=None):
         self._unblocked.wait()
         PrependableQueue.put(
             self, (item, item_type, target), block=block, timeout=timeout
         )
+        self._queue_changed()
 
     def get(self, block=True, timeout=None):
         self._unblocked.wait()
         item, _, _ = PrependableQueue.get(self, block=block, timeout=timeout)
+        self._queue_changed()
         return item
 
     def clear(self):
@@ -155,7 +183,13 @@ class SendQueue(PrependableQueue):
                 PrependableQueue.task_done(self)
             except queue.Empty:
                 break
+        self._queue_changed()
         return cleared
+
+    def _queue_changed(self):
+        eventManager().fire(
+            Events.SEND_QUEUE_UPDATED, {"size": self._qsize()}
+        )
 
     def _put(self, item):
         _, item_type, target = item

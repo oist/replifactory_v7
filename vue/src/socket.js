@@ -35,3 +35,11 @@ socket.on("ConnectionOptionsUpdated", (options) => {
 socket.on("MachineConnected", (payload) => {
   store.commit("machine/updateCurrentConnetion", payload);
 });
+
+socket.on("SendQueueUpdated", (payload) => {
+  store.commit("machine/updateSendQueue", payload);
+});
+
+socket.on("CommandQueueUpdated", (payload) => {
+  store.commit("machine/updateCommandQueue", payload);
+});

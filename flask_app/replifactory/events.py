@@ -43,6 +43,11 @@ class Events:
     CONNECTIONS_AUTOREFRESHED = "ConnectionsAutorefreshed"
     CONNECTION_OPTIONS_UPDATED = "ConnectionOptionsUpdated"
 
+    # Commands queue
+    SEND_QUEUE_UPDATED = "SendQueueUpdated"
+    COMMAND_QUEUE_UPDATED = "CommandQueueUpdated"
+    JOB_QUEUE_UPDATED = "JobQueueUpdated"
+
     # State changes
     MACHINE_STATE_CHANGED = "MachineStateChanged"
     MACHINE_RESET = "MachineReset"

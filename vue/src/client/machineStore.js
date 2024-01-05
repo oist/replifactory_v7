@@ -15,6 +15,10 @@ export default {
       id: "UNKNOWN",
       string: "Unknown",
     },
+    queue: {
+      send: {},
+      command: {},
+    },
     data: {
       state: {
         flags: {
@@ -41,6 +45,12 @@ export default {
     },
     updateData(state, data) {
       state.data = data;
+    },
+    updateSendQueue(state, data) {
+      state.queue.send = data;
+    },
+    updateCommandQueue(state, data) {
+      state.queue.command = data;
     },
   },
   getters: {

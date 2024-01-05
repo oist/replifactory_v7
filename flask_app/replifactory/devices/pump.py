@@ -34,6 +34,7 @@ class Pump(Device):
             self._set_state(self.States.STATE_OPERATIONAL)
         else:
             self._set_state(motor_state)
+        return self._state
 
     def stop(self):
         self._log.debug(f"Stoping {self.name}")
@@ -42,11 +43,11 @@ class Pump(Device):
 
     @property
     def is_pumping(self):
-        return self.motor.is_moving
+        return self.read_state() == self.States.STATE_WORKING
 
     @property
     def is_idle(self):
-        return self.motor.is_idle
+        return self.read_state() == self.States.STATE_OPERATIONAL
 
     def get_data(self):
         return super().get_data() | {

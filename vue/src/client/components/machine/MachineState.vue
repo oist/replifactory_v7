@@ -3,6 +3,11 @@
         <dl class="row">
             <dt>State</dt>
             <dd>{{ state_string }}</dd>
+            <dt>Queue</dt>
+            <dd>
+                Send: {{ sendQueue.size ? sendQueue.size : "0" }}<br/>
+                Commands: {{ commandQueue.size ? commandQueue.size : "0" }}
+            </dd>
         </dl>
         <CButton type="button" color="danger" @click="handleCleanCommandQueueClick" :disabled="!deviceControlEnabled">
             <CIcon :icon="icon.cilXCircle" size="xl" /> Abort
@@ -29,6 +34,8 @@ export default {
     computed: {
         ...mapState("machine", {
             state_string: state => state.data.state.text,
+            sendQueue: state => state.queue.send,
+            commandQueue: state => state.queue.command,
         }),
         ...mapGetters("machine", {
             deviceControlEnabled: "isManualControlEnabled",

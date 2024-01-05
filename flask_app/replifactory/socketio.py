@@ -35,6 +35,8 @@ class SocketIOSessionMachineCallback(MachineCallback):
             Events.CONNECTION_OPTIONS_UPDATED, self._on_connection_options_updated
         )
         eventManager().subscribe(Events.MACHINE_CONNECTED, self._on_connected)
+        eventManager().subscribe(Events.COMMAND_QUEUE_UPDATED, self._on_command_queue)
+        eventManager().subscribe(Events.SEND_QUEUE_UPDATED, self._on_send_queue)
 
     def __del__(self):
         self.unsubscribe()
@@ -75,6 +77,12 @@ class SocketIOSessionMachineCallback(MachineCallback):
         usb_device = comm._usb_device
         payload = UsbManager.get_device_info(usb_device)
         self._emit(event, payload, namespace="/machine", broadcast=True)
+
+    def _on_command_queue(self, event, payload):
+        self._emit(event, payload)
+
+    def _on_send_queue(self, event, payload):
+        self._emit(event, payload)
 
     def on_machine_send_initial_data(self, data):
         self._initial_data_sent = True
