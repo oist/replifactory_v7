@@ -13,8 +13,10 @@ class Thermometer(Device):
         self._last_value = 0
 
     def measure(self):
+        self._set_state(self.States.STATE_WORKING)
         value = self.driver.measure_one_shot()
         self._last_value = value
+        self._set_state(self.States.STATE_OPERATIONAL)
         return value
 
     def _test(self):

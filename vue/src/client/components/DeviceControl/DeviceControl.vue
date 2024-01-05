@@ -17,6 +17,11 @@
       <Pump :disabled="!deviceControlEnabled" deviceId="pump-2" label="[2] Drug pump"/>
       <Pump :disabled="!deviceControlEnabled" deviceId="pump-4" label="[4] Waste pump"/>
     </CRow>
+    <CRow>
+      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x48" label="Main board"/>
+      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x49" label="Reactor 1"/>
+      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x4a" label="Reactor 7"/>
+    </CRow>
     <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
     <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
     <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->
@@ -33,6 +38,7 @@
 // import VialControl from './VialControl';
 import ReactorControl from './ReactorControl';
 import Pump from './Pump';
+import Thermometer from './Thermometer';
 import { mapState, mapGetters, mapMutations, mapActions } from 'vuex';
 import { CRow } from '@coreui/vue';
 
@@ -47,6 +53,7 @@ export default {
     // VialControl,
     ReactorControl,
     Pump,
+    Thermometer,
     CRow,
     // CFormSwitch,
   },

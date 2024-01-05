@@ -79,8 +79,8 @@ export default {
 .update-button:active {
     opacity: 90%;
 }
-.update-button.disabled,
-.update-button.disabled .progress-bar {
+.update-button.disabled
+.update-button.disabled .progress-bar{
     background-color: gray;
     border-color: gray;
     color: white;
@@ -90,7 +90,7 @@ export default {
 
 .progress-bar-vertical {
     width: 100%;
-    min-height: 20rem;
+    min-height: 12rem;
     display: flex;
     align-items: flex-end;
     margin-right: 20px;
