@@ -279,6 +279,10 @@ class Machine(MachineInterface, comm.MachineCallback):
                 tags=kwargs.get("tags", set()) | {"trigger:vial.waste"},
             )
 
+    def command_queue_clear(self, *args, **kwargs):
+        if self._comm:
+            self._comm.command_queue_clear()
+
     def is_closed_or_error(self, *args, **kwargs):
         return self._comm is None or self._comm.isClosedOrError()
 

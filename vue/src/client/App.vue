@@ -128,7 +128,7 @@ export default {
   max-width: 1024px;
 }
 .icon {
-  vertical-align: none !important;
+  vertical-align: middle !important;
 }
 .form-switch > label {
   margin: 0 !important;

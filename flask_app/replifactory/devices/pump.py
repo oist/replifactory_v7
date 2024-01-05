@@ -72,7 +72,6 @@ class Pump(Device):
                 rot_per_sec = self.max_speed_rps
             self._set_state(self.States.STATE_WORKING)
             self.motor.move(n_revolutions=rotations, revolution_per_second=rot_per_sec)
-            self._set_state(self.States.STATE_OPERATIONAL)
 
     def calculate_rotations(self, volume):
         # Get the coefficients for the given pumpId

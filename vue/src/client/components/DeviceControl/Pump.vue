@@ -1,5 +1,5 @@
 <template>
-    <CCard :style="debug ? 'width: 24rem' : 'width: 16rem'" class="m-2">
+    <CCard :style="debug ? 'width: 24rem' : 'width: 16rem'" class="m-2 pump-control">
         <CCardBody>
             <CCardTitle>{{ label }}</CCardTitle>
             <CInputGroup class="mb-3">
@@ -119,19 +119,19 @@ export default {
 </script>
 
 <style>
-.btn {
+.pump-control .btn {
     opacity: 50%;
 }
-.btn:hover {
+.pump-control .btn:hover {
     opacity: 80%;
 }
-.btn.active {
+.pump-control .btn.active {
     opacity: 100%;
 }
-.btn.active:hover {
+.pump-control .btn.active:hover {
     opacity: 80%;
 }
-.btn:disabled {
+.pump-control .btn:disabled {
     background-color: gray;
     border-color: gray;
     color: white;

@@ -376,7 +376,7 @@ class Machine(Device, DeviceCallback):
                             if self._cancel_await_condition:
                                 self._cancel_await_condition = False
                                 command.cancel()
-                                break
+                                continue
                             if command.timeout:
                                 now = time.monotonic()
                                 if now > timeout_time:
@@ -923,9 +923,13 @@ class Machine(Device, DeviceCallback):
         def condition():
             return pump.is_idle
 
+        def cancel():
+            pump.stop()
+
         return LongtimeMachineCommand(
             callback=command,
             condition=kwargs["condition"] if "condition" in kwargs else condition,
+            cancel=kwargs["cancel"] if "cancel" in kwargs else cancel,
             *args,
             **kwargs,
         )
@@ -1025,3 +1029,9 @@ class Machine(Device, DeviceCallback):
             self._get_pump(device_id).stop()
 
         self._sendCommand(self.pump_command(device_id, command), *args, **kwargs)
+
+    def command_queue_clear(self):
+        self._job_queue.queue.clear()
+        self._command_queue.clear()
+        self._send_queue.clear()
+        self._cancel_await_condition = True

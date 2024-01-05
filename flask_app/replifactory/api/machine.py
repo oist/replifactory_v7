@@ -6,6 +6,21 @@ from flask_app.replifactory.api import api
 from replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
 
+@api.route("/machine/command_queue", methods=["POST"])
+def machineCommandQueue():
+    valid_commands = {
+        "clear": [],
+    }
+    command, data, response = get_json_command_from_request(request, valid_commands)
+    if response is not None:
+        return response
+
+    if command == "clear":
+        machine.command_queue_clear()
+
+    return NO_CONTENT
+
+
 @api.route("/machine/valve", methods=["POST"])
 def machineValveCommand():
     valid_commands = {
