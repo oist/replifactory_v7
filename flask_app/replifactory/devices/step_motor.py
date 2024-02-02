@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 from typing import Optional
 
@@ -10,26 +11,78 @@ from flask_app.replifactory.util import BraceMessage as __
 logger = logging.getLogger(__name__)
 
 
-class Motor(Device):
+@dataclass
+class MotorProfile:
+    acceleration: float = 2008  # 0x08A  # 2008 step/s^2
+    deceleration: float = 2008  # 0x08A  # 2008 step/s^2
+    # max value 15610 steps/sec / 200 steps/rev = 78.05 rev/sec
+    max_speed_rps: float = 4.959  # 0x041 (991.8 step/s)
+    min_speed_rps: float = 0
+    full_step_speed: int = 0x027  # 602.7 step/s
+    kval_hold: int = 0x29  # Vs * 0.16
+    kval_run: int = 0x29  # Vs * 0.16
+    kval_acc: int = 0x29  # Vs * 0.16
+    kval_dec: int = 0x29  # Vs * 0.16
+    intersect_speed: int = 0x0408  # 61.5 step/s
+    start_slope: int = 0x19  # 0.038% s/step
+    acceleration_final_slope: int = 0x29  # 0.063% s/step
+    deceleration_final_slope: int = 0x29  # 0.063% s/step
+    thermal_compensation_factor: int = 0x0  # 1.0
+    overcurrent_threshold: int = 0x8  # 3.38A
+    stall_threshold: int = 0x40  # 2.03A
+    step_mode: int = 0x7  # 128 microsteps
+    alarm_enable: int = 0xFF  # All alarms enabled
 
-    def __init__(self, driver: l6470h.StepMotorDriver, callback: Optional[DeviceCallback] = None,):
-        super().__init__(name="Motor", callback=callback)
+
+class MotorProfile_XY42STH34_0354A(MotorProfile):
+    def __init__(self):
+        super().__init__(
+            full_step_speed=0x3FF,  # max value
+            stall_threshold=0,  # minimum 31.25 mA
+            overcurrent_threshold=1,  # 750 mA
+            min_speed_rps=0.01,
+            max_speed_rps=2.5,
+            acceleration=2008,  # 0x0,  # minimuum 14.55 step/sec^2
+            deceleration=2008,  # 0x0,  # minimuum 14.55 step/sec^2
+            kval_hold=0,
+            kval_run=0xFF,  # maximum Vs x (255/256)
+            kval_acc=0xFF,  # maximum Vs x (255/256)
+            kval_dec=0xFF,  # maximum Vs x (255/256)
+        )
+
+
+class MotorProfile_17HS15_1504S_X1(MotorProfile):
+    def __init__(self):
+        super().__init__(
+            full_step_speed=0b1100110,  # legacy 10-bit * 0.1
+            stall_threshold=0b100000,  # half of max 0b111111
+            overcurrent_threshold=0x8,  # default  3.38 A
+            min_speed_rps=0.01,
+            max_speed_rps=3,
+            acceleration=round(((1 << 12) - 1) * 0.01),  # legacy
+            deceleration=round(((1 << 12) - 1) * 0.01),  # legacy
+            kval_hold=0,
+            kval_run=round(((1 << 8) - 1) * 1),  # 0.8)  # legacy
+            kval_acc=round(((1 << 8) - 1) * 1),  # 0.57)  # legacy
+            kval_dec=round(((1 << 8) - 1) * 1),  # 0.3)  # legacy
+        )
+
+
+class Motor(Device):
+    def __init__(
+        self,
+        driver: l6470h.StepMotorDriver,
+        callback: Optional[DeviceCallback] = None,
+        profile: MotorProfile = MotorProfile(),
+        name: str = "Motor",
+    ):
+        super().__init__(name=name, callback=callback)
         self.driver: l6470h.StepMotorDriver = driver
         self.steps_per_revolution: int = 200  # nema-17 step motor datasheet
         self.max_revolution_per_second = (
             driver.max_steps_per_second / self.steps_per_revolution
         )
-        self.max_speed_revolution_per_second = 4
-        self.full_step_speed = 0b1100110  # legacy 10-bit * 0.1
-        self.stall_threshold = 0b100000  # half of max 0b111111
-        self.min_speed_rps = 0.01
-        self.max_speed_rps = 3
-        self.acceleration = round(((1 << 12) - 1) * 0.01)  # legacy
-        self.deceleration = round(((1 << 12) - 1) * 0.01)  # legacy
-        self.kval_hold = 0
-        self.kval_run = round(((1 << 8) - 1) * 1)  # 0.8)  # legacy
-        self.kval_acc = round(((1 << 8) - 1) * 1)  # 0.57)  # legacy
-        self.kval_dec = round(((1 << 8) - 1) * 1)  # 0.3)  # legacy
+        self._profile = profile
 
     @property
     def is_moving(self):
@@ -41,24 +94,42 @@ class Motor(Device):
 
     @property
     def is_error(self):
-        return self.driver.get_status().is_overcurrent or self.driver.get_status().is_thermal_shutdown
+        return (
+            self.driver.get_status().is_overcurrent
+            or self.driver.get_status().is_thermal_shutdown
+        )
 
     def reset(self):
         logger.debug("Configure")
         self.driver.hard_stop()
-
-        self.driver.set_param(l6470h.parameters.FS_SPD, self.full_step_speed)
-        self.driver.set_param(l6470h.parameters.STALL_TH, self.stall_threshold)
-
-        self.driver.set_param(l6470h.parameters.KVAL_HOLD, self.kval_hold)
-        self.driver.set_param(l6470h.parameters.KVAL_RUN, self.kval_run)
-        self.driver.set_param(l6470h.parameters.KVAL_ACC, self.kval_acc)
-        self.driver.set_param(l6470h.parameters.KVAL_DEC, self.kval_dec)
-
-        self.set_min_speed(self.min_speed_rps)
-        self.set_max_speed(self.max_speed_rps)
-        self.driver.set_param(l6470h.parameters.ACC, self.acceleration)
-        self.driver.set_param(l6470h.parameters.DEC, self.deceleration)
+        self.driver.set_acceleration(self._profile.acceleration)
+        self.driver.set_deceleration(self._profile.deceleration)
+        self.set_max_speed(self._profile.max_speed_rps)
+        self.set_min_speed(self._profile.min_speed_rps)
+        self.driver.set_param(l6470h.parameters.FS_SPD, self._profile.full_step_speed)
+        self.driver.set_param(l6470h.parameters.KVAL_HOLD, self._profile.kval_hold)
+        self.driver.set_param(l6470h.parameters.KVAL_RUN, self._profile.kval_run)
+        self.driver.set_param(l6470h.parameters.KVAL_ACC, self._profile.kval_acc)
+        self.driver.set_param(l6470h.parameters.KVAL_DEC, self._profile.kval_dec)
+        self.driver.set_param(
+            l6470h.parameters.INT_SPEED, self._profile.intersect_speed
+        )
+        self.driver.set_param(l6470h.parameters.ST_SLP, self._profile.start_slope)
+        self.driver.set_param(
+            l6470h.parameters.FN_SLP_ACC, self._profile.acceleration_final_slope
+        )
+        self.driver.set_param(
+            l6470h.parameters.FN_SLP_DEC, self._profile.deceleration_final_slope
+        )
+        self.driver.set_param(
+            l6470h.parameters.K_THERM, self._profile.thermal_compensation_factor
+        )
+        self.driver.set_param(
+            l6470h.parameters.OCD_TH, self._profile.overcurrent_threshold
+        )
+        self.driver.set_param(l6470h.parameters.STALL_TH, self._profile.stall_threshold)
+        self.driver.set_param(l6470h.parameters.STEP_MODE, self._profile.step_mode)
+        self.driver.set_param(l6470h.parameters.ALARM_EN, self._profile.alarm_enable)
 
     def read_state(self):
         motor_status = self.driver.get_status()
@@ -86,7 +157,7 @@ class Motor(Device):
 
     def run(self, forward: bool = True, revolutions_per_second: Optional[float] = None):
         steps_per_second = self.convert_revolutions_per_second_to_steps_per_second(
-            revolutions_per_second or self.max_speed_revolution_per_second
+            revolutions_per_second or self._profile.max_speed_rps
         )
         self.driver.set_step_mode(l6470h.STEP_MODE_128)
         self.driver.run(forward=forward, steps_per_second=steps_per_second)
@@ -101,7 +172,9 @@ class Motor(Device):
         self.driver.hard_stop()
         self._set_state(self.States.STATE_OPERATIONAL)
 
-    def move(self, n_revolutions: float = 1, revolution_per_second: Optional[float] = None):
+    def move(
+        self, n_revolutions: float = 1, revolution_per_second: Optional[float] = None
+    ):
         """Move the given number of revolutions
         By default uses 1/128 microstepping to minimize noise and vibration.
         If number of required microsteps can not fit in the register (> 2^22),
@@ -132,9 +205,7 @@ class Motor(Device):
         )
 
         direction = n_revolutions > 0
-        self.set_max_speed(
-            revolution_per_second or self.max_speed_revolution_per_second
-        )
+        self.set_max_speed(revolution_per_second or self._profile.max_speed_rps)
         self.driver.set_step_mode(suitable_step_mode)
         return self.driver.move(n_microsteps, direction)
 

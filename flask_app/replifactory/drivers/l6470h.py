@@ -610,14 +610,16 @@ class StepMotorDriver(Driver):
     def set_step_mode(self, step_mode: StepMode):
         self.set_param(parameters.STEP_MODE, step_mode.value)
 
-    def set_acceleration(self, steps_per_tick):
+    def set_acceleration(self, steps_per_sec2):
         ACC_UQ_SIZE = 40
-        acc_register_value = to_fixed(steps_per_tick, ACC_UQ_SIZE)
+        steps_per_tick2 = steps_per_sec2 * (self.seconds_per_tick**2)
+        acc_register_value = to_fixed(steps_per_tick2, ACC_UQ_SIZE) - 1
         self.set_param(parameters.ACC, acc_register_value)
 
-    def set_deceleration(self, steps_per_tick):
+    def set_deceleration(self, steps_per_sec2):
         DEC_UQ_SIZE = 40
-        dec_register_value = to_fixed(steps_per_tick, DEC_UQ_SIZE)
+        steps_per_tick2 = steps_per_sec2 * (self.seconds_per_tick**2)
+        dec_register_value = to_fixed(steps_per_tick2, DEC_UQ_SIZE) - 1
         self.set_param(parameters.DEC, dec_register_value)
 
     def set_max_speed(self, steps_per_tick):

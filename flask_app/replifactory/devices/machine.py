@@ -13,7 +13,7 @@ from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.laser import Laser
 from flask_app.replifactory.devices.photodiode import Photodiode
 from flask_app.replifactory.devices.pump import Pump
-from flask_app.replifactory.devices.step_motor import Motor
+from flask_app.replifactory.devices.step_motor import Motor, MotorProfile, MotorProfile_17HS15_1504S_X1, MotorProfile_XY42STH34_0354A
 from flask_app.replifactory.devices.stirrer import Stirrer
 from flask_app.replifactory.devices.stirrers_group import StirrersGroup
 from flask_app.replifactory.devices.thermometer import Thermometer
@@ -162,7 +162,8 @@ class Machine(Device, DeviceCallback):
         for cs in range(PUMPS_COUNT):
             spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
             step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
-            motor = Motor(step_motor_driver)
+            profile = MotorProfile() if cs != 0 else MotorProfile_XY42STH34_0354A()
+            motor = Motor(step_motor_driver, profile=profile, name=f"Motor {cs + 1}")
             pump = Pump(motor, name=f"Pump {cs + 1}", callback=self)
             self._pumps.append(pump)
             self._devices[pump.id] = pump
@@ -921,7 +922,7 @@ class Machine(Device, DeviceCallback):
         pump = self._get_pump(device_id)
 
         def condition():
-            return pump.is_idle
+            return pump.is_idle or pump.is_error
 
         def cancel():
             pump.stop()

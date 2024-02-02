@@ -15,7 +15,7 @@ class Pump(Device):
     ):
         super().__init__(name or "Pump", callback=callback)
         self.motor = motor
-        self.max_speed_rps = max_speed_rps or motor.max_speed_rps
+        self.max_speed_rps = max_speed_rps or motor._profile.max_speed_rps
         self.coefficients = {
             1: 10,
             5: 9.5,
@@ -23,6 +23,9 @@ class Pump(Device):
             50: 8.5,
         }
         self.points = sorted([(rot, coef) for rot, coef in self.coefficients.items()])
+
+    def reset(self):
+        self.motor.reset()
 
     def read_state(self):
         motor_state = self.motor.read_state()
@@ -48,6 +51,10 @@ class Pump(Device):
     @property
     def is_idle(self):
         return self.read_state() == self.States.STATE_OPERATIONAL
+
+    @property
+    def is_error(self):
+        return self.read_state() == self.States.STATE_ERROR
 
     def get_data(self):
         return super().get_data() | {
