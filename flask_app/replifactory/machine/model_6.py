@@ -252,6 +252,14 @@ class Machine(MachineInterface, comm.MachineCallback):
                 tags=kwargs.get("tags", set()) | {"trigger:pump.stop"},
             )
 
+    def pump_set_profile(self, device_id, profile,  *args, **kwargs):
+        if self._comm:
+            self._comm.pump_set_profile(
+                device_id,
+                profile,
+                tags=kwargs.get("tags", set()) | {"trigger:pump.set_profile"},
+            )
+
     def vial_add_media(self, device_id, volume, speed, *args, **kwargs):
         if self._comm:
             self._comm.vial_add_media(

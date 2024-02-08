@@ -191,3 +191,6 @@ class Device:
         elif state == self.States.STATE_RECONNECTING:
             return "Reconnecting"
         return f"Unknown State ({self._state})"
+
+    def set_callback(self, callback):
+        self._callback = callback

@@ -162,7 +162,7 @@ class Machine(Device, DeviceCallback):
         for cs in range(PUMPS_COUNT):
             spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
             step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
-            profile = MotorProfile() if cs != 0 else MotorProfile_XY42STH34_0354A()
+            profile = MotorProfile_17HS15_1504S_X1() if cs != 0 else MotorProfile_XY42STH34_0354A()
             motor = Motor(step_motor_driver, profile=profile, name=f"Motor {cs + 1}")
             pump = Pump(motor, name=f"Pump {cs + 1}", callback=self)
             self._pumps.append(pump)
@@ -1030,6 +1030,12 @@ class Machine(Device, DeviceCallback):
             self._get_pump(device_id).stop()
 
         self._sendCommand(self.pump_command(device_id, command), *args, **kwargs)
+
+    def pump_set_profile(self, device_id, profile, *args, **kwargs):
+        def command():
+            self._get_pump(device_id).set_profile(profile)
+
+        self._sendCommand(MachineCommand(command), *args, **kwargs)
 
     def command_queue_clear(self):
         self._job_queue.queue.clear()

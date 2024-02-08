@@ -47,7 +47,7 @@
         <ul class="nav nav-tabs">
           <BootstrapRouterLink to="/experiment">Experiment</BootstrapRouterLink>
           <BootstrapRouterLink to="/device">Device</BootstrapRouterLink>
-          <BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink>
+          <!-- <BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink> -->
           <BootstrapRouterLink to="/help">Help</BootstrapRouterLink>
           <BootstrapRouterLink to="/status">Status</BootstrapRouterLink>
           <BootstrapRouterLink to="/logs">Logs</BootstrapRouterLink>

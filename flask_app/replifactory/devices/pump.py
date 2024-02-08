@@ -4,7 +4,7 @@ from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.step_motor import Motor
 
 
-class Pump(Device):
+class Pump(Device, DeviceCallback):
 
     def __init__(
         self,
@@ -15,6 +15,7 @@ class Pump(Device):
     ):
         super().__init__(name or "Pump", callback=callback)
         self.motor = motor
+        self.motor.set_callback(self)
         self.max_speed_rps = max_speed_rps or motor._profile.max_speed_rps
         self.coefficients = {
             1: 10,
@@ -29,20 +30,27 @@ class Pump(Device):
 
     def read_state(self):
         motor_state = self.motor.read_state()
-        if motor_state == self.States.STATE_ERROR:
-            self._set_state(self.States.STATE_ERROR)
-        elif motor_state == self.States.STATE_WORKING:
-            self._set_state(self.States.STATE_WORKING)
-        elif motor_state == self.States.STATE_OPERATIONAL:
-            self._set_state(self.States.STATE_OPERATIONAL)
-        else:
-            self._set_state(motor_state)
-        return self._state
+        self.on_device_state_change(self.motor, motor_state)
+        return motor_state
 
     def stop(self):
         self._log.debug(f"Stoping {self.name}")
         self.motor.stop()
         self._set_state(self.States.STATE_OPERATIONAL)
+
+    def set_profile(self, profile):
+        self.motor.set_profile(profile)
+
+    def on_device_state_change(self, device, state):
+        if state == self.States.STATE_ERROR:
+            self._set_state(self.States.STATE_ERROR, force=True)
+        elif state == self.States.STATE_WORKING:
+            self._set_state(self.States.STATE_WORKING, force=True)
+        elif state == self.States.STATE_OPERATIONAL:
+            self._set_state(self.States.STATE_OPERATIONAL, force=True)
+        else:
+            self._set_state(state, force=True)
+        return self._state
 
     @property
     def is_pumping(self):
@@ -59,6 +67,7 @@ class Pump(Device):
     def get_data(self):
         return super().get_data() | {
             "max_speed_rps": self.max_speed_rps,
+            "motor": self.motor.get_data(),
         }
 
     def run(self, forward: bool = True, rot_per_sec: Optional[float] = None):

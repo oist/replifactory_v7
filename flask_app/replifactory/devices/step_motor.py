@@ -32,6 +32,7 @@ class MotorProfile:
     stall_threshold: int = 0x40  # 2.03A
     step_mode: int = 0x7  # 128 microsteps
     alarm_enable: int = 0xFF  # All alarms enabled
+    clockwise: bool = True
 
 
 class MotorProfile_XY42STH34_0354A(MotorProfile):
@@ -54,17 +55,17 @@ class MotorProfile_XY42STH34_0354A(MotorProfile):
 class MotorProfile_17HS15_1504S_X1(MotorProfile):
     def __init__(self):
         super().__init__(
-            full_step_speed=0b1100110,  # legacy 10-bit * 0.1
+            full_step_speed=0x3FF,  # legacy 10-bit * 0.1
             stall_threshold=0b100000,  # half of max 0b111111
-            overcurrent_threshold=0x8,  # default  3.38 A
+            overcurrent_threshold=0xA,  # 3.75 A
             min_speed_rps=0.01,
-            max_speed_rps=3,
-            acceleration=round(((1 << 12) - 1) * 0.01),  # legacy
-            deceleration=round(((1 << 12) - 1) * 0.01),  # legacy
+            max_speed_rps=4.3,
+            acceleration=2008,
+            deceleration=2008,
             kval_hold=0,
-            kval_run=round(((1 << 8) - 1) * 1),  # 0.8)  # legacy
-            kval_acc=round(((1 << 8) - 1) * 1),  # 0.57)  # legacy
-            kval_dec=round(((1 << 8) - 1) * 1),  # 0.3)  # legacy
+            kval_run=0xF0,
+            kval_acc=0xF0,
+            kval_dec=0xF0,
         )
 
 
@@ -102,34 +103,7 @@ class Motor(Device):
     def reset(self):
         logger.debug("Configure")
         self.driver.hard_stop()
-        self.driver.set_acceleration(self._profile.acceleration)
-        self.driver.set_deceleration(self._profile.deceleration)
-        self.set_max_speed(self._profile.max_speed_rps)
-        self.set_min_speed(self._profile.min_speed_rps)
-        self.driver.set_param(l6470h.parameters.FS_SPD, self._profile.full_step_speed)
-        self.driver.set_param(l6470h.parameters.KVAL_HOLD, self._profile.kval_hold)
-        self.driver.set_param(l6470h.parameters.KVAL_RUN, self._profile.kval_run)
-        self.driver.set_param(l6470h.parameters.KVAL_ACC, self._profile.kval_acc)
-        self.driver.set_param(l6470h.parameters.KVAL_DEC, self._profile.kval_dec)
-        self.driver.set_param(
-            l6470h.parameters.INT_SPEED, self._profile.intersect_speed
-        )
-        self.driver.set_param(l6470h.parameters.ST_SLP, self._profile.start_slope)
-        self.driver.set_param(
-            l6470h.parameters.FN_SLP_ACC, self._profile.acceleration_final_slope
-        )
-        self.driver.set_param(
-            l6470h.parameters.FN_SLP_DEC, self._profile.deceleration_final_slope
-        )
-        self.driver.set_param(
-            l6470h.parameters.K_THERM, self._profile.thermal_compensation_factor
-        )
-        self.driver.set_param(
-            l6470h.parameters.OCD_TH, self._profile.overcurrent_threshold
-        )
-        self.driver.set_param(l6470h.parameters.STALL_TH, self._profile.stall_threshold)
-        self.driver.set_param(l6470h.parameters.STEP_MODE, self._profile.step_mode)
-        self.driver.set_param(l6470h.parameters.ALARM_EN, self._profile.alarm_enable)
+        self.set_profile(self._profile)
 
     def read_state(self):
         motor_status = self.driver.get_status()
@@ -155,12 +129,49 @@ class Motor(Device):
             success = False
         return success
 
-    def run(self, forward: bool = True, revolutions_per_second: Optional[float] = None):
+    def get_data(self):
+        return super().get_data() | {
+            "profile": self._profile.__dict__,
+        }
+
+    def set_profile(self, profile: MotorProfile):
+        self._profile = profile
+        self.driver.set_acceleration(profile.acceleration)
+        self.driver.set_deceleration(profile.deceleration)
+        self.set_max_speed(profile.max_speed_rps)
+        self.set_min_speed(profile.min_speed_rps)
+        self.driver.set_param(l6470h.parameters.FS_SPD, profile.full_step_speed)
+        self.driver.set_param(l6470h.parameters.KVAL_HOLD, profile.kval_hold)
+        self.driver.set_param(l6470h.parameters.KVAL_RUN, profile.kval_run)
+        self.driver.set_param(l6470h.parameters.KVAL_ACC, profile.kval_acc)
+        self.driver.set_param(l6470h.parameters.KVAL_DEC, profile.kval_dec)
+        self.driver.set_param(
+            l6470h.parameters.INT_SPEED, profile.intersect_speed
+        )
+        self.driver.set_param(l6470h.parameters.ST_SLP, profile.start_slope)
+        self.driver.set_param(
+            l6470h.parameters.FN_SLP_ACC, profile.acceleration_final_slope
+        )
+        self.driver.set_param(
+            l6470h.parameters.FN_SLP_DEC, profile.deceleration_final_slope
+        )
+        self.driver.set_param(
+            l6470h.parameters.K_THERM, profile.thermal_compensation_factor
+        )
+        self.driver.set_param(
+            l6470h.parameters.OCD_TH, profile.overcurrent_threshold
+        )
+        self.driver.set_param(l6470h.parameters.STALL_TH, profile.stall_threshold)
+        self.driver.set_param(l6470h.parameters.STEP_MODE, profile.step_mode)
+        self.driver.set_param(l6470h.parameters.ALARM_EN, profile.alarm_enable)
+        self._set_state(self._state, force=True)
+
+    def run(self, clockwise: Optional[bool] = None, revolutions_per_second: Optional[float] = None):
         steps_per_second = self.convert_revolutions_per_second_to_steps_per_second(
             revolutions_per_second or self._profile.max_speed_rps
         )
         self.driver.set_step_mode(l6470h.STEP_MODE_128)
-        self.driver.run(forward=forward, steps_per_second=steps_per_second)
+        self.driver.run(forward=clockwise or self._profile.clockwise, steps_per_second=steps_per_second)
 
     def stop(self):
         # self._set_state(self.States.STATE_STOPING)
@@ -204,10 +215,10 @@ class Motor(Device):
             * suitable_step_mode.microsteps_per_step
         )
 
-        direction = n_revolutions > 0
+        reversed = n_revolutions < 0
         self.set_max_speed(revolution_per_second or self._profile.max_speed_rps)
         self.driver.set_step_mode(suitable_step_mode)
-        return self.driver.move(n_microsteps, direction)
+        return self.driver.move(n_steps=n_microsteps, reverse=reversed)
 
     def set_max_speed(self, revolutions_per_second: float):
         if revolutions_per_second > self.max_revolution_per_second:
