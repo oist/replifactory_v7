@@ -86,7 +86,7 @@ RUN apt-get update \
 COPY --from=project_root README.md poetry.lock poetry.toml pyproject.toml ./
 
 # RUN poetry export -f requirements.txt --output /tmp/requirements.txt
-RUN poetry install --only main
+RUN poetry install --only main --no-root
 
 
 # PRODUCTION
