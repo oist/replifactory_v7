@@ -128,11 +128,12 @@ USER $USER
 
 COPY --chown=$USER:$USER --from=vue-app /usr/src/app/flask_app/static ./flask_app/static
 COPY --chown=$USER:$USER ./flask_app/ ./flask_app/
+COPY --chown=$USER:$USER ./entrypoint.sh ./
 
 RUN flask --app flask_app digest compile
 
-RUN chmod +x flask_app/entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 ENV PATH=$PATH:/home/flask/.local/bin/
 
-CMD ["python", "-m", "gunicorn", "--access-logfile", "-", "-k", "gevent", "-w", "1", "flask_app.app"]
+ENTRYPOINT ["./entrypoint.sh"]

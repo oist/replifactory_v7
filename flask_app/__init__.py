@@ -24,9 +24,6 @@ machine = None
 
 flask_static_digest = FlaskStaticDigest()
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-pid_file_path = os.path.join(base_dir, "data/flask_app.pid")
-
 logging.basicConfig(
     level=os.environ.get("LOGGING_LEVEL", logging.INFO),
 )
@@ -43,7 +40,7 @@ def create_app():
     app.config["REPLIFACTORY_CONFIG"] = config_file
     try:
         settings(parse_yaml_file_as(Config, config_file))
-    except FileNotFoundError as exc:
+    except FileNotFoundError:
         log.warning("There is no configuration file: %s", config_file)
         settings(Config())
 
