@@ -16,7 +16,7 @@ packages = [
 # flask = 'flask:main'
 
 [tool.poetry.dependencies]
-python = ">=3.9.0, <3.12"
+python = ">=3.9.0, <3.11"
 blinker = "^1.6.2"
 click = "^8.1.3"
 colorama = "^0.4.6"
@@ -29,7 +29,7 @@ itsdangerous = "^2.1.2"
 jinja2 = "^3.1.2"
 markupsafe = "^2.1.2"
 matplotlib = "*"
-numpy = "*"
+numpy = "1.22.4"  # https://github.com/scipy/scipy/blob/main/pyproject.toml
 oauth2client = "*"
 pandas = "*"
 plotly = "*"
@@ -39,7 +39,7 @@ pyserial = "^3.5"
 pyusb = "^1.2.1"
 PyYAML = "^6.0"
 schedule = "*"
-scipy = "*"
+scipy = "1.12.0"
 six = "^1.16.0"
 zipp = "^3.15.0"
 pyinstaller = [
