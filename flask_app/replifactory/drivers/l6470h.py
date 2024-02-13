@@ -8,7 +8,7 @@ from pyftdi.spi import SpiPort
 
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
-from replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 

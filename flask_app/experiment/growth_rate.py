@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
-# from replifactory.util.other import read_csv_tail
+# from flask_app.replifactory.util.other import read_csv_tail
 
 
 def growth_function(t, N0, growth_rate):

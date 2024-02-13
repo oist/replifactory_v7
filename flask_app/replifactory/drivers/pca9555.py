@@ -5,7 +5,7 @@ from typing import Callable, Union
 
 from pyftdi.i2c import I2cPort
 
-from replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver
 
 log = logging.getLogger(__name__)
 

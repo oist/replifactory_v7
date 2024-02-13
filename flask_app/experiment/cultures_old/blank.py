@@ -6,12 +6,12 @@ from logging.handlers import RotatingFileHandler
 
 import numpy as np
 
-from replifactory.culture.culture_functions import inoculate
-from replifactory.culture.plotting import plot_culture
-from replifactory.device.dilution import log_dilution
-from replifactory.util.growth_rate import calculate_last_growth_rate
-from replifactory.util.loading import load_config, save_object
-from replifactory.util.other import read_csv_tail, write_variable
+from flask_app.replifactory.culture.culture_functions import inoculate
+from flask_app.replifactory.culture.plotting import plot_culture
+from flask_app.replifactory.device.dilution import log_dilution
+from flask_app.replifactory.util.growth_rate import calculate_last_growth_rate
+from flask_app.replifactory.util.loading import load_config, save_object
+from flask_app.replifactory.util.other import read_csv_tail, write_variable
 
 log_maxBytes = 5 * 1024 * 1024
 

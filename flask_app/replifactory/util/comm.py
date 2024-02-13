@@ -4,7 +4,7 @@ import queue
 import threading
 from flask_app.replifactory.events import Events, eventManager
 
-from replifactory.util import PrependableQueue, TypeAlreadyInQueue, TypedQueue
+from flask_app.replifactory.util import PrependableQueue, TypeAlreadyInQueue, TypedQueue
 
 _logger = logging.getLogger(__name__)
 

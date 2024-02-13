@@ -7,7 +7,7 @@ from pyftdi.i2c import I2cPort
 
 # from flask_app.replifactory.drivers.ft2232h import I2cPort
 from flask_app.replifactory.util import BraceMessage as __
-from replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 

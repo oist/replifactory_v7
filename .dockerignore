@@ -1,3 +1,6 @@
+.dockerignore
+Dockerfile
+
 __pycache__/
 flask_app/data/
 secrets*
@@ -6,5 +9,5 @@ venv/
 flask_app/develop/
 db/
 data/
-.dockerignore
-Dockerfile
+
+node_modules/

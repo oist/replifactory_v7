@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-import replifactory.drivers.l6470h as l6470h
+import flask_app.replifactory.drivers.l6470h as l6470h
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.util import BraceMessage as __
 

@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from replifactory.culture.chemostat import ChemostatCulture
+from flask_app.replifactory.culture.chemostat import ChemostatCulture
 
 
 class TurbidostatCulture(ChemostatCulture):

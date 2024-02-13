@@ -4,7 +4,7 @@ import time
 from enum import Enum
 from typing import Optional, Union
 
-import replifactory.drivers.pca9685 as pca9685
+import flask_app.replifactory.drivers.pca9685 as pca9685
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.util import BraceMessage as __
 

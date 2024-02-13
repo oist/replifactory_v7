@@ -4,7 +4,7 @@ import threading
 import time
 from collections import deque
 
-import replifactory.devices.machine as comm
+import flask_app.replifactory.devices.machine as comm
 from flask_app import settings
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback, MachineInterface

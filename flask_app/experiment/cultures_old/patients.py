@@ -1,7 +1,7 @@
 import time
 
-from replifactory.culture.culture_functions import dilute_adjust_drug1
-from replifactory.culture.turbidostat import TurbidostatCulture
+from flask_app.replifactory.culture.culture_functions import dilute_adjust_drug1
+from flask_app.replifactory.culture.turbidostat import TurbidostatCulture
 
 
 class PatientCulture(TurbidostatCulture):

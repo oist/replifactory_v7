@@ -6,7 +6,7 @@ import flask
 
 from flask_socketio import emit as socketio_emit
 from flask_socketio.namespace import Namespace
-from replifactory.usb_manager import UsbManager
+from flask_app.replifactory.usb_manager import UsbManager
 
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback, MachineInterface

@@ -4,9 +4,9 @@ import time
 
 import numpy as np
 
-from replifactory.culture.blank import CultureLogger
-from replifactory.util.loading import save_object
-from replifactory.util.other import write_variable
+from flask_app.replifactory.culture.blank import CultureLogger
+from flask_app.replifactory.util.loading import save_object
+from flask_app.replifactory.util.other import write_variable
 
 
 class CultureUniversal:

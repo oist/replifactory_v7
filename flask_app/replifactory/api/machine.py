@@ -1,10 +1,10 @@
 import flask
 from flask import request
-from replifactory.devices.step_motor import MotorProfile
+from flask_app.replifactory.devices.step_motor import MotorProfile
 
 from flask_app import machine
 from flask_app.replifactory.api import api
-from replifactory.util.flask import NO_CONTENT, get_json_command_from_request
+from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
 
 @api.route("/machine/command_queue", methods=["POST"])

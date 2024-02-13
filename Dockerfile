@@ -1,5 +1,3 @@
-#ARG RUST_VERION=1.74.1
-# FROM fnndsc/python-poetry:1.5.1 as poetry
 FROM python:3.10.13-bullseye as python-base
 
 ENV PYTHONUNBUFFERED=1 \
@@ -25,12 +23,10 @@ ENV PYTHONUNBUFFERED=1 \
     # paths
     # this is where our requirements + virtual environment will live
     PYSETUP_PATH="/opt/pysetup" \
-    VENV_PATH="/opt/pysetup/.venv" 
+    VENV_PATH="/opt/pysetup/.venv"
 
 # prepend poetry and venv to path
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
-
-#FROM rust:${RUST_VERION}-slim as rust
 
 # BUILDER
 FROM python-base as builder-base
@@ -48,9 +44,7 @@ ENV CARGO_HOME=/usr/local/cargo \
     RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
     RUST_VERSION=1.74.1
-#COPY --from=rust $CARGO_HOME $CARGO_HOME
-#COPY --from=rust $RUSTUP_HOME $RUSTUP_COME
-#RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
 RUN set -eux; \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
@@ -70,23 +64,44 @@ RUN set -eux; \
     rustup --version; \
     cargo --version; \
     rustc --version;
-#RUN ls -l $CARGO_HOME/bin; echo $PATH; rustc --version
+
 # install poetry - respects $POETRY_VERSION & $POETRY_HOME
 # RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 RUN pip install --upgrade pip && \
-    curl -sSL https://install.python-poetry.org | python3 - || cat /poetry-installer-error-*.log
+    curl -sSL https://install.python-poetry.org | python3 - || cat /poetry-installer-error-*.log && \
+    poetry config installer.max-workers 10
 
-# copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y cmake python-dev libopenblas-dev libopenblas-base gfortran \
     && cmake --version
 
-COPY --from=project_root README.md poetry.lock poetry.toml pyproject.toml ./
+COPY poetry.lock poetry.toml pyproject.toml ./
 
-# RUN poetry export -f requirements.txt --output /tmp/requirements.txt
-RUN poetry install --only main --no-root
+RUN poetry install --only main,server --no-root --no-interaction --no-ansi -vvv
+
+# vue app
+FROM node:20.11-bullseye as vue-app
+
+WORKDIR /usr/src/app
+
+RUN chown node:node .
+
+USER node
+
+RUN mkdir -p vue
+
+COPY --chown=node:node vue/public ./vue/public
+COPY --chown=node:node vue/src ./vue/src
+
+COPY --chown=node:node babel.config.js jsconfig.json package.json package-lock.json vue.config.js ./
+
+RUN npm ci && npm cache clean --force
+
+RUN npm run build
+
+ENV NODE_ENV ${NODE_ENV:-production}
 
 
 # PRODUCTION
@@ -111,14 +126,13 @@ RUN useradd -mU $USER_NAME && \
 
 USER $USER
 
-# COPY --from=poetry /tmp/requirements.txt ./requirements-lock.txt
+COPY --chown=$USER:$USER --from=vue-app /usr/src/app/flask_app/static ./flask_app/static
+COPY --chown=$USER:$USER ./flask_app/ ./flask_app/
 
-# RUN pip install --no-cache-dir -r requirements-lock.txt
+RUN flask --app flask_app digest compile
 
-COPY --chown=$USER:$USER . .
-
-RUN chmod +x entrypoint.sh
+RUN chmod +x flask_app/entrypoint.sh
 
 ENV PATH=$PATH:/home/flask/.local/bin/
 
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["python", "-m", "gunicorn", "--access-logfile", "-", "-k", "gevent", "-w", "1", "flask_app.app"]

@@ -230,6 +230,14 @@ secrets:
 
 
 COMPOSE_OPT = --build --force-recreate
+DOCKER_BUILD_OPT =
+DOCKER_TAG = replifactory:7-latest
+
+docker-build:
+	docker build $(DOCKER_BUILD_OPT) -t $(DOCKER_TAG) .
+
+docker-build-raspberry:
+	make docker-build DOCKER_BUILD_OPT="--platform linux/arm/v7"
 
 docker-run:
 	docker compose up $(COMPOSE_OPT)

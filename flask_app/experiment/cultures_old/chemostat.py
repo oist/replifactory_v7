@@ -1,8 +1,8 @@
 import time
 import numpy as np
 
-from replifactory.culture.blank import BlankCulture
-from replifactory.culture.culture_functions import dilute_adjust_drug1
+from flask_app.replifactory.culture.blank import BlankCulture
+from flask_app.replifactory.culture.culture_functions import dilute_adjust_drug1
 
 
 class ChemostatCulture(BlankCulture):

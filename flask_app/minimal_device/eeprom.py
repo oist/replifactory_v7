@@ -5,7 +5,7 @@ from queue import Queue
 import numpy as np
 import yaml
 import gzip
-from minimal_device.device_data import default_device_data
+from flask_app.minimal_device.device_data import default_device_data
 def make_addr_bytes(page=511, byte=63):
     two_bytes = page << 6 | byte
     byte1 = two_bytes >> 8

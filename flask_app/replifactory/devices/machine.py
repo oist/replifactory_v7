@@ -30,10 +30,10 @@ from flask_app.replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegiste
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.usb_manager import usbManager
-from replifactory.devices.optical_density_sensor import OpticalDensitySensor
-from replifactory.drivers import Driver
-from replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
-from replifactory.util.comm import (
+from flask_app.replifactory.devices.optical_density_sensor import OpticalDensitySensor
+from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
+from flask_app.replifactory.util.comm import (
     AwaitConditionQueueMarker,
     CommandQueue,
     QueueMarker,

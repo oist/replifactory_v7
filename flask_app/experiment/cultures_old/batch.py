@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from replifactory.culture.blank import BlankCulture
+from flask_app.replifactory.culture.blank import BlankCulture
 
 
 class BatchCulture(BlankCulture):

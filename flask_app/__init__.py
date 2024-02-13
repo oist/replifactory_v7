@@ -16,9 +16,9 @@ from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine.model_6 import Machine
 from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
-from routes.device_routes import device_routes
-from routes.experiment_routes import experiment_routes
-from routes.service_routes import service_routes
+from flask_app.routes.device_routes import device_routes
+from flask_app.routes.experiment_routes import experiment_routes
+from flask_app.routes.service_routes import service_routes
 
 machine = None
 
@@ -44,7 +44,7 @@ def create_app():
     try:
         settings(parse_yaml_file_as(Config, config_file))
     except FileNotFoundError as exc:
-        log.warning("There is no configuration file: %s", config_file, exc_info=exc)
+        log.warning("There is no configuration file: %s", config_file)
         settings(Config())
 
     def save_settings():

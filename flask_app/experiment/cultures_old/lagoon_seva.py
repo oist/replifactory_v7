@@ -1,12 +1,12 @@
-# from replifactory.culture.culture_functions import dilute_adjust_drug1
+# from flask_app.replifactory.culture.culture_functions import dilute_adjust_drug1
 import time
 
 import numpy as np
 
-from replifactory.culture.blank import BlankCulture
-from replifactory.culture.chemostat import ChemostatCulture
-from replifactory.culture.turbidostat import TurbidostatCulture
-from replifactory.device.dilution import log_dilution
+from flask_app.replifactory.culture.blank import BlankCulture
+from flask_app.replifactory.culture.chemostat import ChemostatCulture
+from flask_app.replifactory.culture.turbidostat import TurbidostatCulture
+from flask_app.replifactory.device.dilution import log_dilution
 
 
 class LagoonCulture(BlankCulture):

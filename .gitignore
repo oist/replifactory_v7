@@ -3,6 +3,7 @@ node_modules/
 /env/
 /data/
 /.idea/
+.vscode/
 flask_app/static/build/
 cache_manifest.json
 

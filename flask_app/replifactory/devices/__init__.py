@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from replifactory.util import slugify
+from flask_app.replifactory.util import slugify
 
 
 class DeviceCallback:

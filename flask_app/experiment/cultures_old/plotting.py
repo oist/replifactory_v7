@@ -7,8 +7,8 @@ import numpy as np
 from IPython.core.display import clear_output
 from ipywidgets import HBox, Layout, VBox
 
-from replifactory.util.growth_rate import adaptive_window_doubling_time
-from replifactory.util.other import read_csv_tail
+from flask_app.replifactory.util.growth_rate import adaptive_window_doubling_time
+from flask_app.replifactory.util.other import read_csv_tail
 
 
 class Plotter:

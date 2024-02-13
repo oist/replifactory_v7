@@ -2,7 +2,7 @@ import time
 from typing import Callable
 
 from flask_app.replifactory.drivers.ft2232h import I2cPort
-from replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver
 
 REGISTER_TEMPERATURE_VALUE = 0x00
 REGISTER_CONFIGURATION = 0x01
