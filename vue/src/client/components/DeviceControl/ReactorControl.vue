@@ -25,9 +25,9 @@
 // import ValveControl from './ValveControl';
 // import StirrerControl from './StirrerControl';
 // import ODControl from './ODControl';
-import VialControl from './VialControl';
-import Valve from './Valve';
-import Stirrer from './Stirrer';
+import VialControl from './VialControl.vue';
+import Valve from './Valve.vue';
+import Stirrer from './Stirrer.vue';
 // import RangeSlider from '@/client/components/widgets/RangeSlider';
 import { CCard, CCardBody, CCardTitle, CCardSubtitle } from '@coreui/vue'
 

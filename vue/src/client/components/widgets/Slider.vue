@@ -11,6 +11,7 @@
 
 <script>
 export default {
+    name: "SliderWidget",
     props: {
         min: {
             type: Number,
@@ -59,10 +60,10 @@ export default {
         handleInput() {
             // Handle input change
         },
-        handleLabelClick(label) {
+        handleLabelClick() {
             // Handle label click
         },
-        calculatePosition(value) {
+        calculatePosition() {
             // Calculate position based on value
         }
     }

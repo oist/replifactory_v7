@@ -36,9 +36,9 @@
 // import StirrerControl from './StirrerControl';
 // import ODControl from './ODControl';
 // import VialControl from './VialControl';
-import ReactorControl from './ReactorControl';
-import Pump from './Pump';
-import Thermometer from './Thermometer';
+import ReactorControl from './ReactorControl.vue';
+import Pump from './Pump.vue';
+import Thermometer from './Thermometer.vue';
 import { mapState, mapGetters, mapMutations, mapActions } from 'vuex';
 import { CRow } from '@coreui/vue';
 

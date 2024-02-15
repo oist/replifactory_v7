@@ -19,15 +19,16 @@ const fillLine = ref(null);
 function makeItemActive(event) {
     fillLine.value.style.visibility = "visible"
     const childrens = [...event.target.parentElement.children];
+    var child;
 
-    for (var child of childrens) {
+    for (child of childrens) {
         child.classList.remove("active");
     }
     const obj = values.find((item) => item.title === event.target.innerHTML);
     fillLine.value.style.width = obj.amount + "%";
 
     let i = 0;
-    for (var child of childrens.reverse()) {
+    for (child of childrens.reverse()) {
         child.classList.add("active");
         console.log(i)
         if (i === obj.amount) {
