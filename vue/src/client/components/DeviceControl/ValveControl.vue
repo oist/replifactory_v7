@@ -1,29 +1,39 @@
 <template>
   <div class="valve-controls">
-    <button class="btn" :class="{
-      'btn-danger': valves.states[i] === 'closed' && !togglingValves[i],
-      'btn-success': valves.states[i] === 'open' && !togglingValves[i],
-      'btn-warning': togglingValves[i]
-    }" v-for="i in 7" :key="i" @click="toggleValve(i)" :disabled="disabled || togglingValves[i]">
+    <button
+      v-for="i in 7"
+      :key="i"
+      class="btn"
+      :class="{
+        'btn-danger': valves.states[i] === 'closed' && !togglingValves[i],
+        'btn-success': valves.states[i] === 'open' && !togglingValves[i],
+        'btn-warning': togglingValves[i],
+      }"
+      :disabled="disabled || togglingValves[i]"
+      @click="toggleValve(i)"
+    >
       <!-- Conditionally render spinner or valve number -->
-      <div v-if="togglingValves[i]" class="spinner-border spinner-custom" role="status"></div>
+      <div
+        v-if="togglingValves[i]"
+        class="spinner-border spinner-custom"
+        role="status"
+      />
       <span v-else>Valve {{ i }}</span>
     </button>
   </div>
 </template>
 <script>
-import { mapState, mapActions } from 'vuex';
-
+import { mapState, mapActions } from "vuex";
 
 export default {
-  name: 'ValveControl',
+  name: "ValveControl",
   props: {
     disabled: {
       type: Boolean,
       default: false,
-    }
+    },
   },
-  computed: mapState('device', ['valves']),
+  computed: mapState("device", ["valves"]),
   data() {
     return {
       audioContext: new (window.AudioContext || window.webkitAudioContext)(),
@@ -31,7 +41,7 @@ export default {
     };
   },
   methods: {
-    ...mapActions('device', ['setPartStateAction']),
+    ...mapActions("device", ["setPartStateAction"]),
     toggleValve(valveIndex) {
       const currentState = this.valves.states[valveIndex];
 
@@ -43,9 +53,9 @@ export default {
       const oscillator = this.playValveSound(currentState);
 
       this.setPartStateAction({
-        devicePart: 'valves',
+        devicePart: "valves",
         partIndex: valveIndex,
-        newState: currentState === 'open' ? 'closed' : 'open',
+        newState: currentState === "open" ? "closed" : "open",
       })
         .then(() => {
           oscillator.stop();
@@ -56,11 +66,11 @@ export default {
         });
     },
     playValveSound(valveState) {
-      const startFrequency = valveState === 'open' ? 500 : 300;
-      const endFrequency = valveState === 'open' ? 300 : 500;
+      const startFrequency = valveState === "open" ? 500 : 300;
+      const endFrequency = valveState === "open" ? 300 : 500;
 
       const oscillator = this.audioContext.createOscillator();
-      oscillator.type = 'sine';
+      oscillator.type = "sine";
 
       const gainNode = this.audioContext.createGain();
       gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
@@ -68,15 +78,20 @@ export default {
       oscillator.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
 
-      oscillator.frequency.setValueAtTime(startFrequency, this.audioContext.currentTime);
-      oscillator.frequency.linearRampToValueAtTime(endFrequency, this.audioContext.currentTime + 0.3);
+      oscillator.frequency.setValueAtTime(
+        startFrequency,
+        this.audioContext.currentTime,
+      );
+      oscillator.frequency.linearRampToValueAtTime(
+        endFrequency,
+        this.audioContext.currentTime + 0.3,
+      );
 
       oscillator.start();
       oscillator.stop(this.audioContext.currentTime + 0.3); // Stops the oscillator after 0.3 seconds
 
       return oscillator;
     },
-
   },
 };
 </script>

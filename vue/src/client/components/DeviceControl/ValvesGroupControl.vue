@@ -1,22 +1,29 @@
 <template>
-    <Valve class="mx-4 my-1" v-for="i in 7" :deviceId="'valve-' + (i-1)" :key="i" :title="'Valve ' + i" :disabled="disabled"></Valve>
+  <Valve
+    v-for="i in 7"
+    :key="i"
+    class="mx-4 my-1"
+    :device-id="'valve-' + (i - 1)"
+    :title="'Valve ' + i"
+    :disabled="disabled"
+  />
 </template>
 
 <script>
-import Valve from './Valve';
+import Valve from "./Valve";
 
 export default {
-    name: 'ValvesGroupControl',
-    props: {
-        disabled: {
-            type: Boolean,
-            default: false,
-        }
+  name: "ValvesGroupControl",
+  components: {
+    Valve,
+  },
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false,
     },
-    components: {
-        Valve
-    },
-}
+  },
+};
 </script>
 
 <style></style>

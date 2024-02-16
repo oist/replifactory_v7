@@ -1,6 +1,11 @@
 <template>
   <div class="stirrer-controls">
-    <StirrerCalibration v-for="index in 7" :key="index" :stirrerId="index" :disabled="disabled"/>
+    <StirrerCalibration
+      v-for="index in 7"
+      :key="index"
+      :stirrer-id="index"
+      :disabled="disabled"
+    />
   </div>
 </template>
 
@@ -8,17 +13,17 @@
 import StirrerCalibration from "@/client/components/DeviceControl/StirrerCalibration";
 
 export default {
-  name: 'StirrerControl',
+  name: "StirrerControl",
+  components: {
+    StirrerCalibration,
+  },
   props: {
     disabled: {
       type: Boolean,
       default: false,
     },
   },
-  components: {
-    StirrerCalibration,
-  },
-}
+};
 </script>
 
 <style scoped>

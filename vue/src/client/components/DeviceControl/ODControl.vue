@@ -1,14 +1,28 @@
 <template>
   <div class="od-control-container">
-    <div class="elements-container" v-for="(od, index) in ods.states" :key="index">
-      <button class="od-button" @click="handleOdClick(index)" :disabled="disabled">
+    <div
+      v-for="(od, index) in ods.states"
+      :key="index"
+      class="elements-container"
+    >
+      <button
+        class="od-button"
+        :disabled="disabled"
+        @click="handleOdClick(index)"
+      >
         <span>OD {{ index }}</span>
       </button>
-      <span class="od-output-value" v-if="ods.states && ods.states[index] !== undefined">{{
-        parseFloat(ods.states[index].toFixed(2)) }}</span>
-      <div style="height: 0.5px;"></div>
-      <span class="signal-output-value" v-if="ods.odsignals && ods.odsignals[index] !== undefined">({{
-        parseFloat(ods.odsignals[index].toFixed(2)) }}mV)</span>
+      <span
+        v-if="ods.states && ods.states[index] !== undefined"
+        class="od-output-value"
+        >{{ parseFloat(ods.states[index].toFixed(2)) }}</span
+      >
+      <div style="height: 0.5px" />
+      <span
+        v-if="ods.odsignals && ods.odsignals[index] !== undefined"
+        class="signal-output-value"
+        >({{ parseFloat(ods.odsignals[index].toFixed(2)) }}mV)</span
+      >
     </div>
   </div>
   <!--  Header "OD calibration"-->
@@ -17,38 +31,78 @@
       <thead>
         <tr>
           <th>OD value</th>
-          <th></th>
-          <th v-for="vial in vials" :key="vial">{{ 'vial ' + vial }}</th>
-          <th></th>
+          <th />
+          <th v-for="vial in vials" :key="vial">
+            {{ "vial " + vial }}
+          </th>
+          <th />
         </tr>
       </thead>
       <tbody>
         <tr v-for="odValue in allOdValues" :key="odValue">
           <td>
-            <input :value="odValue" @change="updateODCalibrationKeyAction({ oldOD: odValue, newOD: $event.target.value })"
-              :disabled="disabled" type="number" step="0.1" />
+            <input
+              :value="odValue"
+              :disabled="disabled"
+              type="number"
+              step="0.1"
+              @change="
+                updateODCalibrationKeyAction({
+                  oldOD: odValue,
+                  newOD: $event.target.value,
+                })
+              "
+            />
           </td>
           <td>
-            <button @click="measureODCalibrationAction({ odValue: odValue })" :disabled="disabled">Measure</button>
+            <button
+              :disabled="disabled"
+              @click="measureODCalibrationAction({ odValue: odValue })"
+            >
+              Measure
+            </button>
           </td>
           <td v-for="vial in vials" :key="vial">
-            <input class="calibration-signal"
-              @change="updateODCalibrationValueAction({ od: odValue, odsIndex: vial, newValue: $event.target.value })"
-              v-model="ods.calibration[vial][odValue]" type="number" style="opacity: 60%" :disabled="disabled" />
+            <input
+              v-model="ods.calibration[vial][odValue]"
+              class="calibration-signal"
+              type="number"
+              style="opacity: 60%"
+              :disabled="disabled"
+              @change="
+                updateODCalibrationValueAction({
+                  od: odValue,
+                  odsIndex: vial,
+                  newValue: $event.target.value,
+                })
+              "
+            />
           </td>
           <td>
-            <button class="button button-delete" :disabled="disabled || isLoading"
-              @click="handleDeleteRowClick(odValue)">Delete
-              Row</button>
+            <button
+              class="button button-delete"
+              :disabled="disabled || isLoading"
+              @click="handleDeleteRowClick(odValue)"
+            >
+              Delete Row
+            </button>
           </td>
         </tr>
         <tr>
           <td>
-            <input v-model="newRowValue" type="number" step="0.1" :disabled="disabled" />
+            <input
+              v-model="newRowValue"
+              type="number"
+              step="0.1"
+              :disabled="disabled"
+            />
           </td>
           <td>
-            <button class="button button-new" @click="measureODCalibrationAction({ odValue: newRowValue })"
-              :disabled="disabled">
+            <button
+              class="button button-new"
+              :disabled="disabled"
+              @click="measureODCalibrationAction({ odValue: newRowValue })"
+            >
               Measure new probe
             </button>
           </td>
@@ -57,24 +111,29 @@
     </table>
 
     <div class="chart-container">
-      <ODChart v-for="vial in vials" :partId="vial" :key="vial" :disabled="disabled"/>
+      <ODChart
+        v-for="vial in vials"
+        :key="vial"
+        :part-id="vial"
+        :disabled="disabled"
+      />
     </div>
   </div>
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
-import ODChart from './ODChart.vue';
+import { mapState, mapActions } from "vuex";
+import ODChart from "./ODChart.vue";
 
 export default {
+  components: {
+    ODChart,
+  },
   props: {
     disabled: {
       type: Boolean,
       default: false,
-    }
-  },
-  components: {
-    ODChart,
+    },
   },
   data() {
     return {
@@ -82,10 +141,10 @@ export default {
       vials: [1, 2, 3, 4, 5, 6, 7],
       newRowValue: null,
       isLoading: false,
-    }
+    };
   },
   computed: {
-    ...mapState('device', ['ods', "calibrationModeEnabled"]),
+    ...mapState("device", ["ods", "calibrationModeEnabled"]),
     allOdValues() {
       let allOdValuesSet = new Set();
       for (let vial in this.ods.calibration) {
@@ -94,11 +153,19 @@ export default {
         }
       }
       return Array.from(allOdValuesSet);
-    }
+    },
   },
   methods: {
-    ...mapActions("device", ["getAllDeviceData", "setPartStateAction", "measureDevicePart", "measureODCalibrationAction",
-      "setPartCalibrationAction", "removeODCalibrationRowAction", 'updateODCalibrationKeyAction', "updateODCalibrationValueAction"]),
+    ...mapActions("device", [
+      "getAllDeviceData",
+      "setPartStateAction",
+      "measureDevicePart",
+      "measureODCalibrationAction",
+      "setPartCalibrationAction",
+      "removeODCalibrationRowAction",
+      "updateODCalibrationKeyAction",
+      "updateODCalibrationValueAction",
+    ]),
     async handleOdClick(odIndex) {
       await this.measureDevicePart({
         devicePart: "ods",
@@ -117,8 +184,8 @@ export default {
         this.isLoading = false;
       }
     },
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
@@ -132,7 +199,7 @@ export default {
   /* margin: 0 auto; */
 }
 
-.chart-container>div {
+.chart-container > div {
   /*flex: 1;*/
   width: 270px;
   height: 200px;
@@ -167,7 +234,6 @@ td {
   /*margin-top: 10px;*/
 }
 
-
 .elements-container {
   display: flex;
   flex-direction: column;
@@ -183,7 +249,6 @@ td {
   border-radius: 10px;
   /* Adjust as needed to create the level of roundness you desire */
 }
-
 
 button {
   background-color: #2a8c93;

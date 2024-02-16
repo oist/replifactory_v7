@@ -1,33 +1,39 @@
 <template>
   <div id="CulturePlot">
     <!-- Add the button here -->
-    <CButton color="success" @click="plotAllData" class="mt-3 ml-3">Plot</CButton>
+    <CButton color="success" class="mt-3 ml-3" @click="plotAllData">
+      Plot
+    </CButton>
 
-
-    <div class="graph-container" v-for="vial in vials" :key="vial" :id="`vial-${vial}`"></div>
+    <div
+      v-for="vial in vials"
+      :id="`vial-${vial}`"
+      :key="vial"
+      class="graph-container"
+    />
   </div>
 </template>
 
 <script>
-import Plotly from 'plotly.js';
-import { mapActions, mapState } from 'vuex';
-import {CButton} from "@coreui/vue";
+import Plotly from "plotly.js";
+import { mapActions, mapState } from "vuex";
+import { CButton } from "@coreui/vue";
 
 export default {
+  name: "ExperimentChart",
   components: {
     CButton,
   },
-  name: "ExperimentChart",
   computed: {
-    ...mapState('experiment', ['plot_data', 'currentExperiment']),
+    ...mapState("experiment", ["plot_data", "currentExperiment"]),
   },
   data() {
     return {
-      vials: Array.from({length: 7}, (_, i) => i + 1)
+      vials: Array.from({ length: 7 }, (_, i) => i + 1),
     };
   },
   methods: {
-    ...mapActions('experiment', ['fetchCulturePlot']),
+    ...mapActions("experiment", ["fetchCulturePlot"]),
 
     async plotAllData() {
       // Fetch and plot data for each vial
@@ -35,7 +41,7 @@ export default {
         return;
       }
       for (let vial of this.vials) {
-        console.log(this.currentExperiment,"currentExperiment")
+        console.log(this.currentExperiment, "currentExperiment");
         await this.fetchCulturePlot(vial);
         this.plotData(vial);
       }
@@ -47,37 +53,37 @@ export default {
       const layout = {
         title: `Culture ${vial}`,
         xaxis: {
-          title: 'Time',
+          title: "Time",
         },
         yaxis: {
-          title: 'Optical Density',
+          title: "Optical Density",
           automargin: true,
-          mode: 'lines+markers',
+          mode: "lines+markers",
         },
         yaxis2: {
-          title: 'Generation',
-          overlaying: 'y',
-          side: 'right',
+          title: "Generation",
+          overlaying: "y",
+          side: "right",
           automargin: true,
         },
         yaxis3: {
-          title: 'Concentration',
-          overlaying: 'y',
-          side: 'right',
+          title: "Concentration",
+          overlaying: "y",
+          side: "right",
           position: 0.92,
           automargin: true,
         },
         yaxis4: {
-          title: 'Growth Rate',
-          overlaying: 'y',
-          side: 'left',
+          title: "Growth Rate",
+          overlaying: "y",
+          side: "left",
           position: 0.08,
           automargin: true,
         },
       };
 
       const graphDiv = document.getElementById(`vial-${vial}`);
-      if(graphDiv) {
+      if (graphDiv) {
         Plotly.react(`vial-${vial}`, data, layout);
       }
     },
@@ -85,7 +91,7 @@ export default {
   mounted() {
     this.plotAllData();
   },
-}
+};
 </script>
 
 <style scoped>
@@ -105,4 +111,3 @@ export default {
   align-items: center;
 }
 </style>
-

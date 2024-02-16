@@ -64,8 +64,10 @@ export default {
       return state.data.state.flags.manualControl;
     },
     getDeviceById: (state) => (id) => {
-      return Object.hasOwn(state.data.devices, id) ? state.data.devices[id] : {}
-    }
+      return Object.hasOwn(state.data.devices, id)
+        ? state.data.devices[id]
+        : {};
+    },
   },
   actions: {
     connect() {},

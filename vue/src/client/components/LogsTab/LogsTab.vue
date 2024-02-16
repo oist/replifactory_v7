@@ -5,18 +5,18 @@
       <CButton
         color="info"
         class="btn mt-3"
-        style="width: 20%;"
+        style="width: 20%"
         @click="fetchLogTails"
       >
         Get Logs
       </CButton>
-      <CFormFloating class="mt-3 ml-3" style="width: 20%;">
+      <CFormFloating class="mt-3 ml-3" style="width: 20%">
         <CFormInput
-          type="number"
-          style="background-color: transparent; border: none;"
           id="floatingInput"
+          type="number"
+          style="background-color: transparent; border: none"
           :value="formatNumber(lines)"
-          floatingLabel="Number of Lines"
+          floating-label="Number of Lines"
         />
       </CFormFloating>
     </div>
@@ -45,19 +45,18 @@ export default {
       logs: {},
     };
   },
-  methods: {
-    formatNumber(number) {
-      return number !== null ? number.toFixed(0) : 'N/A';
-    },
-    fetchLogTails() {
-      api.get(`/log/${this.lines}/`)
-        .then((response) => {
-          this.logs = response.data;
-        });
-    },
-  },
   mounted() {
     this.fetchLogTails();
+  },
+  methods: {
+    formatNumber(number) {
+      return number !== null ? number.toFixed(0) : "N/A";
+    },
+    fetchLogTails() {
+      api.get(`/log/${this.lines}/`).then((response) => {
+        this.logs = response.data;
+      });
+    },
   },
 };
 </script>

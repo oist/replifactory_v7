@@ -1,14 +1,10 @@
 // api.js
-import axios from 'axios';
+import axios from "axios";
 
-let baseURL = window.location.origin + '/api';
-
-// if (process.env.NODE_ENV === 'development') {
-//   baseURL = 'http://localhost:5000';
-// }
+let baseURL = window.location.origin + "/api";
 
 const api = axios.create({
-  baseURL: baseURL
+  baseURL: baseURL,
 });
 
 export default api;

@@ -1,101 +1,104 @@
 {
-    "name": "replifactory-ui",
-    "version": "1.0.0",
-    "description": "Сontrol a machine for bacterial growth experiments.",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build --emptyOutDir",
-        "start": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve\" \"npm run flask-server\"",
-        "flask-server": "poetry run flask --app flask_app.app run --host=0.0.0.0",
-        "flask-static-digest": "poetry run flask --app flask_app digest compile",
-        "serve": "vite preview",
-        "dev": "vite",
-        "lint": "eslint . --ext .js,.vue --ignore-path .gitignore --fix vue/src"
+  "name": "replifactory-ui",
+  "version": "1.0.0",
+  "description": "Сontrol a machine for bacterial growth experiments.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build --emptyOutDir",
+    "start": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve\" \"npm run flask-server\"",
+    "flask-server": "poetry run flask --app flask_app.app run --host=0.0.0.0",
+    "flask-static-digest": "poetry run flask --app flask_app digest compile",
+    "serve": "vite preview",
+    "dev": "vite",
+    "lint": "eslint . --ext .js,.vue --ignore-path .gitignore --fix vue/src",
+    "format": "prettier . --write"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/catalin-rusnac/replifactory_v7.git"
+  },
+  "author": "Catalin Rusnac <ctlnrsnc@gmail.com> (https://www.linkedin.com/in/cata7in/)",
+  "contributors": [
+    {
+      "name": "Fedor Gagarin",
+      "email": "fddgagarin@gmail.com",
+      "url": "https://www.linkedin.com/in/fgagarin/"
+    }
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bugs": {
+    "url": "https://github.com/catalin-rusnac/replifactory_v7/issues"
+  },
+  "homepage": "https://www.replifactory.com/",
+  "dependencies": {
+    "@coreui/coreui": "^4.2.6",
+    "@coreui/icons": "^3.0.1",
+    "@coreui/icons-vue": "^2.0.0",
+    "@coreui/vue": "^4.8.1",
+    "@google-cloud/local-auth": "^2.1.0",
+    "assert": "^2.0.0",
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.2",
+    "bootstrap-vue-next": "^0.14.8",
+    "chart.js": "^4.3.0",
+    "cors": "^2.8.5",
+    "googleapis": "^118.0.0",
+    "http-proxy-middleware": "^2.0.6",
+    "path": "^0.12.7",
+    "plotly.js": "^2.24.0",
+    "socket.io-client": "^4.7.2",
+    "vue": "^3.3.4",
+    "vue-chartjs": "^5.2.0",
+    "vue-router": "^4.2.5",
+    "vuex": "^4.1.0"
+  },
+  "devDependencies": {
+    "@mdi/font": "^7.2.96",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "chokidar": "3.5.3",
+    "concurrently": "8.2.1",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb-base": "15.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "2.28.1",
+    "eslint-plugin-vue": "^8.7.1",
+    "less": "4.2.0",
+    "mini-css-extract-plugin": "2.7.6",
+    "prettier": "^3.2.5",
+    "run-script-os": "1.1.6",
+    "unplugin-vue-components": "^0.25.2",
+    "vite": "^5.1.2",
+    "vite-plugin-node-polyfills": "^0.21.0"
+  },
+  "overrides": {
+    "consolidate": "^1.0.3",
+    "mumath": {
+      ".": "@types/mumath@^3.3.5"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/catalin-rusnac/replifactory_v7.git"
+    "postcss": "^8.4.31"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
     },
-    "author": "Catalin Rusnac <ctlnrsnc@gmail.com> (https://www.linkedin.com/in/cata7in/)",
-    "contributors": [
-        {
-            "name": "Fedor Gagarin",
-            "email": "fddgagarin@gmail.com",
-            "url": "https://www.linkedin.com/in/fgagarin/"
-        }
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
     ],
-    "license": "MIT",
-    "engines": {
-        "node": ">=18"
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
     },
-    "bugs": {
-        "url": "https://github.com/catalin-rusnac/replifactory_v7/issues"
-    },
-    "homepage": "https://www.replifactory.com/",
-    "dependencies": {
-        "@coreui/coreui": "^4.2.6",
-        "@coreui/icons": "^3.0.1",
-        "@coreui/icons-vue": "^2.0.0",
-        "@coreui/vue": "^4.8.1",
-        "@google-cloud/local-auth": "^2.1.0",
-        "assert": "^2.0.0",
-        "axios": "^1.4.0",
-        "bootstrap": "^5.3.2",
-        "bootstrap-vue-next": "^0.14.8",
-        "chart.js": "^4.3.0",
-        "cors": "^2.8.5",
-        "googleapis": "^118.0.0",
-        "http-proxy-middleware": "^2.0.6",
-        "path": "^0.12.7",
-        "plotly.js": "^2.24.0",
-        "socket.io-client": "^4.7.2",
-        "vue": "^3.3.4",
-        "vue-chartjs": "^5.2.0",
-        "vue-router": "^4.2.5",
-        "vuex": "^4.1.0"
-    },
-    "devDependencies": {
-        "@mdi/font": "^7.2.96",
-        "@vitejs/plugin-vue": "^5.0.4",
-        "chokidar": "3.5.3",
-        "concurrently": "8.2.1",
-        "eslint": "^8.50.0",
-        "eslint-config-airbnb-base": "15.0.0",
-        "eslint-plugin-import": "2.28.1",
-        "eslint-plugin-vue": "^8.7.1",
-        "less": "4.2.0",
-        "mini-css-extract-plugin": "2.7.6",
-        "run-script-os": "1.1.6",
-        "unplugin-vue-components": "^0.25.2",
-        "vite": "^5.1.2",
-        "vite-plugin-node-polyfills": "^0.21.0"
-    },
-    "overrides": {
-        "consolidate": "^1.0.3",
-        "mumath": {
-            ".": "@types/mumath@^3.3.5"
-        },
-        "postcss": "^8.4.31"
-    },
-    "eslintConfig": {
-        "root": true,
-        "env": {
-            "node": true
-        },
-        "extends": [
-            "plugin:vue/vue3-essential",
-            "eslint:recommended"
-        ],
-        "parserOptions": {
-            "parser": "@babel/eslint-parser"
-        },
-        "rules": {}
-    },
-    "browserslist": [
-        "> 1%",
-        "last 8 versions",
-        "not dead",
-        "not ie 11"
-    ]
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 8 versions",
+    "not dead",
+    "not ie 11"
+  ]
 }

@@ -1,5 +1,8 @@
 <template>
-  <div class="DeviceControl" :class="{ 'device-disconnected': deviceConnected === false }">
+  <div
+    class="DeviceControl"
+    :class="{ 'device-disconnected': deviceConnected === false }"
+  >
     <!-- <div class="disconnected-overlay" v-if="deviceConnected === false"></div> -->
     <!-- <div class="centered-text" v-if="deviceConnected === false"> device connection not available </div> -->
     <!-- <div class="experiment-running-overlay" v-if="deviceControlEnabled === false"></div> -->
@@ -10,17 +13,46 @@
 
     <PumpControl :disabled="!deviceControlEnabled" />
     <CRow>
-      <ReactorControl :disabled="!deviceControlEnabled" v-for="i in 7" :key="i" :id="i" />
+      <ReactorControl
+        v-for="i in 7"
+        :id="i"
+        :key="i"
+        :disabled="!deviceControlEnabled"
+      />
     </CRow>
     <CRow>
-      <Pump :disabled="!deviceControlEnabled" deviceId="pump-1" label="[1] Main pump"/>
-      <Pump :disabled="!deviceControlEnabled" deviceId="pump-2" label="[2] Drug pump"/>
-      <Pump :disabled="!deviceControlEnabled" deviceId="pump-4" label="[4] Waste pump"/>
+      <Pump
+        :disabled="!deviceControlEnabled"
+        device-id="pump-1"
+        label="[1] Main pump"
+      />
+      <Pump
+        :disabled="!deviceControlEnabled"
+        device-id="pump-2"
+        label="[2] Drug pump"
+      />
+      <Pump
+        :disabled="!deviceControlEnabled"
+        device-id="pump-4"
+        label="[4] Waste pump"
+      />
     </CRow>
     <CRow>
-      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x48" label="Main board"/>
-      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x49" label="Reactor 1"/>
-      <Thermometer :disabled="!deviceControlEnabled" deviceId="thermometer-0x4a" label="Reactor 7"/>
+      <Thermometer
+        :disabled="!deviceControlEnabled"
+        device-id="thermometer-0x48"
+        label="Main board"
+      />
+      <Thermometer
+        :disabled="!deviceControlEnabled"
+        device-id="thermometer-0x49"
+        label="Reactor 1"
+      />
+      <Thermometer
+        :disabled="!deviceControlEnabled"
+        device-id="thermometer-0x4a"
+        label="Reactor 7"
+      />
     </CRow>
     <!-- <ValvesGroupControl :disabled="!deviceControlEnabled" /> -->
     <!-- <ValveControl :disabled="!deviceControlEnabled" /> -->
@@ -36,12 +68,11 @@
 // import StirrerControl from './StirrerControl';
 // import ODControl from './ODControl';
 // import VialControl from './VialControl';
-import ReactorControl from './ReactorControl.vue';
-import Pump from './Pump.vue';
-import Thermometer from './Thermometer.vue';
-import { mapState, mapGetters, mapMutations, mapActions } from 'vuex';
-import { CRow } from '@coreui/vue';
-
+import ReactorControl from "./ReactorControl.vue";
+import Pump from "./Pump.vue";
+import Thermometer from "./Thermometer.vue";
+import { mapState, mapGetters, mapMutations, mapActions } from "vuex";
+import { CRow } from "@coreui/vue";
 
 export default {
   components: {
@@ -58,7 +89,13 @@ export default {
     // CFormSwitch,
   },
   computed: {
-    ...mapState('device', ['calibrationModeEnabled', 'stirrers', 'pumps', 'valves', 'ods']),
+    ...mapState("device", [
+      "calibrationModeEnabled",
+      "stirrers",
+      "pumps",
+      "valves",
+      "ods",
+    ]),
     ...mapGetters("machine", {
       deviceConnected: "isConnected",
       deviceControlEnabled: "isManualControlEnabled",
@@ -88,9 +125,12 @@ export default {
     // }
   },
   methods: {
-    ...mapMutations('device', ['toggleCalibrationMode', 'setDeviceControlEnabled']),
-    ...mapActions('device', ['getAllDeviceData']),
-    ...mapActions(['connectDevice']),
+    ...mapMutations("device", [
+      "toggleCalibrationMode",
+      "setDeviceControlEnabled",
+    ]),
+    ...mapActions("device", ["getAllDeviceData"]),
+    ...mapActions(["connectDevice"]),
   },
 };
 </script>

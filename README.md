@@ -1,10 +1,14 @@
 # Replifactory
 
 ### New device initialization
+
 #### Write USB String Descriptor
+
 For PCBv5:
+
 1. Plug only one instance of replifactory machine to USB port.
 2. Run `poetry run python replifactory_ftconf.py` to get list of devices urls. Output should looks like:
+
    ```
    Available interfaces:
    ftdi://ftdi:2232:1:e/1   (Dual RS232-HS)
@@ -12,16 +16,21 @@ For PCBv5:
 
    Please specify the USB device
    ```
+
    Copy address interface address that ends with 2. E.g.: `ftdi://ftdi:2232:1:e/2`
+
 3. Now write new machine serial number to selected interface:
    ```
    poetry run python replifactory_ftconf.py -i data.ini -s FT050000 -u ftdi://ftdi:2232:1:e/2
    ```
 4. Check the result. Read configuration from EEPROM:
+
    ```
-   poetry run python replifactory_ftconf.py -o - ftdi://ftdi:2232:1:e/2 
+   poetry run python replifactory_ftconf.py -o - ftdi://ftdi:2232:1:e/2
    ```
+
    Output should look like:
+
    ```
    [values]
    chip = 0xff
@@ -74,4 +83,5 @@ For PCBv5:
    @e0 = 00000000000000000000000000000000
    @f0 = 0000000000000000000000000000c2d4
    ```
+
    Check that parameter serial equals to your value from step 3.

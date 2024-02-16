@@ -1,17 +1,17 @@
 <template>
-    <p>State: {{ connected }}</p>
+  <p>State: {{ connected }}</p>
 </template>
 
 <script>
 import { state } from "@/socket";
 
 export default {
-    name: "ConnectionState",
+  name: "ConnectionState",
 
-    computed: {
-        connected() {
-            return state.connected;
-        }
-    }
-}
+  computed: {
+    connected() {
+      return state.connected;
+    },
+  },
+};
 </script>

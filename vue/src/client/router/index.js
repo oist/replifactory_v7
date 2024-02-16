@@ -42,7 +42,7 @@ const routes = [
         name: "Logs",
         component: LogsTab,
       },
-    ]
+    ],
   },
   {
     path: "/login",
@@ -63,11 +63,11 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       next();
     } else {
-      next('/login');
+      next("/login");
     }
   } else {
     next();

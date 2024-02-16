@@ -23,10 +23,10 @@ export default createStore({
   },
   mutations: {
     initialiseStore() {
-      if(localStorage.getItem('store')) {
-        const store = JSON.parse(localStorage.getItem('store'))
-        this.commit('setDebug', store.debug)
-			}
+      if (localStorage.getItem("store")) {
+        const store = JSON.parse(localStorage.getItem("store"));
+        this.commit("setDebug", store.debug);
+      }
     },
     setExperiments(state, experiments) {
       state.experiments = experiments;
@@ -45,7 +45,7 @@ export default createStore({
     },
     setDebug(state, debug) {
       state.debug = debug;
-    }
+    },
   },
   actions: {
     fetchHostname({ commit }) {
@@ -72,44 +72,44 @@ export default createStore({
         commit("setDeviceConnected", false);
       }
     },
-    notifyInfo({ commit }, {title, content}) {
+    notifyInfo({ commit }, { title, content }) {
       commit("addMessage", {
         color: "info",
         title: title,
         content: content,
         autohide: true,
         delay: 5000,
-       });
+      });
     },
-    notifyWarning({ commit }, {title, content}) {
+    notifyWarning({ commit }, { title, content }) {
       commit("addMessage", {
         color: "warning",
         title: title != null ? title : "Warning",
         content: content,
         autohide: true,
         delay: 5000,
-       });
+      });
     },
-    notifySuccess({ commit }, {title, content}) {
+    notifySuccess({ commit }, { title, content }) {
       commit("addMessage", {
         color: "success",
         title: title,
         content: content,
         autohide: true,
         delay: 5000,
-       });
+      });
     },
-    notifyDanger({ commit }, {title, content}) {
+    notifyDanger({ commit }, { title, content }) {
       commit("addMessage", {
         color: "danger",
         title: title,
         content: content,
         autohide: true,
         delay: 5000,
-       });
+      });
     },
     notify({ commit }, toast) {
       commit("addMessage", toast);
-    }
+    },
   },
 });

@@ -152,7 +152,7 @@ export default {
   mutations: {
     setPartCalibration(
       state,
-      { devicePart, partIndex, newCalibration, coefs }
+      { devicePart, partIndex, newCalibration, coefs },
     ) {
       state[devicePart].calibration[partIndex] = newCalibration;
       if (coefs) {
@@ -228,7 +228,7 @@ export default {
           partIndex: i,
           newCalibration: state.ods.calibration[i],
         }).catch((error) =>
-          console.error(`Error dispatching setPartCalibrationAction:`, error)
+          console.error(`Error dispatching setPartCalibrationAction:`, error),
         );
       }
     },
@@ -241,7 +241,7 @@ export default {
         partIndex: i,
         newCalibration: state.ods.calibration[i],
       }).catch((error) =>
-        console.error(`Error during updateODCalibrationValueAction:`, error)
+        console.error(`Error during updateODCalibrationValueAction:`, error),
       );
     },
 
@@ -256,7 +256,7 @@ export default {
           });
           console.log(
             state.ods.calibration[i],
-            " setPartCalibrationAction***********************"
+            " setPartCalibrationAction***********************",
           );
         }
       } catch (error) {
@@ -277,7 +277,7 @@ export default {
             if (response.data.success) {
               console.log(
                 response.data,
-                "response.data from setpartcalibrationaction"
+                "response.data from setpartcalibrationaction",
               );
               commit("setPartCalibration", {
                 devicePart,
@@ -290,7 +290,7 @@ export default {
             } else {
               console.error(
                 `Error updating ${devicePart} calibration:`,
-                response.data.message
+                response.data.message,
               );
               reject();
             }
@@ -341,7 +341,7 @@ export default {
             } else {
               console.error(
                 `Error updating ${devicePart} calibration:`,
-                response.data.message
+                response.data.message,
               );
               reject(response.data);
             }
@@ -385,7 +385,7 @@ export default {
               resolve(response); // Resolve the response so that it can be used in the connectDevice action
             } else {
               console.error(
-                "Error connecting device: server responded with an error"
+                "Error connecting device: server responded with an error",
               );
               reject();
             }
@@ -406,7 +406,7 @@ export default {
               resolve();
             } else {
               console.error(
-                "Error fetching device data: server responded with an error"
+                "Error fetching device data: server responded with an error",
               );
               reject();
             }
@@ -431,7 +431,7 @@ export default {
             } else {
               console.error(
                 `Error measuring ${devicePart}:`,
-                response.data.message
+                response.data.message,
               );
               reject();
             }

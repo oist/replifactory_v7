@@ -1,5 +1,5 @@
 <template>
-  <div class="stirrer-calibrator" ref="container">
+  <div ref="container" class="stirrer-calibrator">
     <div class="elements-container">
       <div class="stirrer-name">
         <header>Stirrer {{ stirrerId }}</header>
@@ -7,30 +7,30 @@
 
       <div v-if="calibrationModeEnabled">
         <input
+          v-model="stirrers.calibration[stirrerId].high"
           type="range"
           class="slider slider-high"
           :class="{ active: currentStirrerState === 'high' }"
-          :min=min
-          :max=max
-          :step=0.01
-          v-model="stirrers.calibration[stirrerId].high"
-          @change="onSliderChange('high', $event)"
-          @input="onSliderInput('high', $event)"
+          :min="min"
+          :max="max"
+          :step="0.01"
           :disabled="disabled"
           orient="vertical"
+          @change="onSliderChange('high', $event)"
+          @input="onSliderInput('high', $event)"
         />
         <input
+          v-model="stirrers.calibration[stirrerId].low"
           type="range"
           class="slider slider-low"
           :class="{ active: currentStirrerState === 'low' }"
-          :min=min
-          :max=max
-          :step=0.01
-          v-model="stirrers.calibration[stirrerId].low"
-          @change="onSliderChange('low', $event)"
-          @input="onSliderInput('low', $event)"
+          :min="min"
+          :max="max"
+          :step="0.01"
           :disabled="disabled"
           orient="vertical"
+          @change="onSliderChange('low', $event)"
+          @input="onSliderInput('low', $event)"
         />
 
         <svg class="svg-container">
@@ -39,7 +39,7 @@
             :y1="lowY1"
             :x2="lowX2"
             :y2="lowY2"
-            stroke= "gray"
+            stroke="gray"
             stroke-width="1"
           />
           <line
@@ -51,37 +51,36 @@
             stroke-width="1"
           />
         </svg>
-
       </div>
 
       <div class="buttons-container">
         <button
+          ref="buttonHigh"
           class="button button-high"
           :class="{ active: currentStirrerState === 'high' }"
-          ref="buttonHigh"
+          :disabled="disabled"
           @click="onClick('high')"
           @dblclick="onDoubleClick('high')"
-          :disabled="disabled"
         >
           High
         </button>
         <button
+          ref="buttonLow"
           class="button button-low"
           :class="{ active: currentStirrerState === 'low' }"
-          ref="buttonLow"
+          :disabled="disabled"
           @click="onClick('low')"
           @dblclick="onDoubleClick('low')"
-          :disabled="disabled"
         >
           Low
         </button>
         <button
+          ref="buttonOff"
           class="button button-off"
           :class="{ active: currentStirrerState === 'stopped' }"
-          ref="buttonOff"
+          :disabled="disabled"
           @click="onClick('stopped')"
           @dblclick="onDoubleClick('stopped')"
-          :disabled="disabled"
         >
           OFF
         </button>
@@ -90,25 +89,18 @@
   </div>
 </template>
 <script>
-import { mapState, mapActions } from 'vuex';
+import { mapState, mapActions } from "vuex";
 
 export default {
   name: "StirrerCalibration",
   props: {
     stirrerId: {
       type: Number,
-      required: true
+      required: true,
     },
     disabled: {
       type: Boolean,
       default: false,
-    },
-  },
-  watch: {
-    calibrationModeEnabled(newVal) {
-      if (newVal) { // newVal will be true if calibrationModeEnabled has just been set to true
-        this.$nextTick(this.updateLine);
-      }
     },
   },
   data() {
@@ -125,9 +117,17 @@ export default {
       highY2: 0,
       audioContext: new (window.AudioContext || window.webkitAudioContext)(),
       oscillator: null,
-      gainNode:null,
+      gainNode: null,
       stopSoundTimeout: null,
     };
+  },
+  watch: {
+    calibrationModeEnabled(newVal) {
+      if (newVal) {
+        // newVal will be true if calibrationModeEnabled has just been set to true
+        this.$nextTick(this.updateLine);
+      }
+    },
   },
 
   // mounted() {
@@ -136,50 +136,66 @@ export default {
   //     // this.highValue = this.stirrers.calibration[this.stirrerId].high;
   // },
 
-
   computed: {
-    ...mapState('device', ['calibrationModeEnabled', 'stirrers']),
+    ...mapState("device", ["calibrationModeEnabled", "stirrers"]),
     currentStirrerState() {
       return this.stirrers.states[this.stirrerId];
     },
   },
 
   methods: {
-    ...mapActions('device', ['setPartStateAction', 'setPartCalibrationAction', 'getAllDeviceData', 'setAllStirrersStateAction']),
+    ...mapActions("device", [
+      "setPartStateAction",
+      "setPartCalibrationAction",
+      "getAllDeviceData",
+      "setAllStirrersStateAction",
+    ]),
     onClick(type) {
-          this.setPartStateAction({ devicePart: 'stirrers', partIndex: this.stirrerId, newState: type });
-},
+      this.setPartStateAction({
+        devicePart: "stirrers",
+        partIndex: this.stirrerId,
+        newState: type,
+      });
+    },
     onDoubleClick(type) {
       this.setAllStirrersStateAction(type);
     },
 
     onSliderChange(type, event) {
-      if (type === 'low') {
-        this.stirrers.calibration[this.stirrerId].low = parseFloat(event.target.value);
-      } else if (type === 'high') {
-        this.stirrers.calibration[this.stirrerId].high = parseFloat(event.target.value);
+      if (type === "low") {
+        this.stirrers.calibration[this.stirrerId].low = parseFloat(
+          event.target.value,
+        );
+      } else if (type === "high") {
+        this.stirrers.calibration[this.stirrerId].high = parseFloat(
+          event.target.value,
+        );
       }
       this.setPartCalibrationAction({
-        devicePart: 'stirrers',
+        devicePart: "stirrers",
         partIndex: this.stirrerId,
         newCalibration: {
           low: this.stirrers.calibration[this.stirrerId].low,
           high: this.stirrers.calibration[this.stirrerId].high,
         },
       }).catch((error) => {
-        console.error('Error updating stirrer calibration:', error);
+        console.error("Error updating stirrer calibration:", error);
       });
     },
 
     onSliderInput(type, event) {
-      if (type === 'low') {
-        this.stirrers.calibration[this.stirrerId].low = parseFloat(event.target.value);
-      } else if (type === 'high') {
-        this.stirrers.calibration[this.stirrerId].high = parseFloat(event.target.value);
+      if (type === "low") {
+        this.stirrers.calibration[this.stirrerId].low = parseFloat(
+          event.target.value,
+        );
+      } else if (type === "high") {
+        this.stirrers.calibration[this.stirrerId].high = parseFloat(
+          event.target.value,
+        );
       }
       this.updateLine();
-        this.playSound(event.target.value);
-      },
+      this.playSound(event.target.value);
+    },
 
     updateLine() {
       this.$nextTick(() => {
@@ -191,62 +207,85 @@ export default {
         const rectSliderLow = sliderLow.getBoundingClientRect();
         const rectButtonLow = buttonLow.getBoundingClientRect();
 
-        this.lowX1 = rectSliderLow.x - rectContainer.x + rectSliderLow.width / 2;
-        this.lowY1 = rectSliderLow.y - rectContainer.y + rectSliderLow.height * (1 - this.stirrers.calibration[this.stirrerId].low / (this.max - this.min));
-        this.lowX2 = rectButtonLow.x - rectContainer.x
-        this.lowY2 = rectButtonLow.y - rectContainer.y + rectButtonLow.height / 2;
+        this.lowX1 =
+          rectSliderLow.x - rectContainer.x + rectSliderLow.width / 2;
+        this.lowY1 =
+          rectSliderLow.y -
+          rectContainer.y +
+          rectSliderLow.height *
+            (1 -
+              this.stirrers.calibration[this.stirrerId].low /
+                (this.max - this.min));
+        this.lowX2 = rectButtonLow.x - rectContainer.x;
+        this.lowY2 =
+          rectButtonLow.y - rectContainer.y + rectButtonLow.height / 2;
 
         const sliderHigh = this.$el.querySelector(".slider-high");
         const buttonHigh = this.$refs.buttonHigh;
         const rectSliderHigh = sliderHigh.getBoundingClientRect();
         const rectButtonHigh = buttonHigh.getBoundingClientRect();
 
-        this.highX1 = rectSliderHigh.x - rectContainer.x + rectSliderHigh.width / 2;
-        this.highY1 = rectSliderHigh.y - rectContainer.y + rectSliderHigh.height * (1 - this.stirrers.calibration[this.stirrerId].high / (this.max - this.min));
-        this.highX2 = rectButtonHigh.x - rectContainer.x
-        this.highY2 = rectButtonHigh.y - rectContainer.y + rectButtonHigh.height / 2;
+        this.highX1 =
+          rectSliderHigh.x - rectContainer.x + rectSliderHigh.width / 2;
+        this.highY1 =
+          rectSliderHigh.y -
+          rectContainer.y +
+          rectSliderHigh.height *
+            (1 -
+              this.stirrers.calibration[this.stirrerId].high /
+                (this.max - this.min));
+        this.highX2 = rectButtonHigh.x - rectContainer.x;
+        this.highY2 =
+          rectButtonHigh.y - rectContainer.y + rectButtonHigh.height / 2;
       });
     },
     playSound(speed) {
-    // If an oscillator is not already set up
-    if (!this.oscillator) {
-      this.oscillator = this.audioContext.createOscillator();
-      this.gainNode = this.audioContext.createGain();
+      // If an oscillator is not already set up
+      if (!this.oscillator) {
+        this.oscillator = this.audioContext.createOscillator();
+        this.gainNode = this.audioContext.createGain();
 
-      this.oscillator.type = 'sine';
-      this.gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-      this.oscillator.connect(this.gainNode);
-      this.gainNode.connect(this.audioContext.destination);
-      this.oscillator.start();
-    }
+        this.oscillator.type = "sine";
+        this.gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        this.oscillator.connect(this.gainNode);
+        this.gainNode.connect(this.audioContext.destination);
+        this.oscillator.start();
+      }
 
-    const frequency = 300 + speed * 500;
-    this.oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+      const frequency = 300 + speed * 500;
+      this.oscillator.frequency.setValueAtTime(
+        frequency,
+        this.audioContext.currentTime,
+      );
 
-    // Clear any previous stopSound timeout
-    if (this.stopSoundTimeout) {
-      clearTimeout(this.stopSoundTimeout);
-    }
+      // Clear any previous stopSound timeout
+      if (this.stopSoundTimeout) {
+        clearTimeout(this.stopSoundTimeout);
+      }
 
-    // Set a new timeout to stop the sound in 0.3 seconds
-    this.stopSoundTimeout = setTimeout(this.stopSound, 200);
-  },
+      // Set a new timeout to stop the sound in 0.3 seconds
+      this.stopSoundTimeout = setTimeout(this.stopSound, 200);
+    },
 
-  // Call this method when you want to stop the sound
-  stopSound() {
-    if (this.oscillator) {
-      this.gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.01);
-      this.gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime + 0.02);
-      this.oscillator.stop(this.audioContext.currentTime + 0.02);
-      this.oscillator = null;
-      this.gainNode = null;
-    }
-  }
-
+    // Call this method when you want to stop the sound
+    stopSound() {
+      if (this.oscillator) {
+        this.gainNode.gain.exponentialRampToValueAtTime(
+          0.001,
+          this.audioContext.currentTime + 0.01,
+        );
+        this.gainNode.gain.setValueAtTime(
+          0.1,
+          this.audioContext.currentTime + 0.02,
+        );
+        this.oscillator.stop(this.audioContext.currentTime + 0.02);
+        this.oscillator = null;
+        this.gainNode = null;
+      }
+    },
   },
 };
 </script>
-
 
 <!--<style>-->
 <!--body {-->
@@ -289,7 +328,6 @@ export default {
   color: #fff; /* And this to the text color you want for active buttons */
 }
 
-
 .button {
   background-color: transparent;
   border: 1px solid #3aab40; /* green border */
@@ -308,7 +346,7 @@ export default {
 }
 
 .button:hover {
-  opacity:80%;
+  opacity: 80%;
 }
 
 .button-off {
@@ -320,10 +358,12 @@ export default {
 
 .button-off:hover {
   background-color: #da190b;
-  opacity:60%;
+  opacity: 60%;
 }
 
-.button:hover, .button-off:hover, .active:hover {
+.button:hover,
+.button-off:hover,
+.active:hover {
   opacity: 100%; /* 100% opacity on hover for all buttons */
 }
 
@@ -333,7 +373,8 @@ export default {
   flex-direction: column;
 }
 
-.button:disabled, button:disabled {
+.button:disabled,
+button:disabled {
   background-color: gray;
   border-color: gray;
   color: white;
@@ -350,7 +391,8 @@ export default {
 .button-off.active {
   background-color: #da190b; /* red background for active off button */
 }
-.button.active:disabled, .button-off.active {
+.button.active:disabled,
+.button-off.active {
   opacity: 60%;
 }
 
@@ -375,5 +417,4 @@ export default {
   color: #9b9b9b; /* Color of the text */
   font-size: 14px; /* Adjust as needed */
 }
-
 </style>

@@ -3,46 +3,81 @@
     <table>
       <tr>
         <th>Calibration Sequence</th>
-        <th></th>
+        <th />
         <th>Volume (mL)</th>
       </tr>
       <tr v-for="(row, index) in rows" :key="index">
         <td>
           <div class="iteration-rotation-wrapper">
-            <div class="iteration">{{ row.iterations }}</div>
+            <div class="iteration">
+              {{ row.iterations }}
+            </div>
             <div class="multiplier">x</div>
             <div class="rotation">{{ row.rotations }} rots</div>
           </div>
         </td>
         <td>
-          <button @click="toggleButtonState(index)" :class="{ 'stop-button': isStopButton[index] }" :disabled="disabled">
+          <button
+            :class="{ 'stop-button': isStopButton[index] }"
+            :disabled="disabled"
+            @click="toggleButtonState(index)"
+          >
             <span v-if="!isStopButton[index]">Pump</span>
             <span v-else>Stop</span>
           </button>
         </td>
-        <td><input v-model="row.total_ml" @change="onTotalMlInput(row)" type="float" :disabled="disabled"/></td>
+        <td>
+          <input
+            v-model="row.total_ml"
+            type="float"
+            :disabled="disabled"
+            @change="onTotalMlInput(row)"
+          />
+        </td>
         <!--        <td>{{pumps.calibration[pumpId][row.rotations].toFixed(3)}}</td>-->
       </tr>
     </table>
     <div class="chart-container">
-      <Bar id="pump-calibration-chart" :options="chartOptions" class="pump-calibration-chart"
-        v-if="chartData.datasets[0].data.length > 0" :data="chartData" />
+      <Bar
+        v-if="chartData.datasets[0].data.length > 0"
+        id="pump-calibration-chart"
+        :options="chartOptions"
+        class="pump-calibration-chart"
+        :data="chartData"
+      />
     </div>
   </div>
 </template>
 <script>
 import { mapActions, mapState } from "vuex";
-import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, BarElement, CategoryScale, LinearScale } from 'chart.js'
+import { Bar } from "vue-chartjs";
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
 
-ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale)
+ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale);
 
 export default {
   components: { Bar },
+  props: {
+    pumpId: {
+      type: Number,
+      required: true,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       chartData: {
-        datasets: [{ data: [] }]
+        datasets: [{ data: [] }],
       },
       chartOptions: {
         responsive: true,
@@ -50,29 +85,29 @@ export default {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
-          }
+            display: false,
+          },
         },
         //#008CBA
-        backgroundColor: 'rgba(0, 140, 186, 0.3)',
+        backgroundColor: "rgba(0, 140, 186, 0.3)",
 
         layout: {
           padding: {
-            top: 20 // This adds some padding at the top of the chart
-          }
+            top: 20, // This adds some padding at the top of the chart
+          },
         },
 
         scales: {
           x: {
             title: {
               display: true,
-              text: 'rotations',
+              text: "rotations",
             },
           },
           y: {
             title: {
               display: true,
-              text: 'mL / rotation',
+              text: "mL / rotation",
             },
             beginAtZero: false,
             suggestedMin: 0.1,
@@ -86,55 +121,57 @@ export default {
         { rotations: 5, iterations: 10, total_ml: NaN },
         { rotations: 10, iterations: 5, total_ml: NaN },
         { rotations: 50, iterations: 1, total_ml: NaN },
-      ]
+      ],
     };
   },
-  props: {
-    pumpId: {
-      type: Number,
-      required: true
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    }
-  },
   computed: {
-    ...mapState('device', ['calibrationModeEnabled', 'pumps', 'valves']),
+    ...mapState("device", ["calibrationModeEnabled", "pumps", "valves"]),
     pumpIdCalibrationData() {
       return this.pumps?.calibration[this.pumpId];
     },
   },
   methods: {
-    ...mapActions('device', ['setPartCalibrationAction', 'startPumpCalibrationSequence', 'setPartStateAction']),
+    ...mapActions("device", [
+      "setPartCalibrationAction",
+      "startPumpCalibrationSequence",
+      "setPartStateAction",
+    ]),
 
     createChartData() {
       return {
         labels: Object.keys(this.pumpIdCalibrationData),
-        datasets: [{
-          label: null,
-          data: Object.values(this.pumpIdCalibrationData),
-          fill: false,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0.1,
-        }]
+        datasets: [
+          {
+            label: null,
+            data: Object.values(this.pumpIdCalibrationData),
+            fill: false,
+            borderColor: "rgb(75, 192, 192)",
+            tension: 0.1,
+          },
+        ],
       };
     },
     updateChartData() {
       this.chartData = this.createChartData();
     },
     toggleButtonState(index) {
-      const isValveOpen = Object.values(this.valves.states).some((valve) => valve === 'open');
+      const isValveOpen = Object.values(this.valves.states).some(
+        (valve) => valve === "open",
+      );
 
       if (!isValveOpen) {
-        alert('At least one valve must be open to start the pump');
+        alert("At least one valve must be open to start the pump");
         return;
       }
       this.$set(this.isStopButton, index, !this.isStopButton[index]);
       if (this.isStopButton[index]) {
         this.promptForMl(this.rows[index]);
       } else {
-        this.setPartStateAction({ devicePart: 'pumps', partIndex: this.pumpId, newState: 'stopped' });
+        this.setPartStateAction({
+          devicePart: "pumps",
+          partIndex: this.pumpId,
+          newState: "stopped",
+        });
       }
     },
     resetButton(row) {
@@ -142,42 +179,41 @@ export default {
     },
     onTotalMlInput(row) {
       if (row.total_ml) {
-        this.pumps.calibration[this.pumpId][row.rotations] = row.total_ml / row.rotations / row.iterations;
+        this.pumps.calibration[this.pumpId][row.rotations] =
+          row.total_ml / row.rotations / row.iterations;
         this.setPartCalibrationAction({
-          devicePart: 'pumps',
+          devicePart: "pumps",
           partIndex: this.pumpId,
-          newCalibration: this.pumps.calibration[this.pumpId]
+          newCalibration: this.pumps.calibration[this.pumpId],
         });
       }
     },
     promptForMl(row) {
-      console.log("starting pump calibration sequence for pumpId: " + this.pumpId);
+      console.log(
+        "starting pump calibration sequence for pumpId: " + this.pumpId,
+      );
       // alert("Starting pump calibration sequence for pumpId: " + this.pumpId + ". Blank the scale and make sure ~10mL are available."); // Add alert here
-      alert("Pumping " + row.rotations + " rotations " + row.iterations + " times. Please blank the scale"); // Add alert here
+      alert(
+        "Pumping " +
+          row.rotations +
+          " rotations " +
+          row.iterations +
+          " times. Please blank the scale",
+      ); // Add alert here
       this.startPumpCalibrationSequence({
         pumpId: this.pumpId,
         rotations: row.rotations,
-        iterations: row.iterations
+        iterations: row.iterations,
       }).then(() => {
         console.log("pump calibration sequence finished");
         this.resetButton(row);
-        const total_ml = parseFloat(prompt('Enter total mL pumped'));
+        const total_ml = parseFloat(prompt("Enter total mL pumped"));
         if (!isNaN(total_ml)) {
           row.total_ml = total_ml;
           this.onTotalMlInput(row);
         }
       });
     },
-  },
-  mounted() {
-    if (this.pumpIdCalibrationData) {
-      this.updateChartData();
-    }
-    this.rows.forEach((row) => {
-      // console.log(this.pumps.calibration[this.pumpId][row.rotations], "pumps.calibration")
-      row.total_ml = this.pumps.calibration[this.pumpId][row.rotations] * row.rotations * row.iterations;
-      row.total_ml = row.total_ml.toFixed(2)
-    });
   },
   watch: {
     pumpIdCalibrationData: {
@@ -187,9 +223,21 @@ export default {
       },
     },
   },
+  mounted() {
+    if (this.pumpIdCalibrationData) {
+      this.updateChartData();
+    }
+    this.rows.forEach((row) => {
+      // console.log(this.pumps.calibration[this.pumpId][row.rotations], "pumps.calibration")
+      row.total_ml =
+        this.pumps.calibration[this.pumpId][row.rotations] *
+        row.rotations *
+        row.iterations;
+      row.total_ml = row.total_ml.toFixed(2);
+    });
+  },
 };
 </script>
-
 
 <style scoped>
 .pump-data {
@@ -206,7 +254,6 @@ export default {
   justify-content: center;
   padding-left: 5px;
   padding-right: 5px;
-
 }
 
 table {
@@ -228,7 +275,7 @@ td {
 button {
   padding: 3px 5px;
   /* reduced padding to save space */
-  background-color: #008CBA;
+  background-color: #008cba;
   /* Blue background */
   color: white;
   /* White text */
@@ -246,7 +293,7 @@ button stop-button {
 }
 
 button:hover {
-  background-color: #007B9A;
+  background-color: #007b9a;
 }
 
 button:disabled {
@@ -298,4 +345,5 @@ input[type="float"] {
 .rotation {
   width: 40px;
   text-align: left;
-}</style>
+}
+</style>

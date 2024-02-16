@@ -1,10 +1,12 @@
 <template>
   <div class="HomeTab">
     <h1>Welcome to replifactory!</h1>
-    <p>To start using the app, navigate to the 'Device' tab and start controlling your device.</p>
+    <p>
+      To start using the app, navigate to the 'Device' tab and start controlling
+      your device.
+    </p>
   </div>
 </template>
-
 
 <style>
 #app {
