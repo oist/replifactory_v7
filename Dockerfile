@@ -90,12 +90,9 @@ RUN chown node:node .
 
 USER node
 
-RUN mkdir -p vue
+COPY --chown=node:node vue/ ./vue
 
-COPY --chown=node:node vue/public ./vue/public
-COPY --chown=node:node vue/src ./vue/src
-
-COPY --chown=node:node babel.config.js jsconfig.json package.json package-lock.json vue.config.js ./
+COPY --chown=node:node jsconfig.json package.json package-lock.json vite.config.js ./
 
 RUN npm ci && npm cache clean --force
 
@@ -130,7 +127,7 @@ COPY --chown=$USER:$USER --from=vue-app /usr/src/app/flask_app/static ./flask_ap
 COPY --chown=$USER:$USER ./flask_app/ ./flask_app/
 COPY --chown=$USER:$USER ./entrypoint.sh ./
 
-RUN flask --app flask_app digest compile
+# RUN flask --app flask_app digest compile
 
 RUN chmod +x entrypoint.sh
 

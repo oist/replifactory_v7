@@ -119,6 +119,7 @@ def create_app():
         return app.send_static_file("index.html")
 
     @app.route("/", defaults={"path": ""})
+    @app.route("/login", defaults={"path": "/login"})
     @app.route("/<path:path>")
     def catch_all(path):
         return app.send_static_file("index.html")

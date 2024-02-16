@@ -3,10 +3,11 @@ Dockerfile
 
 __pycache__/
 flask_app/data/
+flask_app/develop/
+flask_app/static/build/
 secrets*
 logs/
 venv/
-flask_app/develop/
 db/
 data/
 
