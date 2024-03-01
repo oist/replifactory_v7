@@ -1,13 +1,15 @@
 import flask
 from flask import request
-from flask_app.replifactory.devices.step_motor import MotorProfile
+from flask_security.decorators import auth_required
 
 from flask_app import machine
 from flask_app.replifactory.api import api
+from flask_app.replifactory.devices.step_motor import MotorProfile
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
 
 @api.route("/machine/command_queue", methods=["POST"])
+@auth_required()
 def machineCommandQueue():
     valid_commands = {
         "clear": [],
@@ -23,6 +25,7 @@ def machineCommandQueue():
 
 
 @api.route("/machine/valve", methods=["POST"])
+@auth_required()
 def machineValveCommand():
     valid_commands = {
         "open": ["deviceId"],
@@ -45,6 +48,7 @@ def machineValveCommand():
 
 
 @api.route("/machine/stirrer", methods=["POST"])
+@auth_required()
 def machineStirrerCommand():
     valid_commands = {
         "setSpeed": ["deviceId", "speed"],
@@ -64,6 +68,7 @@ def machineStirrerCommand():
 
 
 @api.route("/machine/thermometer", methods=["POST"])
+@auth_required()
 def machineThermometerCommand():
     valid_commands = {
         "measure": ["deviceId"],
@@ -82,6 +87,7 @@ def machineThermometerCommand():
 
 
 @api.route("/machine/odsensor", methods=["POST"])
+@auth_required()
 def machineODSensorCommand():
     valid_commands = {
         "measure": ["deviceId"],
@@ -100,6 +106,7 @@ def machineODSensorCommand():
 
 
 @api.route("/machine/pump", methods=["POST"])
+@auth_required()
 def machinePumpCommand():
     valid_commands = {
         "pump": ["deviceId", "volume"],
@@ -158,6 +165,7 @@ def machinePumpCommand():
 
 
 @api.route("/machine/vial", methods=["POST"])
+@auth_required()
 def machineVialCommand():
     valid_commands = {
         "add_media": ["deviceId", "volume", "speed"],

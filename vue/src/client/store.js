@@ -2,6 +2,7 @@ import { createStore } from "vuex";
 import device from "./deviceStore.js";
 import experiment from "./experimentStore.js";
 import machine from "./machineStore.js";
+import security from "./securityStore.js";
 
 import api from "@/api.js";
 export default createStore({
@@ -20,6 +21,7 @@ export default createStore({
     device,
     experiment,
     machine,
+    security,
   },
   mutations: {
     initialiseStore() {
@@ -50,7 +52,7 @@ export default createStore({
   actions: {
     fetchHostname({ commit }) {
       api
-        .get("/hostname")
+        .get("/api/hostname")
         .then((response) => {
           commit("setHostname", response.data.hostname);
         })
@@ -60,7 +62,7 @@ export default createStore({
     },
     async connectDevice({ dispatch, commit }) {
       try {
-        const response = await dispatch("device/connect");
+        const response = await dispatch("/api/device/connect");
         if (response && response.data.success) {
           await dispatch("device/getAllDeviceData");
           commit("setDeviceConnected", true);

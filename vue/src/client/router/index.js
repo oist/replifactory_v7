@@ -6,15 +6,14 @@ import NgrokTab from "@/client/components/Remote/NgrokTab.vue";
 import HelpTab from "@/client/components/HelpTab/HelpTab.vue";
 import StatusTab from "@/client/components/StatusTab/StatusTab.vue";
 import LogsTab from "@/client/components/LogsTab/LogsTab.vue";
+import store from "@/client/store.js";
 
 const routes = [
   {
     path: "/",
     name: "Home",
     component: () => import("@/client/components/Replifactory.vue"),
-    meta: {
-      // requiresAuth: true,
-    },
+    beforeEnter: requireAuth,
     children: [
       {
         path: "/",
@@ -61,17 +60,26 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    const token = localStorage.getItem("token");
-    if (token) {
-      next();
-    } else {
+store.dispatch("security/verify");
+
+// define a route guard function
+function requireAuth(to, from, next) {
+  store
+    .dispatch("security/verify")
+    .then((response) => {
+      // if the session id is valid, allow the user to access the route
+      if (response.status === 200) {
+        next();
+      } else {
+        // if the session id is invalid, redirect the user to the login page
+        next("/login");
+      }
+    })
+    .catch((err) => {
+      // handle any errors
+      console.error(err);
       next("/login");
-    }
-  } else {
-    next();
-  }
-});
+    });
+}
 
 export default router;

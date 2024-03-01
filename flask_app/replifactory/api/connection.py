@@ -1,13 +1,13 @@
 from flask import jsonify, request
+from flask_security.decorators import auth_required
 
-from flask_app import machine
+from flask_app import machine, settings
 from flask_app.replifactory.api import api
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
-from flask_app import settings
-
 
 @api.route("/connection", methods=["GET"])
+# @auth_required()
 # @Permissions.STATUS.require(403)
 def connectionState():
     current = machine.get_current_connection()
@@ -16,6 +16,7 @@ def connectionState():
 
 
 @api.route("/connection", methods=["POST"])
+@auth_required()
 # @no_firstrun_access
 # @Permissions.CONNECTION.require(403)
 def connectionCommand():

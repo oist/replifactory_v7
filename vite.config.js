@@ -31,6 +31,30 @@ export default defineConfig({
     devSourcemap: true,
   },
   server: {
+    port: 8080,
     open: true,
+    proxy: {
+      "/security": {
+        changeOrigin: false,
+        target: "http://localhost:5000",
+        // secure: false,
+      },
+      "/api/": {
+        changeOrigin: true,
+        target: "http://localhost:5000",
+        secure: false,
+      },
+      "/help": {
+        changeOrigin: true,
+        target: "http://localhost:5000",
+        // secure: false,
+      },
+      "/socket.io": {
+        ws: true,
+        // changeOrigin: true,
+        target: "http://localhost:5000",
+        // secure: false,
+      },
+    },
   },
 });

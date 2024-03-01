@@ -1,19 +1,12 @@
 <template>
   <div id="alerts">
-    <BAlert
-      :model-value="true"
-      :variant="backendConnectedAlertVariant"
-      class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between"
-    >
+    <BAlert :model-value="true" :variant="backendConnectedAlertVariant"
+      class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between align-content-center flex-wrap">
       <div class="flex-fill">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </div>
-      <CFormSwitch
-        id="switchDebug"
-        v-model="debug"
-        label="Debug"
-        @input="debugHandleSwitchChange"
-      />
+      <CFormSwitch id="switchDebug" v-model="debug" label="Debug" @input="debugHandleSwitchChange" />
+      <a href="/security/logout" class="btn btn-outline-danger btn-sm ms-2">Logout</a>
       <MachineNotification />
     </BAlert>
   </div>
@@ -45,14 +38,24 @@
       </CCol>
       <CCol md="10">
         <ul class="nav nav-tabs">
-          <BootstrapRouterLink to="/experiment">
-            Experiment
-          </BootstrapRouterLink>
-          <BootstrapRouterLink to="/device"> Device </BootstrapRouterLink>
-          <!-- <BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink> -->
-          <BootstrapRouterLink to="/help"> Help </BootstrapRouterLink>
-          <BootstrapRouterLink to="/status"> Status </BootstrapRouterLink>
-          <BootstrapRouterLink to="/logs"> Logs </BootstrapRouterLink>
+          <li class="nav-item">
+            <BootstrapRouterLink to="/experiment" class="nav-link">
+              Experiment
+            </BootstrapRouterLink>
+          </li>
+          <li class="nav-item">
+            <BootstrapRouterLink to="/device" class="nav-link"> Device </BootstrapRouterLink>
+          </li>
+          <!-- <li class="nav-item"><BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink></li> -->
+          <li class="nav-item">
+            <BootstrapRouterLink to="/help" class="nav-link"> Help </BootstrapRouterLink>
+          </li>
+          <li class="nav-item">
+            <BootstrapRouterLink to="/status" class="nav-link"> Status </BootstrapRouterLink>
+          </li>
+          <li class="nav-item">
+            <BootstrapRouterLink to="/logs" class="nav-link"> Logs </BootstrapRouterLink>
+          </li>
         </ul>
         <div class="tab-content">
           <router-view />
@@ -82,24 +85,6 @@ import BootstrapRouterLink from "@/client/router/BootstrapRouterLink.vue";
 
 export default {
   name: "App",
-  computed: {
-    backendConnectedAlertVariant() {
-      return this.connected ? "primary" : "danger";
-    },
-    ...mapState(["hostname", "debug"]),
-    ...mapState({
-      connected: (state) => state.backendConnected,
-    }),
-  },
-  async mounted() {
-    socket.connect();
-  },
-  methods: {
-    ...mapMutations(["setDebug"]),
-    debugHandleSwitchChange(event) {
-      this.setDebug(event.target.checked);
-    },
-  },
   components: {
     MachineConnection,
     MachineState,
@@ -119,11 +104,29 @@ export default {
       tabs: ["Experiment", "Device", "Remote", "Help", "Status", "Logs"],
     };
   },
+  computed: {
+    backendConnectedAlertVariant() {
+      return this.connected ? "primary" : "danger";
+    },
+    ...mapState(["hostname", "debug"]),
+    ...mapState({
+      connected: (state) => state.backendConnected,
+    }),
+  },
+  async mounted() {
+    socket.connect();
+  },
   beforeCreate() {
     this.$store.commit("initialiseStore");
     this.$store.subscribe((mutation, state) => {
       localStorage.setItem("store", JSON.stringify(state));
     });
+  },
+  methods: {
+    ...mapMutations(["setDebug"]),
+    debugHandleSwitchChange(event) {
+      this.setDebug(event.target.checked);
+    },
   },
 };
 </script>
@@ -137,10 +140,12 @@ export default {
   margin: 0 auto;
   max-width: 1024px;
 }
+
 .icon {
   vertical-align: middle !important;
 }
-.form-switch > label {
+
+.form-switch>label {
   margin: 0 !important;
 }
 </style>

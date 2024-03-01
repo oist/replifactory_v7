@@ -1,16 +1,8 @@
 <template>
   <router-link v-slot="{ isActive, href, navigate }" v-bind="$props" custom>
-    <li class="nav-item">
-      <a
-        v-bind="$attrs"
-        :href="href"
-        class="nav-link"
-        :class="isActive ? activeClass : inactiveClass"
-        @click="navigate"
-      >
-        <slot />
-      </a>
-    </li>
+    <a v-bind="$attrs" :href="href" :class="isActive ? activeClass : inactiveClass" @click="navigate">
+      <slot />
+    </a>
   </router-link>
 </template>
 

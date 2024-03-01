@@ -74,7 +74,7 @@ export default {
     updateConnection({ commit }) {
       return new Promise((resolve, reject) => {
         api
-          .get("/connection")
+          .get("/api/connection")
           .then((response) => {
             commit("updateCurrentConnetion", response.data.current);
             commit("updateConnectionOptions", response.data.options);
@@ -89,7 +89,7 @@ export default {
     updateDevices({ commit }) {
       return new Promise((resolve, reject) => {
         api
-          .get("/devices")
+          .get("/api/devices")
           .then((response) => {
             commit("updateDevices", response.data);
             resolve(response.data);
@@ -102,7 +102,7 @@ export default {
     },
     runCommand(context, payload) {
       const { device, deviceId, command, ...args } = payload;
-      const endpoint = `/machine/${device}`;
+      const endpoint = `/api/machine/${device}`;
       return new Promise((resolve, reject) => {
         api
           .post(endpoint, { deviceId, command, ...args })

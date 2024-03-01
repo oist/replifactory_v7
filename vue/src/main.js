@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import CoreuiVue from "@coreui/vue";
 import BootstrapVueNext from "bootstrap-vue-next";
+import VueCookies from "vue3-cookies";
 
 import App from "./client/App.vue";
 import store from "./client/store";
@@ -34,6 +35,7 @@ app.directive("click-outside", {
 
 app.use(CoreuiVue);
 app.use(BootstrapVueNext);
-app.use(store); // This line adds your Vuex store to your Vue app
+app.use(VueCookies);
+app.use(store);
 app.use(router);
 app.mount("#replifactory");

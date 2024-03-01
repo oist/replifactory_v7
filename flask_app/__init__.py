@@ -4,10 +4,18 @@ import logging
 import os
 from http.client import HTTPException
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, url_for
 from flask_cors import CORS
+from flask_security import (
+    Security,
+    SQLAlchemyUserDatastore,
+    auth_required,
+    hash_password,
+)
+from flask_security.models import fsqla_v3 as fsqla
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
+from flask_wtf.csrf import CSRFProtect
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 
 from flask_app.replifactory.config import Config, settings
@@ -36,6 +44,18 @@ def create_app():
     global settings
 
     app = Flask(__name__, static_folder="static/build", static_url_path="/")
+
+    # Generate a nice key using secrets.token_urlsafe()
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "not-secret-key")
+    # Bcrypt is set as default SECURITY_PASSWORD_HASH, which requires a salt
+    # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
+    app.config["SECURITY_PASSWORD_SALT"] = os.environ.get(
+        "SECURITY_PASSWORD_SALT", "146585145368132386173505678016728509634"
+    )
+    # have session and remember cookie be samesite (flask/flask_login)
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "strict"
+    app.config["SESSION_COOKIE_SAMESITE"] = "strict"
+
     config_file = os.environ.get("REPLIFACTORY_CONFIG", "config.yml")
     app.config["REPLIFACTORY_CONFIG"] = config_file
     try:
@@ -53,8 +73,70 @@ def create_app():
     db_path = os.path.join(script_dir, "replifactory.db")
     database_uri = os.environ.get("DATABASE_URI", f"sqlite:///{db_path}")
     app.config["SQLALCHEMY_DATABASE_URI"] = database_uri
+    # As of Flask-SQLAlchemy 2.4.0 it is easy to pass in options directly to the
+    # underlying engine. This option makes sure that DB connections from the
+    # pool are still valid. Important for entire application since
+    # many DBaaS options automatically close idle connections.
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
+
+    # Define models
+    fsqla.FsModels.set_db_info(db)
+
+    class Role(db.Model, fsqla.FsRoleMixin):
+        pass
+
+    class User(db.Model, fsqla.FsUserMixin):
+        pass
+
+    app.config.update(
+        # no forms so no concept of flashing
+        SECURITY_FLASH_MESSAGES=False,
+        # Need to be able to route backend flask API calls. Use 'accounts'
+        # to be the Flask-Security endpoints.
+        SECURITY_URL_PREFIX="/security",
+        # Turn on all the great Flask-Security features
+        SECURITY_RECOVERABLE=True,
+        SECURITY_TRACKABLE=True,
+        SECURITY_CHANGEABLE=True,
+        SECURITY_CONFIRMABLE=False,
+        SECURITY_REGISTERABLE=True,
+        # SECURITY_UNIFIED_SIGNIN=True,
+        # These need to be defined to handle redirects
+        # As defined in the API documentation - they will receive the relevant context
+        SECURITY_LOGIN_URL="/login",
+        SECURITY_LOGOUT_URL="/logout",
+        SECURITY_POST_LOGOUT_VIEW="/",
+        SECURITY_POST_CONFIRM_VIEW="/confirmed",
+        SECURITY_CONFIRM_ERROR_VIEW="/confirm-error",
+        SECURITY_RESET_VIEW="/reset-password",
+        SECURITY_RESET_ERROR_VIEW="/reset-password-error",
+        SECURITY_REDIRECT_BEHAVIOR="spa",
+        # CSRF protection is critical for all session-based browser UIs
+        # enforce CSRF protection for session / browser - but allow token-based
+        # API calls to go through
+        SECURITY_CSRF_PROTECT_MECHANISMS=["session", "basic"],
+        SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
+        # Send Cookie with csrf-token. This is the default for Axios and Angular.
+        SECURITY_CSRF_COOKIE_NAME="XSRF-TOKEN",
+        WTF_CSRF_CHECK_DEFAULT=False,
+        WTF_CSRF_TIME_LIMIT=None,
+        # For development
+        SECURITY_REDIRECT_HOST=os.environ.get("REDIRECT_HOST", "localhost:8000"),
+    )
+    # In your app
+    # Enable CSRF on all api endpoints.
+    CSRFProtect(app)
+
+    # app.config["SECURITY_REDIRECT_HOST"] = "localhost:8080"
+
+    # Setup Flask-Security
+    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    app.security = Security(app, user_datastore)
 
     global machine
     machine = Machine()
@@ -88,11 +170,25 @@ def create_app():
     def _run_before_server_started():
         with app.app_context():
             db.create_all()
+            if not app.security.datastore.find_user(email="fedor.gagarin@oist.jp"):
+                app.security.datastore.create_user(
+                    email="fedor.gagarin@oist.jp", password=hash_password("password")
+                )
+            db.session.commit()
             # connect_device()  # connect to device on startu
         # socketio_cors_allowed_origins = "*" if environment == "development" else None
-        socket_io_async_mode = "threading" if os.environ.get("FLASK_RUN_FROM_CLI") == "true" else "gevent"
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode=socket_io_async_mode, path="socket.io")
-        socketio.on_namespace(MachineNamespace(app=app, machine=machine, namespace="/machine"))
+        socket_io_async_mode = (
+            "threading" if os.environ.get("FLASK_RUN_FROM_CLI") == "true" else "gevent"
+        )
+        socketio = SocketIO(
+            app,
+            cors_allowed_origins="*",
+            async_mode=socket_io_async_mode,
+            path="socket.io",
+        )
+        socketio.on_namespace(
+            MachineNamespace(app=app, machine=machine, namespace="/machine")
+        )
         # socketio.run(app)
         usb_manager.start_monitoring()
 
@@ -124,7 +220,6 @@ def create_app():
     def catch_all(path):
         return app.send_static_file("index.html")
 
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "not-secret-key")
     _setup_blueprints()
     flask_static_digest.init_app(app)
 

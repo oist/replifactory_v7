@@ -9,8 +9,8 @@
     "start": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve\" \"npm run flask-server\"",
     "flask-server": "poetry run flask --app flask_app.app run --host=0.0.0.0",
     "flask-static-digest": "poetry run flask --app flask_app digest compile",
-    "serve": "vite preview",
-    "dev": "vite",
+    "serve": "vite",
+    "dev": "vite --debug",
     "lint": "eslint . --ext .js,.vue --ignore-path .gitignore --fix vue/src",
     "format": "prettier . --write"
   },

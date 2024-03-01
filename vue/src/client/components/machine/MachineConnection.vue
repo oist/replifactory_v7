@@ -3,53 +3,25 @@
     <CForm class="row g-3">
       <CCol xs="12">
         <CFormLabel for="machineSelect"> Machine </CFormLabel>
-        <CFormSelect
-          id="machineSelect"
-          v-model="selectedMachine"
-          aria-label="Select machine"
-          :disabled="isConnected"
-        >
-          <option
-            v-for="(value, device_id) in connectionOptions.devices"
-            :key="device_id"
-            :value="device_id"
-          >
+        <CFormSelect id="machineSelect" v-model="selectedMachine" aria-label="Select machine" :disabled="isConnected">
+          <option v-for="(value, device_id) in connectionOptions.devices" :key="device_id" :value="device_id">
             {{ value.product }} ({{ value.serial_number }})
           </option>
         </CFormSelect>
       </CCol>
       <CCol xs="12">
-        <CButton
-          v-if="isDisconnected"
-          :disabled="loading"
-          type="button"
-          color="primary"
-          variant="outline"
-          class="w-100"
-          @click="connectMachine"
-        >
+        <CButton v-if="isDisconnected" :disabled="loading" type="button" color="primary" variant="outline" class="w-100"
+          @click="connectMachine">
           <CSpinner v-if="loading" size="sm" color="secondary" />
           Connect
         </CButton>
-        <CButton
-          v-else
-          :disabled="loading"
-          type="button"
-          color="danger"
-          variant="outline"
-          class="w-100"
-          @click="disconnectMachine"
-        >
+        <CButton v-else :disabled="loading" type="button" color="danger" variant="outline" class="w-100"
+          @click="disconnectMachine">
           <CSpinner v-if="loading" size="sm" color="secondary" />
           Disconnect
         </CButton>
       </CCol>
-      <CAlert
-        v-if="error"
-        v-model="showAlert"
-        color="danger"
-        @dismissed="onDismissed"
-      >
+      <CAlert v-if="error" v-model="showAlert" color="danger" @dismissed="onDismissed">
         {{ error }}
       </CAlert>
     </CForm>
@@ -78,6 +50,14 @@ export default {
     CCol,
     CSpinner,
     CAlert,
+  },
+  data() {
+    return {
+      selectedMachine: undefined,
+      loading: false,
+      error: "",
+      showAlert: false,
+    };
   },
   computed: {
     connectionOptions() {
@@ -118,14 +98,6 @@ export default {
       }
     },
   },
-  data() {
-    return {
-      selectedMachine: undefined,
-      loading: false,
-      error: "",
-      showAlert: false,
-    };
-  },
   mounted() {
     this.refreshConnectionOptions();
     this.selectedMachine = this.currentConnection.id;
@@ -146,7 +118,7 @@ export default {
       this.loading = true;
       this.showAlert = false;
       try {
-        const response = await api.post("/connection", payload);
+        const response = await api.post("/api/connection", payload);
         console.log("Connection response: " + response);
         this.loading = false;
       } catch (err) {
@@ -180,7 +152,7 @@ export default {
     },
   },
   sockets: {
-    changeMachineListEvent() {},
+    changeMachineListEvent() { },
   },
 };
 </script>
