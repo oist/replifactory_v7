@@ -1,8 +1,11 @@
-from typing import Callable, Iterable, SupportsBytes, SupportsIndex
+import logging
+from enum import Enum
+from time import sleep
+from typing import Iterable, Optional, SupportsBytes, SupportsIndex
 
-from pyftdi.i2c import I2cPort
+from flask_app.replifactory.drivers import HardwarePort, StepperDriver
 
-from flask_app.replifactory.drivers import Driver
+logger = logging.getLogger(__name__)
 
 AUTOINCREMENT_BIT = 1 << 7
 
@@ -49,6 +52,10 @@ REGISTERS_NAMES = {
     for name, value in locals().items()
     if name.startswith("REGISTER_")
 }
+REGISTERS_NAMES |= {
+    (regaddr | AUTOINCREMENT_BIT):  f"{name}_AI"
+    for regaddr, name in REGISTERS_NAMES.items()
+}
 
 
 def get_register_name(regaddr: int) -> str:
@@ -81,7 +88,9 @@ def is_set(value: int, bit: int) -> bool:
 
 
 class ControllerRegister:
-    def __init__(self, address: int, value: int | Iterable[SupportsIndex] | SupportsBytes):
+    def __init__(
+        self, address: int, value: int | Iterable[SupportsIndex] | SupportsBytes
+    ):
         if isinstance(value, (Iterable, SupportsBytes)):
             value = int.from_bytes(bytes(value), "little")
         self._value = value
@@ -99,7 +108,9 @@ class ControllerRegister:
 
 
 class StepperMode(ControllerRegister):
-    def __init__(self, mode: int | Iterable[SupportsIndex] | SupportsBytes = 0b00000001):
+    def __init__(
+        self, mode: int | Iterable[SupportsIndex] | SupportsBytes = 0b00000001
+    ):
         super().__init__(REGISTER_MODE, mode)
 
     def __str__(self):
@@ -138,7 +149,8 @@ class StepperMode(ControllerRegister):
             if self._is_set(MODE_SLEEP_BIT)
             else "Normal mode"
         )
-        return f"""{self._value:08b} {get_register_name(self._address)}
+        return f"""
+{self._value:08b} {get_register_name(self._address)}
  \u2502\u2502\u2502\u2502\u2502\u2502\u2514{allcall}
  \u2502\u2502\u2502\u2502\u2502\u2514{subbaddr3}
  \u2502\u2502\u2502\u2502\u2514{subbaddr2}
@@ -150,15 +162,51 @@ class StepperMode(ControllerRegister):
 
 
 class MotorControl(ControllerRegister):
+
+    class Directions(Enum):
+        CCW_THEN_CW = 0b11
+        CW_THEN_CCW = 0b10
+        CCW = 0b01
+        CW = 0b00
+
     def __init__(self, value: int | Iterable[SupportsIndex] | SupportsBytes = 0):
         super().__init__(REGISTER_MCNTL, value)
 
+    @property
+    def is_running(self) -> bool:
+        return self._is_set(MCTL_RUN_BIT)
+
+    def set_start(self):
+        self._value |= 1 << MCTL_RUN_BIT
+        return self
+
+    def set_stop(self):
+        self._value &= ~(1 << MCTL_RUN_BIT)
+        return self
+
+    def set_emergency_stop(self):
+        self._value |= 1 << MCTL_EMERGENCY_STOP_BIT
+        return self
+
+    def set_restart(self):
+        self._value |= 1 << MCTL_RESTART_BIT
+        return self
+
+    def enable_start_ignore_p0(self):
+        self._value |= 1 << MCTL_START_IGNORE_P0_BIT
+        return self
+
+    def disable_start_ignore_p0(self):
+        self._value &= ~(1 << MCTL_START_IGNORE_P0_BIT)
+        return self
+
+    def set_direction(self, direction: Directions):
+        self._value &= ~0b11
+        self._value |= direction.value
+        return self
+
     def __str__(self):
-        run = (
-            "Start motor"
-            if self._is_set(MCTL_RUN_BIT)
-            else "Stop motor"
-        )
+        run = "Running" if self._is_set(MCTL_RUN_BIT) else "Stoped"
         restart = (
             "Re-start motor for new speed and operation"
             if self._is_set(MCTL_RESTART_BIT)
@@ -189,17 +237,18 @@ class MotorControl(ControllerRegister):
             case 0b11:
                 direction = "Rotate counter-clockwise first, then clockwise"
 
-        return f"""{(self._value >> 5 & 0b111):03b}xxx{(self._value & 0b11):b} {get_register_name(self._address)}
+        return f"""
+{(self._value >> 5 & 0b111):03b}xxx{(self._value & 0b11):b} {get_register_name(self._address)}
 \u2502\u2502\u2502   \u2514{direction}
 \u2502\u2502\u2514{emergency_stop}
 \u2502\u2514{restart}
 \u2514{run}"""
 
 
-class StepMotorDriver(Driver):
+class StepMotorDriver(StepperDriver):
 
-    def __init__(self, get_port: Callable[[], I2cPort]):
-        self._get_port = get_port
+    def __init__(self, port: HardwarePort):
+        self._port = port
         self._mode = StepperMode()
         self._control = MotorControl()
 
@@ -221,9 +270,42 @@ class StepMotorDriver(Driver):
         """
         pass
 
+    def rotate(
+        self,
+        n_steps: Optional[int] = None,
+        steps_per_second: Optional[int] = None,
+        cw: bool = True,
+        wait: bool = False,
+    ):
+        step_count_register = REGISTER_CWSCOUNTL if cw else REGISTER_CCSWCOUNTL
+        step_count_register |= AUTOINCREMENT_BIT
+        with self._port.session:
+            motor_control = MotorControl(self._port.read_from(REGISTER_MCNTL, 1))
+            if motor_control.is_running:
+                raise ValueError("Motor is already running")
+            if n_steps is not None:
+                self._port.write_to(step_count_register, n_steps.to_bytes(2, "little"))
+            elif steps_per_second is not None:
+                self._port.write_to(REGISTER_PMA, [0])
+            self._port.write_to(REGISTER_CWPWL | AUTOINCREMENT_BIT, 0x1000.to_bytes(2, "little"))
+            motor_control.set_start()
+            self._port.write_to(REGISTER_MCNTL, motor_control.to_bytes())
+            while wait and motor_control.is_running:
+                motor_control = MotorControl(self._port.read_from(REGISTER_MCNTL, 1))
+                sleep(1)
+
+    def stop(self, emergency: bool = False, wait: bool = False):
+        with self._port.session:
+            motor_control = MotorControl(self._port.read_from(REGISTER_MCNTL, 1))
+            if emergency:
+                motor_control.set_emergency_stop()
+            else:
+                motor_control.set_stop()
+            self._port.write_to(REGISTER_MCNTL, motor_control.to_bytes())
+
     @property
     def port(self):
-        return self._get_port()
+        return self._port
 
     @property
     def mode(self) -> StepperMode:
@@ -247,6 +329,10 @@ class StepMotorDriver(Driver):
         self.port.write_to(REGISTER_MCNTL, value.to_bytes())
         self._control = value
 
+    @property
+    def steps_counter(self):
+        return int.from_bytes(self.port.read_from(REGISTER_STEPCOUNT0 | AUTOINCREMENT_BIT, 4), "little")
+
 
 if __name__ == "__main__":
     from flask_app.replifactory.drivers.ft2232h import FtdiDriver
@@ -267,14 +353,22 @@ if __name__ == "__main__":
         i2c_freq=I2C_FREQ,
     )
     stepper_driver = StepMotorDriver(
-        get_port=ftdi_driver.get_i2c_port_callback(PORT_ADDR, "STEPPER_CONTROLLER")
+        port=ftdi_driver.get_i2c_hw_port(PORT_ADDR, "STEPPER_CONTROLLER", registers=REGISTERS_NAMES)
     )
 
     ftdi_driver.connect(usb_device)
     stepper_driver.init()
 
-    print(f"{stepper_driver.mode}")
-    print(f"{stepper_driver.control}")
+    logger.debug(f"{stepper_driver.mode}")
+    logger.debug(f"{stepper_driver.control}")
+    stepper_driver.rotate(n_steps=100)
+    logger.debug(f"{stepper_driver.control}")
+
+    while stepper_driver.control.is_running:
+        logger.debug(f"steps: {stepper_driver.steps_counter}")
+        sleep(1)
+
+    logger.debug(f"{stepper_driver.control}")
 
     stepper_driver.terminate()
     ftdi_driver.terminate()

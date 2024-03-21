@@ -10,19 +10,19 @@ from pyftdi.ftdi import Ftdi, FtdiError
 from pyftdi.i2c import I2cController as FtdiI2cController
 from pyftdi.i2c import I2cIOError, I2cNackError
 from pyftdi.i2c import I2cPort as FtdiI2cPort
-from pyftdi.spi import SpiController, SpiPort
+from pyftdi.spi import SpiController
 from pyftdi.usbtools import UsbTools
 from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
-from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver, HardwarePort, LazyPort
 
 logger = logging.getLogger(__name__)
 
 
-class I2cPort(FtdiI2cPort):
+class I2cPort(FtdiI2cPort, HardwarePort):
     def __init__(
         self,
         controller: "I2cController",
@@ -105,6 +105,45 @@ class ParsedDescriptor:
     description: str
 
 
+class SpiPort(HardwarePort):
+    def __init__(
+        self,
+        controller: "SpiController",
+        cs: int,
+        freq: float,
+        mode: int,
+        name: str,
+    ):
+        super().__init__(controller=controller, cs=cs, freq=freq, mode=mode)
+        self._name = name
+
+    def write(self, data: bytes | bytearray | Iterable[int]):
+        logger.debug(
+            __(
+                "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
+                port_name=self._name,
+                cs=self._cs,
+                int_data=ArrayOfBytesAsInt(data),
+                data=bytearray(data).hex(" ").upper(),
+            )
+        )
+        return super().write(data)
+
+    def read(self, length: int) -> bytes:
+        result = super().read(length)
+        logger.debug(
+            __(
+                "R spi: {port_name} (CS{cs}) len: {length} data: {int_data} [{data}]",
+                port_name=self._name,
+                cs=self._cs,
+                int_data=ArrayOfBytesAsInt(result),
+                data=result.hex(" ").upper(),
+                length=length,
+            )
+        )
+        return result
+
+
 class FtdiDriver(Driver):
     def __init__(
         self,
@@ -175,6 +214,11 @@ class FtdiDriver(Driver):
                         interface=self._i2c_interface,
                     )
         return self._i2c_controller
+
+    def get_i2c_hw_port(self, address: int, name: str, registers: dict[int, str] = {}):
+        return LazyPort(
+            get_port=self.get_i2c_port_callback(address, name, registers)
+        )
 
     def get_i2c_port_callback(
         self, address: int, name: str, registers: dict[int, str] = {}
