@@ -578,6 +578,7 @@ class StepMotorDriver(Driver):
         status = self.get_status()
         while wait and status.is_busy:
             status = self.get_status()
+        return status
 
     def hard_stop(self):
         self._command(commands.HARD_STOP.address)

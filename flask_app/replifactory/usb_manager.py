@@ -84,11 +84,17 @@ class UsbManager:
 
     def get_device(self, device_id):
         with self._lock:
-            return self._usb_devices[device_id]
+            usb_devices = self._usb_devices
+            if usb_devices is None:
+                usb_devices = self.get_available_devices()
+            return usb_devices[device_id]
 
     def find_device(self, **kwargs):
         with self._lock:
-            for device in self._usb_devices:
+            usb_devices = self._usb_devices
+            if usb_devices is None:
+                usb_devices = self.get_available_devices()
+            for _, device in usb_devices.items():
                 tests = (val == getattr(device, key, None) for key, val in kwargs.items())
                 if _interop._all(tests):
                     return device
