@@ -6,5 +6,10 @@ import flask_app.replifactory.drivers.ftdi
 sys.modules["pyftdi.eeprom"] = flask_app.replifactory.drivers.ftdi
 import ftconf
 
-if __name__ == '__main__':
+
+def main():
     ftconf.main()
+
+
+if __name__ == '__main__':
+    main()

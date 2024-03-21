@@ -1,7 +1,7 @@
 from flask_security.decorators import auth_required
 
 from flask_app.replifactory.api import api
-from replifactory.util.flask import SUCCESS
+from flask_app.replifactory.util.flask import SUCCESS
 
 
 @api.route("/security/verify", methods=["GET"])

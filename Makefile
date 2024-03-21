@@ -256,8 +256,8 @@ eeprom-write-sn:
 	@test -z "$(DEVICE_URL)" && echo "There is no connected device" && exit 1 || exit 0
 	@test -z "$$SERIAL_NUMBER" && echo "Define SERIAL_NUMBER" && exit 1 || exit 0
 	@echo Write serial number: "$$SERIAL_NUMBER" to device: $(DEVICE_URL)
-	poetry run python replifactory_ftconf.py $(DEVICE_URL) -i data.ini -u -s "$$SERIAL_NUMBER" -o -
+	poetry run ftconf $(DEVICE_URL) -i data.ini -u -s "$$SERIAL_NUMBER" -o -
 
 eeprom-read:
 	@test -z "$(DEVICE_URL)" && echo "There is no connected device" && exit 1 || exit 0
-	poetry run python replifactory_ftconf.py $(DEVICE_URL) -o -
+	poetry run ftconf $(DEVICE_URL) -o -

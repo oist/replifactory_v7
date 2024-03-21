@@ -9,11 +9,13 @@ maintainers = [
 readme = "README.md"
 homepage = "https://replifactory.com"
 packages = [
-    { include = "**/*.py", from = "flask_app" },
+    { include = "**/*.py", from = "." },
+    { include = "replifactory_ftconf.py" },
 ]
 
-# [tool.poetry.scripts]
-# flask = 'flask:main'
+[tool.poetry.scripts]
+ftconf = 'replifactory_ftconf:main'
+replifactory = 'flask_app:main'
 
 [tool.poetry.dependencies]
 python = ">=3.9.0, <3.11"
@@ -77,7 +79,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = "flask_app"
+pythonpath = "."
 addopts = [
     "--import-mode=importlib",
     "--cov=replifactory",
@@ -91,4 +93,4 @@ filterwarnings = [
 
 [tool.isort]
 profile = "black"
-src_paths = ["flask_app", "tests"]
+src_paths = [".", "tests"]

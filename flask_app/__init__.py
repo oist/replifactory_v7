@@ -4,14 +4,9 @@ import logging
 import os
 from http.client import HTTPException
 
-from flask import Flask, request, send_from_directory, url_for
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
-from flask_security import (
-    Security,
-    SQLAlchemyUserDatastore,
-    auth_required,
-    hash_password,
-)
+from flask_security import Security, SQLAlchemyUserDatastore, hash_password
 from flask_security.models import fsqla_v3 as fsqla
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
@@ -226,5 +221,11 @@ def create_app():
     return app
 
 
+def main():
+    app = create_app()
+    app.run_before_server_started()
+    app.run()
+
+
 if __name__ == "__main__":
-    create_app().run()
+    main()
