@@ -1,4 +1,5 @@
 import logging
+import signal
 from enum import Enum
 from time import sleep
 from typing import Iterable, Optional, SupportsBytes, SupportsIndex
@@ -81,6 +82,10 @@ MCTL_RESTART_BIT = 6
 MCTL_EMERGENCY_STOP_BIT = 5
 MCTL_START_IGNORE_P0_BIT = 4
 MCTL_P0_POLARITY_BIT = 3
+
+
+PMA_CONTINUOUSLY = 0x00
+PMA_ONCE = 0x01
 
 
 def is_set(value: int, bit: int) -> bool:
@@ -251,6 +256,7 @@ class StepMotorDriver(StepperDriver):
         self._port = port
         self._mode = StepperMode()
         self._control = MotorControl()
+        self._speed = 0x1000
 
     def init(self):
         """
@@ -285,9 +291,15 @@ class StepMotorDriver(StepperDriver):
                 raise ValueError("Motor is already running")
             if n_steps is not None:
                 self._port.write_to(step_count_register, n_steps.to_bytes(2, "little"))
-            elif steps_per_second is not None:
-                self._port.write_to(REGISTER_PMA, [0])
-            self._port.write_to(REGISTER_CWPWL | AUTOINCREMENT_BIT, 0x1000.to_bytes(2, "little"))
+                self._port.write_to(REGISTER_PMA, [PMA_ONCE])
+            else:
+                self._port.write_to(step_count_register, [1, 0])
+                self._port.write_to(REGISTER_PMA, [PMA_CONTINUOUSLY])
+            if steps_per_second is not None:
+                speed = steps_per_second
+            else:
+                speed = self._speed
+            self._port.write_to(REGISTER_CWPWL | AUTOINCREMENT_BIT, speed.to_bytes(2, "little"))
             motor_control.set_start()
             self._port.write_to(REGISTER_MCNTL, motor_control.to_bytes())
             while wait and motor_control.is_running:
@@ -334,6 +346,8 @@ class StepMotorDriver(StepperDriver):
         return int.from_bytes(self.port.read_from(REGISTER_STEPCOUNT0 | AUTOINCREMENT_BIT, 4), "little")
 
 
+global exit_flag
+
 if __name__ == "__main__":
     from flask_app.replifactory.drivers.ft2232h import FtdiDriver
     from flask_app.replifactory.usb_manager import usbManager
@@ -356,19 +370,31 @@ if __name__ == "__main__":
         port=ftdi_driver.get_i2c_hw_port(PORT_ADDR, "STEPPER_CONTROLLER", registers=REGISTERS_NAMES)
     )
 
+    def terminate():
+        stepper_driver.terminate()
+        ftdi_driver.terminate()
+
+    def exit_gracefully(signum, frame):
+        stepper_driver.stop()
+        terminate()
+        exit(0)
+
+    signal.signal(signal.SIGINT, exit_gracefully)
+    signal.signal(signal.SIGTERM, exit_gracefully)
+
     ftdi_driver.connect(usb_device)
     stepper_driver.init()
 
     logger.debug(f"{stepper_driver.mode}")
     logger.debug(f"{stepper_driver.control}")
-    stepper_driver.rotate(n_steps=100)
+    stepper_driver.rotate()
     logger.debug(f"{stepper_driver.control}")
 
     while stepper_driver.control.is_running:
         logger.debug(f"steps: {stepper_driver.steps_counter}")
+        logger.info("Press Ctrl+C to stop")
         sleep(1)
 
     logger.debug(f"{stepper_driver.control}")
 
-    stepper_driver.terminate()
-    ftdi_driver.terminate()
+    terminate()
