@@ -8,6 +8,8 @@ from flask_app.replifactory.drivers import HardwarePort, StepperDriver
 
 logger = logging.getLogger(__name__)
 
+TICKS_PER_SECOND = 1_000_000  # 1MHz internal oscilator
+
 AUTOINCREMENT_BIT = 1 << 7
 
 REGISTER_MODE = 0x00
@@ -54,7 +56,7 @@ REGISTERS_NAMES = {
     if name.startswith("REGISTER_")
 }
 REGISTERS_NAMES |= {
-    (regaddr | AUTOINCREMENT_BIT):  f"{name}_AI"
+    (regaddr | AUTOINCREMENT_BIT): f"{name}_AI"
     for regaddr, name in REGISTERS_NAMES.items()
 }
 
@@ -86,6 +88,24 @@ MCTL_P0_POLARITY_BIT = 3
 
 PMA_CONTINUOUSLY = 0x00
 PMA_ONCE = 0x01
+
+
+# Prescaler range from   3us(333333pps) to   24.576ms(40   pps)
+PRESCALER_FROM_40_TO_333333 = 0
+# Prescaler range from   6us(166667pps) to   49.152ms(20   pps)
+PRESCALER_FROM_20_TO_166667 = 1
+# Prescaler range from  12us( 83333pps) to   98.304ms(10   pps)
+PRESCALER_FROM_10_TO_83333 = 2
+# Prescaler range from  24us( 41667pps) to  196.608ms( 5   pps)
+PRESCALER_FROM_5_TO_41667 = 3
+# Prescaler range from  48us( 20833pps) to  393.216ms( 2.5 pps)
+PRESCALER_FROM_2_5_TO_20833 = 4
+# Prescaler range from  96us( 10416pps) to  786.432ms( 1.27pps)
+PRESCALER_FROM_1_27_TO_10416 = 5
+# Prescaler range from 192us(  5208pps) to 1572.864ms( 0.64pps)
+PRESCALER_FROM_0_64_TO_5208 = 6
+# Prescaler range from 384us(  2604pps) to 3145.728ms( 0.32pps)
+PRESCALER_FROM_0_32_TO_2604 = 7
 
 
 def is_set(value: int, bit: int) -> bool:
@@ -154,8 +174,8 @@ class StepperMode(ControllerRegister):
             if self._is_set(MODE_SLEEP_BIT)
             else "Normal mode"
         )
-        return f"""
-{self._value:08b} {get_register_name(self._address)}
+        return f"""{get_register_name(self._address)}:
+{self._value:08b}
  \u2502\u2502\u2502\u2502\u2502\u2502\u2514{allcall}
  \u2502\u2502\u2502\u2502\u2502\u2514{subbaddr3}
  \u2502\u2502\u2502\u2502\u2514{subbaddr2}
@@ -242,8 +262,8 @@ class MotorControl(ControllerRegister):
             case 0b11:
                 direction = "Rotate counter-clockwise first, then clockwise"
 
-        return f"""
-{(self._value >> 5 & 0b111):03b}xxx{(self._value & 0b11):b} {get_register_name(self._address)}
+        return f"""{get_register_name(self._address)}:
+{(self._value >> 5 & 0b111):03b}xxx{(self._value & 0b11):b}
 \u2502\u2502\u2502   \u2514{direction}
 \u2502\u2502\u2514{emergency_stop}
 \u2502\u2514{restart}
@@ -299,7 +319,7 @@ class StepMotorDriver(StepperDriver):
                 speed = steps_per_second
             else:
                 speed = self._speed
-            self._port.write_to(REGISTER_CWPWL | AUTOINCREMENT_BIT, speed.to_bytes(2, "little"))
+            self._set_speed(speed, cw)
             motor_control.set_start()
             self._port.write_to(REGISTER_MCNTL, motor_control.to_bytes())
             while wait and motor_control.is_running:
@@ -314,6 +334,13 @@ class StepMotorDriver(StepperDriver):
             else:
                 motor_control.set_stop()
             self._port.write_to(REGISTER_MCNTL, motor_control.to_bytes())
+
+    def _set_speed(self, steps_per_second: int, cw: bool = True):
+        pwl_register = REGISTER_CWPWL if cw else REGISTER_CCWPWL
+        pulse_per_second = steps_per_second * 4  # 4 - for one-phase drive
+        pulse_width = TICKS_PER_SECOND // pulse_per_second
+        with self._port.session:
+            self._port.write_to(pwl_register | AUTOINCREMENT_BIT, pulse_width.to_bytes(2, "little"))
 
     @property
     def port(self):
@@ -343,7 +370,9 @@ class StepMotorDriver(StepperDriver):
 
     @property
     def steps_counter(self):
-        return int.from_bytes(self.port.read_from(REGISTER_STEPCOUNT0 | AUTOINCREMENT_BIT, 4), "little")
+        return int.from_bytes(
+            self.port.read_from(REGISTER_STEPCOUNT0 | AUTOINCREMENT_BIT, 4), "little"
+        )
 
 
 global exit_flag
@@ -367,7 +396,9 @@ if __name__ == "__main__":
         i2c_freq=I2C_FREQ,
     )
     stepper_driver = StepMotorDriver(
-        port=ftdi_driver.get_i2c_hw_port(PORT_ADDR, "STEPPER_CONTROLLER", registers=REGISTERS_NAMES)
+        port=ftdi_driver.get_i2c_hw_port(
+            PORT_ADDR, "STEPPER_CONTROLLER", registers=REGISTERS_NAMES
+        )
     )
 
     def terminate():
@@ -387,14 +418,15 @@ if __name__ == "__main__":
 
     logger.debug(f"{stepper_driver.mode}")
     logger.debug(f"{stepper_driver.control}")
-    stepper_driver.rotate()
+    stepper_driver.rotate(n_steps=2000, steps_per_second=600)
     logger.debug(f"{stepper_driver.control}")
 
     while stepper_driver.control.is_running:
-        logger.debug(f"steps: {stepper_driver.steps_counter}")
+        # logger.debug(f"steps: {stepper_driver.steps_counter}")‘
         logger.info("Press Ctrl+C to stop")
         sleep(1)
 
+    logger.debug(f"steps: {stepper_driver.steps_counter}")
     logger.debug(f"{stepper_driver.control}")
 
     terminate()
