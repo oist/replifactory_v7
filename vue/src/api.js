@@ -5,7 +5,7 @@ let baseURL = window.location.origin;
 
 // set the cookie and header names
 axios.defaults.xsrfCookieName = "XSRF-TOKEN";
-axios.defaults.xsrfHeaderName = "XSRF-TOKEN";
+axios.defaults.xsrfHeaderName = "X-CSRF-Token";
 
 const api = axios.create({
   baseURL: baseURL,
