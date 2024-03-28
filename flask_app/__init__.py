@@ -6,8 +6,10 @@ from http.client import HTTPException
 
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
-from flask_security import Security, SQLAlchemyUserDatastore, hash_password
+from flask_security.core import Security
+from flask_security.datastore import SQLAlchemyUserDatastore
 from flask_security.models import fsqla_v3 as fsqla
+from flask_security.utils import hash_password
 from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
 from flask_wtf.csrf import CSRFProtect
@@ -36,7 +38,7 @@ log = logging.getLogger(__name__)
 
 
 def create_app():
-    global settings
+    # global settings
 
     app = Flask(__name__, static_folder="static/build", static_url_path="/")
 

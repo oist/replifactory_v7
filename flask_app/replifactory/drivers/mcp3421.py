@@ -1,13 +1,9 @@
 import logging
-import threading
 import time
-from typing import Callable
 
-from pyftdi.i2c import I2cPort
-
+from flask_app.replifactory.drivers import Driver, HardwarePort
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
-from flask_app.replifactory.drivers import Driver
 
 log = logging.getLogger(__name__)
 
@@ -18,29 +14,17 @@ log = logging.getLogger(__name__)
 
 
 class ADCDriver(Driver):
-    def __init__(self, get_port: Callable[[], I2cPort], lock=threading.RLock()) -> None:
-        self._get_port = get_port
-        self._lock = lock
+    def __init__(self, port: HardwarePort) -> None:
+        super().__init__(port=port)
         self._gain = 1
         self._bitrate = 12
         self._continous_conversion = True
-        self._port = None
-
-    @property
-    def port(self):
-        with self._lock:
-            if self._port is None:
-                self.init()
-            return self._port
-
-    def init(self):
-        self._port = self._get_port()
 
     def measure(self, gain=8, bitrate=16, continuous_conversion=False):
         log.debug(
             f"enter measure(gain={gain}, bitrate={bitrate}, continuous_conversion={continuous_conversion})"
         )
-        with self._lock:
+        with self.port.session:
             self.configure(
                 gain=gain, bitrate=bitrate, continuous_conversion=continuous_conversion
             )
@@ -111,7 +95,7 @@ class ADCDriver(Driver):
         configuration = (
             ready_bit | conversion_mode_bit | bitrate_bits[bitrate] | gain_bits[gain]
         )
-        with self._lock:
+        with self.port.session:
             self.write(configuration)
             self._gain = gain
             self._bitrate = bitrate
@@ -121,7 +105,7 @@ class ADCDriver(Driver):
         log.debug(
             __(
                 "W i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config})",
-                port_addr=self.port._address,
+                port_addr=self.port.address,
                 config=configuration,
             )
         )
@@ -134,7 +118,7 @@ class ADCDriver(Driver):
         log.debug(
             __(
                 "R i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config}) value: {value} [{hex_value}] data: [{hex_data}]",
-                port_addr=self.port._address,
+                port_addr=self.port.address,
                 config=int.from_bytes(config, "little"),
                 value=ArrayOfBytesAsInt(data),
                 hex_value=data.hex(" ").upper(),

@@ -3,16 +3,30 @@ from typing import Union
 from pyftdi.eeprom import FtdiEeprom as _FtdiEeprom
 from pyftdi.ftdi import Ftdi as _Ftdi
 from pyftdi.ftdi import FtdiError as _FtdiError
-from pyftdi.i2c import I2cController, I2cPort
 from usb.core import Device as UsbDevice
 from usb.core import USBError
 
-from flask_app.replifactory.drivers.at24c256c import EepromDriver
+from flask_app.replifactory.drivers.at24c256c import AT24C256C_Driver
+from flask_app.replifactory.drivers.ft2232h import I2cController, I2cPort
 
 I2C_FREQ = 5e4  # try 100e3
 # I2C_FREQ = 100e3  # 100kHz
 I2C_INTERFACE = 2
 EEPROM_ADDRESS = 0x53
+
+
+class FtdiError(_FtdiError):
+    """Base class error for all FTDI device"""
+
+
+class FtdiEepromError(FtdiError):
+    """FTDI EEPROM access errors"""
+
+
+class FtdiEeprom(_FtdiEeprom):
+    def __init__(self):
+        super().__init__()
+        self._ftdi = Ftdi()
 
 
 class Ftdi(_Ftdi):
@@ -22,12 +36,9 @@ class Ftdi(_Ftdi):
         self._eeprom_port = I2cPort(
             controller=self._i2c_controller,
             address=EEPROM_ADDRESS,
+            name="EEPROM",
         )
-
-        def get_port():
-            return self._eeprom_port
-
-        self._eeprom_driver = EepromDriver(get_port=get_port)
+        self._eeprom_driver = AT24C256C_Driver(port=self._eeprom_port)
         self._i2c_default_freq = I2C_FREQ
         self._i2c_interface = I2C_INTERFACE
         self._i2c_retry_count = 1
@@ -43,6 +54,7 @@ class Ftdi(_Ftdi):
         self._eeprom_port = I2cPort(
             controller=self._i2c_controller,
             address=EEPROM_ADDRESS,
+            name="EEPROM",
         )
 
     def read_eeprom(
@@ -78,17 +90,3 @@ class Ftdi(_Ftdi):
         finally:
             if latency:
                 self.set_latency_timer(latency)
-
-
-class FtdiError(_FtdiError):
-    """Base class error for all FTDI device"""
-
-
-class FtdiEepromError(FtdiError):
-    """FTDI EEPROM access errors"""
-
-
-class FtdiEeprom(_FtdiEeprom):
-    def __init__(self):
-        super().__init__()
-        self._ftdi = Ftdi()

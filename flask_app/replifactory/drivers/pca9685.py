@@ -1,13 +1,10 @@
 import logging
 import threading
 import time
-from typing import Callable, Union
+from typing import Union
 
-from pyftdi.i2c import I2cPort
-
-# from flask_app.replifactory.drivers.ft2232h import I2cPort
+from flask_app.replifactory.drivers import Driver, HardwarePort
 from flask_app.replifactory.util import BraceMessage as __
-from flask_app.replifactory.drivers import Driver
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +76,10 @@ def get_led_off_registers(led_num: int) -> tuple[int, int]:
 
 
 class PWMDriver(Driver):
+    registers = REGISTERS_NAMES
 
-    def __init__(self, get_port: Callable[[], I2cPort]) -> None:
-        self._get_port = get_port
+    def __init__(self, port: HardwarePort) -> None:
+        super().__init__(port=port)
         self._lock = threading.RLock()
 
     def init(self):
@@ -222,8 +220,8 @@ class PWMDriver(Driver):
     def _write_to_register(
         self, regaddr: int, data: Union[bytes, bytearray, list[int]]
     ):
-        self._get_port().write_to(regaddr=regaddr, out=data)
+        self.port.write_to(regaddr=regaddr, out=data)
 
     def _read_from_register(self, regaddr: int, readlen: int = 0) -> bytes:
-        result = self._get_port().read_from(regaddr=regaddr, readlen=readlen)
+        result = self.port.read_from(regaddr=regaddr, readlen=readlen)
         return result

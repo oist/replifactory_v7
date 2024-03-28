@@ -3,99 +3,19 @@ import logging
 import threading
 from dataclasses import dataclass
 from string import printable as printablechars
-from typing import Iterable, Optional, Union
+from typing import Optional, Union
 
 import usb
 from pyftdi.ftdi import Ftdi, FtdiError
-from pyftdi.i2c import I2cController as FtdiI2cController
-from pyftdi.i2c import I2cIOError, I2cNackError
-from pyftdi.i2c import I2cPort as FtdiI2cPort
+from pyftdi.i2c import I2cNackError
 from pyftdi.spi import SpiController
 from pyftdi.usbtools import UsbTools
 from usb.core import Device as UsbDevice
 
+from flask_app.replifactory.drivers import Driver, I2cController, I2cPort, LazyPort, SpiPort
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
-from flask_app.replifactory.util import ArrayOfBytesAsInt
-from flask_app.replifactory.util import BraceMessage as __
-from flask_app.replifactory.drivers import Driver, HardwarePort, LazyPort
 
 logger = logging.getLogger(__name__)
-
-
-class I2cPort(FtdiI2cPort, HardwarePort):
-    def __init__(
-        self,
-        controller: "I2cController",
-        address: int,
-        name: str,
-        registers: dict[int, str] = {},
-    ):
-        super().__init__(controller=controller, address=address)
-        self._name = name
-        self._registers = registers
-
-    @property
-    def address(self):
-        return self._address
-
-    def get_register_name(self, regaddr: int) -> str:
-        try:
-            return self._registers[regaddr]
-        except KeyError:
-            return "UNKNOWN"
-
-    def write_to(
-        self,
-        regaddr: int,
-        out: bytes | bytearray | Iterable[int],
-        relax: bool = True,
-        start: bool = True,
-    ):
-        logger.debug(
-            __(
-                "W i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) data: {int_data} [{data}]",
-                port_name=self._name,
-                port_addr=self._address,
-                regaddr=regaddr,
-                regname=self.get_register_name(regaddr),
-                int_data=ArrayOfBytesAsInt(out),
-                data=bytearray(out).hex(" ").upper(),
-            )
-        )
-        return super().write_to(regaddr, out, relax, start)
-
-    def read_from(
-        self, regaddr: int, readlen: int = 0, relax: bool = True, start: bool = True
-    ) -> bytes:
-        result = super().read_from(regaddr, readlen, relax, start)
-        logger.debug(
-            __(
-                "R i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) len: {readlen} data: {int_data} [{data}]",
-                port_name=self._name,
-                port_addr=self._address,
-                regaddr=regaddr,
-                regname=self.get_register_name(regaddr),
-                int_data=ArrayOfBytesAsInt(result),
-                data=result.hex(" ").upper(),
-                readlen=readlen,
-            )
-        )
-        return result
-
-
-class I2cController(FtdiI2cController):
-    def __init__(self):
-        super().__init__()
-
-    def get_verbose_port(
-        self, address: int, name: str, registers: dict[int, str] = {}
-    ) -> I2cPort:
-        if not self._ftdi.is_connected:
-            raise I2cIOError("FTDI controller not initialized")
-        self.validate_address(address)
-        if address not in self._slaves:
-            self._slaves[address] = I2cPort(self, address, name, registers)
-        return self._slaves[address]
 
 
 @dataclass
@@ -103,45 +23,6 @@ class ParsedDescriptor:
     url: str
     ifcount: int
     description: str
-
-
-class SpiPort(HardwarePort):
-    def __init__(
-        self,
-        controller: "SpiController",
-        cs: int,
-        freq: float,
-        mode: int,
-        name: str,
-    ):
-        super().__init__(controller=controller, cs=cs, freq=freq, mode=mode)
-        self._name = name
-
-    def write(self, data: bytes | bytearray | Iterable[int]):
-        logger.debug(
-            __(
-                "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
-                port_name=self._name,
-                cs=self._cs,
-                int_data=ArrayOfBytesAsInt(data),
-                data=bytearray(data).hex(" ").upper(),
-            )
-        )
-        return super().write(data)
-
-    def read(self, length: int) -> bytes:
-        result = super().read(length)
-        logger.debug(
-            __(
-                "R spi: {port_name} (CS{cs}) len: {length} data: {int_data} [{data}]",
-                port_name=self._name,
-                cs=self._cs,
-                int_data=ArrayOfBytesAsInt(result),
-                data=result.hex(" ").upper(),
-                length=length,
-            )
-        )
-        return result
 
 
 class FtdiDriver(Driver):
@@ -215,7 +96,11 @@ class FtdiDriver(Driver):
                     )
         return self._i2c_controller
 
-    def get_i2c_hw_port(self, address: int, name: str, registers: dict[int, str] = {}):
+    def get_i2c_hw_port(self, address: int | list[int], name: str, registers: dict[int, str] = {}):
+        if isinstance(address, list):
+            return LazyPort(
+                get_port=self.get_first_active_i2c_port_callback(address, name, registers)
+            )
         return LazyPort(
             get_port=self.get_i2c_port_callback(address, name, registers)
         )
@@ -234,8 +119,11 @@ class FtdiDriver(Driver):
         port = self.i2c_controller.get_verbose_port(address, name, registers)
         return port
 
+    def get_spi_hw_port(self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
+        return LazyPort(get_port=self.get_spi_port_callback(cs, freq, mode))
+
     def get_spi_port_callback(
-        self, cs: int, freq: Optional[float] = None, mode: int = None
+        self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
     ):
         def callback():
             return self.get_spi_port(cs, freq, mode)
@@ -243,7 +131,7 @@ class FtdiDriver(Driver):
         return callback
 
     def get_spi_port(
-        self, cs: int, freq: Optional[float] = None, mode: int = None
+        self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
     ) -> SpiPort:
         if not self.is_connected:
             raise ConnectionError("FTDI not connected")
@@ -279,9 +167,8 @@ class FtdiDriver(Driver):
         self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}
     ) -> I2cPort:
         """Scan an I2C bus and return first answered port."""
-        i2c = self.i2c_controller
         for addr in possible_addresses:
-            port = i2c.get_verbose_port(addr, name, registers)
+            port = self.get_i2c_port(addr, name, registers)
             try:
                 port.read(4)  # TODO: move to mcp3421 driver
                 return port

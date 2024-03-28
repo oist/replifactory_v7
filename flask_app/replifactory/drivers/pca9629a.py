@@ -343,10 +343,6 @@ class StepMotorDriver(StepperDriver):
             self._port.write_to(pwl_register | AUTOINCREMENT_BIT, pulse_width.to_bytes(2, "little"))
 
     @property
-    def port(self):
-        return self._port
-
-    @property
     def mode(self) -> StepperMode:
         mode = self.port.read_from(REGISTER_MODE, 1)
         self._mode = StepperMode(mode)
@@ -374,8 +370,6 @@ class StepMotorDriver(StepperDriver):
             self.port.read_from(REGISTER_STEPCOUNT0 | AUTOINCREMENT_BIT, 4), "little"
         )
 
-
-global exit_flag
 
 if __name__ == "__main__":
     from flask_app.replifactory.drivers.ft2232h import FtdiDriver

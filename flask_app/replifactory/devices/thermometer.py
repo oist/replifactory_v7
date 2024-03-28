@@ -3,7 +3,7 @@ from typing import Optional
 from pyftdi.i2c import I2cNackError
 
 from flask_app.replifactory.devices import Device
-from flask_app.replifactory.drivers.adt75 import ThermometerDriver
+from flask_app.replifactory.drivers import ThermometerDriver
 
 
 class Thermometer(Device):
@@ -14,13 +14,13 @@ class Thermometer(Device):
 
     def measure(self):
         self._set_state(self.States.STATE_WORKING)
-        value = self.driver.measure_one_shot()
+        value = self.driver.read()
         self._last_value = value
         self._set_state(self.States.STATE_OPERATIONAL)
         return value
 
     def _test(self):
-        return self.driver.measure_one_shot() != 0
+        return self.driver.read() != 0
 
     def read_state(self):
         try:

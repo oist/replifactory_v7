@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel as PydanticBaseModel
 from flask_app.replifactory.config.connection import ConnectionConfig
 from flask_app.replifactory.config.temperature import TemperatureConfig
@@ -21,15 +22,14 @@ class Config(PydanticBaseModel):
         self._save_callback = callback
 
 
-_settings: Config = None
+_settings: Optional[Config] = None
 
 
-def settings(init=None):
+def settings(init: Optional[Config] = None) -> Config:
     global _settings
     if _settings is not None:
         if init:
             raise ValueError("Settings Manager already initialized")
-
     else:
         if init:
             _settings = init

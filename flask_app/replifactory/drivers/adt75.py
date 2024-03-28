@@ -1,8 +1,6 @@
 import time
-from typing import Callable
 
-from flask_app.replifactory.drivers.ft2232h import I2cPort
-from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.drivers import HardwarePort, ThermometerDriver
 
 REGISTER_TEMPERATURE_VALUE = 0x00
 REGISTER_CONFIGURATION = 0x01
@@ -22,23 +20,22 @@ REGISTERS_NAMES = {
 }
 
 
-class ThermometerDriver(Driver):
+class ADT75Driver(ThermometerDriver):
+    registers = REGISTERS_NAMES
+
     def __init__(
         self,
-        get_port: Callable[[], I2cPort],
+        port: HardwarePort,
         one_shot_delay: float = TEMPERATURE_CONVERSION_TIME,
     ):
-        self._get_port = get_port
+        super().__init__(port)
         self.one_shot_delay = one_shot_delay
 
-    @property
-    def port(self):
-        return self._get_port()
-
-    def measure_one_shot(self):
-        self.port.write([REGISTER_ONE_SHOT])
-        time.sleep(self.one_shot_delay)
-        data = self.port.read_from(REGISTER_ONE_SHOT, TEMPERATURE_DATA_SIZE)
-        digital_temp = int.from_bytes(data, "big", signed=True) >> NOT_A_VALUE_BITS
-        celsius_temp = digital_temp * TEMPERATURE_RESOLUTION
-        return celsius_temp
+    def read(self):
+        with self.port.session:
+            self.port.write([REGISTER_ONE_SHOT])
+            time.sleep(self.one_shot_delay)
+            data = self.port.read_from(REGISTER_ONE_SHOT, TEMPERATURE_DATA_SIZE)
+            digital_temp = int.from_bytes(data, "big", signed=True) >> NOT_A_VALUE_BITS
+            celsius_temp = digital_temp * TEMPERATURE_RESOLUTION
+            return celsius_temp

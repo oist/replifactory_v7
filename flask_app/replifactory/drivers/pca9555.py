@@ -1,11 +1,9 @@
 import logging
 import threading
 from dataclasses import dataclass
-from typing import Callable, Union
+from typing import Union
 
-from pyftdi.i2c import I2cPort
-
-from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.drivers import Driver, HardwarePort
 
 log = logging.getLogger(__name__)
 
@@ -88,10 +86,11 @@ def get_register_name(regaddr: int) -> str:
 
 
 class IOPortDriver(Driver):
+    registers = REGISTERS_NAMES
     NUM_GPIO = 16
 
-    def __init__(self, get_port: Callable[[], I2cPort], init_config: int = 0x0000):
-        self._get_port = get_port
+    def __init__(self, port: HardwarePort, init_config: int = 0x0000):
+        super().__init__(port=port)
         self._lock = threading.RLock()
         self._input_value = None
         self._output_value = None
@@ -103,10 +102,6 @@ class IOPortDriver(Driver):
 
     def reset(self):
         self.write_config(self._config)
-
-    @property
-    def port(self):
-        return self._get_port()
 
     @property
     def input_value(self):
@@ -201,7 +196,7 @@ class IOPortDriver(Driver):
         """
         if self.config >> pin & 1 == PIN_INPUT:
             raise ValueError(
-                f"Pin {pin} at i2c address 0x{self.port._address:02X} is configed as INPUT"
+                f"Pin {pin} at i2c address 0x{self.port.address:02X} is configed as INPUT"
             )
         new_value = self._changebit(self.output_value, pin, value)
         if pin <= 7:
@@ -213,7 +208,7 @@ class IOPortDriver(Driver):
     def read_pin(self, pin: int):
         if self.config >> pin & 1 == PIN_OUTPUT:
             raise ValueError(
-                f"Pin {pin} at i2c address 0x{self.port._address:02X} is configed as OUTPUT"
+                f"Pin {pin} at i2c address 0x{self.port.address:02X} is configed as OUTPUT"
             )
         regaddr = REGISTER_INPUT_PORT_0 if pin <= 7 else REGISTER_INPUT_PORT_1
         input_register_data = self.read_from(regaddr, 1)

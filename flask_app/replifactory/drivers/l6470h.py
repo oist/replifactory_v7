@@ -2,13 +2,11 @@ import logging
 import math
 import threading
 from dataclasses import dataclass
-from typing import Callable, Union
-
-from pyftdi.spi import SpiPort
+from typing import Optional, Union
 
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
-from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.drivers import HardwarePort, StepperDriver
 
 logger = logging.getLogger(__name__)
 
@@ -507,11 +505,11 @@ class CommandName:
             return str(e)
 
 
-class StepMotorDriver(Driver):
+class StepMotorDriver(StepperDriver):
     """API for L6470H step motor driver"""
 
-    def __init__(self, get_port: Callable[[], SpiPort]):
-        self._get_port = get_port
+    def __init__(self, port: HardwarePort):
+        super().__init__(port=port)
         # steps_per_revolution: int = 200
         self.max_steps_per_second = 15610  # page 43 from L6470H datasheet
         # max_revolution_per_second = max_steps_per_second / steps_per_revolution
@@ -519,6 +517,24 @@ class StepMotorDriver(Driver):
         # minimal_speed_in_steps_per_tick = 2**-18
         # seconds_per_step = seconds_per_tick / minimal_speed_in_steps_per_tick
         self.max_n_microsteps = 2**22 - 1  # 22 bit
+
+    def rotate(
+        self,
+        n_steps: Optional[int],
+        steps_per_second: Optional[int],
+        cw: bool = True,
+        wait: bool = False,
+    ):
+        if n_steps is not None:
+            self.move(n_steps, not cw, wait)
+        elif steps_per_second is not None:
+            self.run(cw, steps_per_second)
+
+    def stop(self, emergency: bool = False, wait: bool = False):
+        if emergency:
+            self.hard_stop()
+        else:
+            self.soft_stop(wait)
 
     def get_status(self) -> StepMotorStatusValue:
         return self.status
@@ -681,7 +697,7 @@ class StepMotorDriver(Driver):
         logger.debug(
             __(
                 "Write to SPI (cs={cs}) cmd: {cmd_name} (0x{cmd:02X}) data: {int_data} {data} readlen: {readlen:d}",
-                cs=self._get_port().cs,
+                cs=self.port.address,
                 cmd=cmd,
                 cmd_name=CommandName(cmd),
                 data=data_bytes,
@@ -702,16 +718,16 @@ class StepMotorDriver(Driver):
                 # start = b == 0
                 # stop = readlen <= 0 and b == len(payload) - 1
                 # self.spi_port.write(out=[payload[b]], start=start, stop=stop)
-                self._get_port().write([payload[b]])
+                self.port.write([payload[b]])
             if readlen > 0:
                 for b in range(readlen):
                     # stop = b == readlen - 1
                     # res += self.spi_port.read(readlen=1, start=False, stop=stop)
-                    res += self._get_port().read(1)
+                    res += self.port.read(1)
                 logger.debug(
                     __(
                         "Read from SPI (cs={cs}) {int_data} {data}",
-                        cs=self._get_port().cs,
+                        cs=self.port.address,
                         data=res,
                         int_data=ArrayOfBytesAsInt(res),
                     )
