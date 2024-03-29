@@ -6,7 +6,7 @@ from typing import Callable, Iterable, Optional, Union
 from pyftdi.i2c import I2cController as FtdiI2cController
 from pyftdi.i2c import I2cIOError
 from pyftdi.i2c import I2cPort as FtdiI2cPort
-from pyftdi.spi import SpiController
+from pyftdi.spi import SpiController as FtdiSpiController
 from pyftdi.spi import SpiPort as FtdiSpiPort
 
 from flask_app.replifactory.util import ArrayOfBytesAsInt
@@ -27,33 +27,26 @@ class HardwarePort:
     def address(self):
         return 0
 
-    def read(self, readlen: int = 0, relax: bool = True, start: bool = True):
+    def read(self, readlen: int = 0, *args, **kwargs) -> bytes:
         pass
 
-    def exchange(self, out: Union[bytes, bytearray, Iterable[int]] = b'',
-                 readlen: int = 0,
-                 relax: bool = True, start: bool = True) -> bytes:
-        pass
-
-    def write(
+    def exchange(
         self,
-        out: Union[bytes, bytearray, Iterable[int]],
-        relax: bool = True,
-        start: bool = True,
-    ):
-        pass
-
-    def read_from(
-        self, regaddr: int, readlen: int = 0, relax: bool = True, start: bool = True
+        out: Union[bytes, bytearray, Iterable[int]] = b"",
+        readlen: int = 0,
+        *args,
+        **kwargs,
     ) -> bytes:
         pass
 
+    def write(self, out: Union[bytes, bytearray, Iterable[int]], *args, **kwargs):
+        pass
+
+    def read_from(self, regaddr: int, readlen: int = 0, *args, **kwargs) -> bytes:
+        pass
+
     def write_to(
-        self,
-        regaddr: int,
-        out: bytes | bytearray | Iterable[int],
-        relax: bool = True,
-        start: bool = True,
+        self, regaddr: int, out: bytes | bytearray | Iterable[int], *args, **kwargs
     ):
         pass
 
@@ -66,35 +59,33 @@ class LazyPort(HardwarePort):
     def port(self):
         return self._get_port()
 
-    def exchange(self, out: Union[bytes, bytearray, Iterable[int]] = b'',
-                 readlen: int = 0,
-                 relax: bool = True, start: bool = True) -> bytes:
-        return self.port.exchange(out, readlen, relax, start)
-
-    def read(self, readlen: int = 0, relax: bool = True, start: bool = True):
-        return self.port.read(readlen, relax, start)
-
-    def write(
+    def exchange(
         self,
-        out: Union[bytes, bytearray, Iterable[int]],
-        relax: bool = True,
-        start: bool = True,
-    ):
-        return self.port.write(out, relax, start)
-
-    def read_from(
-        self, regaddr: int, readlen: int = 0, relax: bool = True, start: bool = True
+        out: Union[bytes, bytearray, Iterable[int]] = b"",
+        readlen: int = 0,
+        *args,
+        **kwargs,
     ) -> bytes:
-        return self.port.read_from(regaddr, readlen, relax, start)
+        with self.session:
+            return self.port.exchange(out, readlen, *args, **kwargs)
+
+    def read(self, readlen: int = 0, *args, **kwargs):
+        with self.session:
+            return self.port.read(readlen, *args, **kwargs)
+
+    def write(self, out: Union[bytes, bytearray, Iterable[int]], *args, **kwargs):
+        with self.session:
+            return self.port.write(out, *args, **kwargs)
+
+    def read_from(self, regaddr: int, readlen: int = 0, *args, **kwargs) -> bytes:
+        with self.session:
+            return self.port.read_from(regaddr, readlen, *args, **kwargs)
 
     def write_to(
-        self,
-        regaddr: int,
-        out: bytes | bytearray | Iterable[int],
-        relax: bool = True,
-        start: bool = True,
+        self, regaddr: int, out: bytes | bytearray | Iterable[int], *args, **kwargs
     ):
-        return self.port.write_to(regaddr, out, relax, start)
+        with self.session:
+            return self.port.write_to(regaddr, out, *args, **kwargs)
 
 
 class I2cPort(FtdiI2cPort, HardwarePort):
@@ -120,69 +111,67 @@ class I2cPort(FtdiI2cPort, HardwarePort):
         except KeyError:
             return "UNKNOWN"
 
-    def read(self, readlen: int = 0, relax: bool = True, start: bool = True):
-        result = super().read(readlen, relax, start)
-        self.log.debug(
-            __(
-                "R i2c: {port_name} (0x{port_addr:02X}) len: {readlen} data: [{data}]",
-                port_name=self._name,
-                port_addr=self._address,
-                readlen=readlen,
-                data=result.hex(" ").upper(),
+    def read(self, readlen: int = 0, *args, **kwargs):
+        with self.session:
+            result = super().read(readlen, *args, **kwargs)
+            self.log.debug(
+                __(
+                    "R i2c: {port_name} (0x{port_addr:02X}) len: {readlen} data: [{data}]",
+                    port_name=self._name,
+                    port_addr=self._address,
+                    readlen=readlen,
+                    data=result.hex(" ").upper(),
+                )
             )
-        )
-        return result
+            return result
 
-    def write(
+    def write(self, out: Union[bytes, bytearray, Iterable[int]], *args, **kwargs):
+        with self.session:
+            return super().write(out, *args, **kwargs)
+
+    def exchange(
         self,
-        out: Union[bytes, bytearray, Iterable[int]],
-        relax: bool = True,
-        start: bool = True,
-    ):
-        return super().write(out, relax, start)
-
-    def exchange(self, out: Union[bytes, bytearray, Iterable[int]] = b'',
-                 readlen: int = 0,
-                 relax: bool = True, start: bool = True) -> bytes:
-        return super().exchange(out, readlen, relax, start)
+        out: Union[bytes, bytearray, Iterable[int]] = b"",
+        readlen: int = 0,
+        *args,
+        **kwargs,
+    ) -> bytes:
+        with self.session:
+            return super().exchange(out, readlen, *args, **kwargs)
 
     def write_to(
-        self,
-        regaddr: int,
-        out: bytes | bytearray | Iterable[int],
-        relax: bool = True,
-        start: bool = True,
+        self, regaddr: int, out: bytes | bytearray | Iterable[int], *args, **kwargs
     ):
-        logger.debug(
-            __(
-                "W i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) data: {int_data} [{data}]",
-                port_name=self._name,
-                port_addr=self._address,
-                regaddr=regaddr,
-                regname=self.get_register_name(regaddr),
-                int_data=ArrayOfBytesAsInt(out),
-                data=bytearray(out).hex(" ").upper(),
+        with self.session:
+            logger.debug(
+                __(
+                    "W i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) data: {int_data} [{data}]",
+                    port_name=self._name,
+                    port_addr=self._address,
+                    regaddr=regaddr,
+                    regname=self.get_register_name(regaddr),
+                    int_data=ArrayOfBytesAsInt(out),
+                    data=bytearray(out).hex(" ").upper(),
+                )
             )
-        )
-        return super().write_to(regaddr, out, relax, start)
+            return super().write_to(regaddr, out, *args, **kwargs)
 
-    def read_from(
-        self, regaddr: int, readlen: int = 0, relax: bool = True, start: bool = True
-    ) -> bytes:
-        result = super().read_from(regaddr, readlen, relax, start)
-        logger.debug(
-            __(
-                "R i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) len: {readlen} data: {int_data} [{data}]",
-                port_name=self._name,
-                port_addr=self._address,
-                regaddr=regaddr,
-                regname=self.get_register_name(regaddr),
-                int_data=ArrayOfBytesAsInt(result),
-                data=result.hex(" ").upper(),
-                readlen=readlen,
+    def read_from(self, regaddr: int, readlen: int = 0, *args, **kwargs) -> bytes:
+        with self.session:
+            result = super().read_from(regaddr, readlen, *args, **kwargs)
+            logger.debug(
+                __(
+                    "R i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) len: {readlen} data: {int_data} [{data}]",
+                    port_name=self._name,
+                    port_addr=self._address,
+                    regaddr=regaddr,
+                    regname=self.get_register_name(regaddr),
+                    int_data=ArrayOfBytesAsInt(result),
+                    data=result.hex(" ").upper(),
+                    readlen=readlen,
+                )
             )
-        )
-        return result
+            return result
 
 
 class I2cController(FtdiI2cController):
@@ -215,31 +204,90 @@ class SpiPort(FtdiSpiPort, HardwarePort):
     def address(self):
         return self._cs
 
-    def write(self, data: bytes | bytearray | Iterable[int]):
-        logger.debug(
-            __(
-                "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
-                port_name=self._name,
-                cs=self._cs,
-                int_data=ArrayOfBytesAsInt(data),
-                data=bytearray(data).hex(" ").upper(),
-            )
-        )
-        return super().write(data)
+    def write(self, data: bytes | bytearray | Iterable[int], *args, **kwargs):
+        with self.session:
+            if kwargs.pop("log", True):
+                logger.debug(
+                    __(
+                        "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
+                        port_name=self._name,
+                        cs=self._cs,
+                        int_data=ArrayOfBytesAsInt(data),
+                        data=bytearray(data).hex(" ").upper(),
+                    )
+                )
+            return super().write(data, *args, **kwargs)
 
-    def read(self, length: int) -> bytes:
-        result = super().read(length)
-        logger.debug(
-            __(
-                "R spi: {port_name} (CS{cs}) len: {length} data: {int_data} [{data}]",
-                port_name=self._name,
-                cs=self._cs,
-                int_data=ArrayOfBytesAsInt(result),
-                data=result.hex(" ").upper(),
-                length=length,
-            )
-        )
-        return result
+    def read(self, length: int, *args, **kwargs) -> bytes:
+        with self.session:
+            write_log = kwargs.pop("log", True)
+            result = super().read(length, *args, **kwargs)
+            if write_log:
+                logger.debug(
+                    __(
+                        "R spi: {port_name} (CS{cs}) len: {length} data: {int_data} [{data}]",
+                        port_name=self._name,
+                        cs=self._cs,
+                        int_data=ArrayOfBytesAsInt(result),
+                        data=result.hex(" ").upper(),
+                        length=length,
+                    )
+                )
+            return result
+
+    def exchange(
+        self,
+        out: Union[bytes, bytearray, Iterable[int]] = b"",
+        readlen: int = 0,
+        *args,
+        **kwargs,
+    ) -> bytes:
+        with self.session:
+            logger.debug(
+                    __(
+                        "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
+                        port_name=self._name,
+                        cs=self._cs,
+                        int_data=ArrayOfBytesAsInt(out),
+                        data=bytearray(out).hex(" ").upper(),
+                    )
+                )
+            if isinstance(out, Iterable):
+                for b in out:
+                    self.write([b], log=False, *args, **kwargs)
+            else:
+                for b in range(len(out)):
+                    # start = b == 0
+                    # stop = readlen <= 0 and b == len(payload) - 1
+                    # self.spi_port.write(out=[payload[b]], start=start, stop=stop)
+                    self.write(out=[out[b]], log=False, *args, **kwargs)
+            res = bytearray()
+            if readlen > 0:
+                for b in range(readlen):
+                    # stop = b == readlen - 1
+                    # res += self.spi_port.read(readlen=1, start=False, stop=stop)
+                    res += self.read(1, log=False, *args, **kwargs)
+                logger.debug(
+                    __(
+                        "Read from SPI (cs={cs}) {int_data} {data}",
+                        cs=self.address,
+                        data=res,
+                        int_data=ArrayOfBytesAsInt(res),
+                    )
+                )
+            return res
+
+
+class SpiController(FtdiSpiController):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_named_port(self, name: str, cs: int, freq: float | None = None, mode: int = 0) -> SpiPort:
+        origin_port = super().get_port(cs, freq, mode)
+        self._spi_ports[cs] = SpiPort(self, cs, name, cs_hold=origin_port._cs_hold, spi_mode=mode)
+        self._spi_ports[cs].set_frequency(freq)
+        self._flush()
+        return self._spi_ports[cs]
 
 
 class Driver:

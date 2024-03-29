@@ -174,14 +174,14 @@ class Motor(Device):
         self.driver.run(forward=clockwise or self._profile.clockwise, steps_per_second=steps_per_second)
 
     def stop(self):
-        # self._set_state(self.States.STATE_STOPING)
+        self._set_state(self.States.STATE_FINISHING)
         self.driver.soft_stop()
-        self._set_state(self.States.STATE_OPERATIONAL)
+        # self._set_state(self.States.STATE_OPERATIONAL)
 
     def emergency_stop(self):
-        # self._set_state(self.States.STATE_STOPING)
+        self._set_state(self.States.STATE_FINISHING)
         self.driver.hard_stop()
-        self._set_state(self.States.STATE_OPERATIONAL)
+        # self._set_state(self.States.STATE_OPERATIONAL)
 
     def move(
         self, n_revolutions: float = 1, revolution_per_second: Optional[float] = None

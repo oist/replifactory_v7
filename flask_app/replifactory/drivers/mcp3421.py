@@ -102,27 +102,29 @@ class ADCDriver(Driver):
             self._continous_conversion = continuous_conversion
 
     def write(self, configuration: int):
-        log.debug(
-            __(
-                "W i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config})",
-                port_addr=self.port.address,
-                config=configuration,
+        with self.port.session:
+            log.debug(
+                __(
+                    "W i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config})",
+                    port_addr=self.port.address,
+                    config=configuration,
+                )
             )
-        )
-        self.port.write([configuration])
+            self.port.write([configuration])
 
     def read(self):
-        response = self.port.read(4)  # read 4 bytes from ADC
-        data = response[:3] if self._bitrate == 18 else response[:2]
-        config = response[3:]
-        log.debug(
-            __(
-                "R i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config}) value: {value} [{hex_value}] data: [{hex_data}]",
-                port_addr=self.port.address,
-                config=int.from_bytes(config, "little"),
-                value=ArrayOfBytesAsInt(data),
-                hex_value=data.hex(" ").upper(),
-                hex_data=response.hex(" ").upper(),
+        with self.port.session:
+            response = self.port.read(4)  # read 4 bytes from ADC
+            data = response[:3] if self._bitrate == 18 else response[:2]
+            config = response[3:]
+            log.debug(
+                __(
+                    "R i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config}) value: {value} [{hex_value}] data: [{hex_data}]",
+                    port_addr=self.port.address,
+                    config=int.from_bytes(config, "little"),
+                    value=ArrayOfBytesAsInt(data),
+                    hex_value=data.hex(" ").upper(),
+                    hex_data=response.hex(" ").upper(),
+                )
             )
-        )
         return data, config

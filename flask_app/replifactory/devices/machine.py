@@ -3,35 +3,35 @@ import queue
 import threading
 from collections import OrderedDict
 from time import sleep
-import time
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
-from flask_app.replifactory.devices.vial import Vial
 
 from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.devices.laser import Laser
+from flask_app.replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from flask_app.replifactory.devices.photodiode import Photodiode
 from flask_app.replifactory.devices.pump import Pump
-from flask_app.replifactory.devices.step_motor import Motor, MotorProfile, MotorProfile_17HS15_1504S_X1, MotorProfile_XY42STH34_0354A
+from flask_app.replifactory.devices.step_motor import (
+    Motor,
+    MotorProfile_17HS15_1504S_X1,
+    MotorProfile_XY42STH34_0354A,
+)
 from flask_app.replifactory.devices.stirrer import Stirrer
 from flask_app.replifactory.devices.stirrers_group import StirrersGroup
 from flask_app.replifactory.devices.thermometer import Thermometer
 from flask_app.replifactory.devices.valve import Valve
 from flask_app.replifactory.devices.valves_group import ValvesGroup
-from flask_app.replifactory.drivers.adt75 import REGISTERS_NAMES as ThermometerRegisters
-from flask_app.replifactory.drivers.adt75 import ThermometerDriver
+from flask_app.replifactory.devices.vial import Vial
+from flask_app.replifactory.drivers import Driver
+from flask_app.replifactory.drivers.adt75 import ADT75Driver
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.drivers.l6470h import StepMotorDriver
 from flask_app.replifactory.drivers.mcp3421 import ADCDriver
-from flask_app.replifactory.drivers.pca9555 import REGISTERS_NAMES as IORegisters
 from flask_app.replifactory.drivers.pca9555 import IOPortDriver
-from flask_app.replifactory.drivers.pca9685 import REGISTERS_NAMES as PwmRegisters
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.usb_manager import usbManager
-from flask_app.replifactory.devices.optical_density_sensor import OpticalDensitySensor
-from flask_app.replifactory.drivers import Driver
 from flask_app.replifactory.util import CountedEvent, JobQueue, TypeAlreadyInQueue
 from flask_app.replifactory.util.comm import (
     AwaitConditionQueueMarker,
@@ -147,7 +147,7 @@ class Machine(Device, DeviceCallback):
         )
         self.sending_thread.daemon = True
 
-        self._ftdi_driver = FtdiDriver(
+        ftdi_driver = FtdiDriver(
             spi_interface=SPI_INTERFACE,
             spi_cs_count=SPI_CS_COUNT,
             spi_freq=SPI_FREQ,
@@ -156,23 +156,28 @@ class Machine(Device, DeviceCallback):
             i2c_interface=I2C_INTERFACE,
             i2c_freq=I2C_FREQ,
         )
+        self._ftdi_driver = ftdi_driver
 
         self._pumps: list[Pump] = []
         # it's important to init pump drivers before valves
         for cs in range(PUMPS_COUNT):
-            spi_port_callback = self._ftdi_driver.get_spi_port_callback(cs=cs)
-            step_motor_driver = StepMotorDriver(get_port=spi_port_callback)
-            profile = MotorProfile_17HS15_1504S_X1() if cs != 0 else MotorProfile_XY42STH34_0354A()
+            step_motor_driver = StepMotorDriver(port=ftdi_driver.get_spi_hw_port(f"Stepper {cs + 1}", cs=cs))
+            profile = (
+                MotorProfile_17HS15_1504S_X1()
+                if cs != 0
+                else MotorProfile_XY42STH34_0354A()
+            )
             motor = Motor(step_motor_driver, profile=profile, name=f"Motor {cs + 1}")
             pump = Pump(motor, name=f"Pump {cs + 1}", callback=self)
             self._pumps.append(pump)
             self._devices[pump.id] = pump
             self._drivers += [step_motor_driver]
 
-        pwm_port_callback = self._ftdi_driver.get_i2c_port_callback(
-            I2C_PORT_PWM, "PWM", PwmRegisters
+        pwm_driver = PWMDriver(
+            port=ftdi_driver.get_i2c_hw_port(
+                address=I2C_PORT_PWM, name="PWM", registers=PWMDriver.registers
+            )
         )
-        pwm_driver = PWMDriver(get_port=pwm_port_callback)
         self._drivers += [pwm_driver]
         stirrers = [
             Stirrer(
@@ -219,10 +224,10 @@ class Machine(Device, DeviceCallback):
         valves_group = ValvesGroup(valves)
         self._devices[valves_group.id] = valves_group
 
-        laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
-            I2C_PORT_IO_LASER, "IO_LASERS", IORegisters
-        )
-        io_driver_laser = IOPortDriver(get_port=laser_port_callback)
+        # laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
+        #     I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
+        # )
+        io_driver_laser = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers))
         self._drivers += [io_driver_laser]
         lasers = [
             Laser(laser_cs=cs, io_driver=io_driver_laser)
@@ -231,9 +236,9 @@ class Machine(Device, DeviceCallback):
         for laser in lasers:
             self._devices[laser.id] = laser
 
-        adc_port_callback = self._ftdi_driver.get_first_active_i2c_port_callback(
-            I2C_PORT_ADC, "ADC"
-        )
+        # adc_port_callback = self._ftdi_driver.get_first_active_i2c_port_callback(
+        #     I2C_PORT_ADC, "ADC"
+        # )
         # if isinstance(I2C_PORT_ADC, Iterable):
         #     try:
         #         i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
@@ -243,12 +248,12 @@ class Machine(Device, DeviceCallback):
         # else:
         #     i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
         # if i2c_adc_port:
-        io_port_callback = self._ftdi_driver.get_i2c_port_callback(
-            I2C_PORT_IO_ADC, "IO_ADC", IORegisters
-        )
-        adc_driver = ADCDriver(get_port=adc_port_callback)
+        # io_port_callback = self._ftdi_driver.get_i2c_port_callback(
+        #     I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers
+        # )
+        adc_driver = ADCDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_ADC, "ADC"))
         self._drivers += [adc_driver]
-        io_driver_adc = IOPortDriver(get_port=io_port_callback)
+        io_driver_adc = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers))
         self._drivers += [io_driver_adc]
         photodiodes = [
             Photodiode(
@@ -292,10 +297,8 @@ class Machine(Device, DeviceCallback):
             I2C_PORT_THERMOMETER_2: "THERMOMETER_2",
             I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
         }.items():
-            thermometer_driver = ThermometerDriver(
-                get_port=self._ftdi_driver.get_i2c_port_callback(
-                    address, name, ThermometerRegisters
-                )
+            thermometer_driver = ADT75Driver(
+                port=ftdi_driver.get_i2c_hw_port(address, name, ADT75Driver.registers)
             )
             self._drivers += [thermometer_driver]
             thermometers += [
@@ -366,30 +369,30 @@ class Machine(Device, DeviceCallback):
                     # fetch command, command type and optional linenumber and sent callback from queue
                     command, linenumber, command_type, on_sent, processed, tags = entry
 
-                    if isinstance(command, AwaitConditionQueueMarker):
-                        command.run()
-                        timeout_time = (
-                            time.monotonic() + command.timeout if command.timeout else 0
-                        )
-                        wait_time = command.interval
+                    # if isinstance(command, AwaitConditionQueueMarker):
+                    #     command.run()
+                    #     timeout_time = (
+                    #         time.monotonic() + command.timeout if command.timeout else 0
+                    #     )
+                    #     wait_time = command.interval
 
-                        while self._send_queue_active and not command.done():
-                            if self._cancel_await_condition:
-                                self._cancel_await_condition = False
-                                command.cancel()
-                                continue
-                            if command.timeout:
-                                now = time.monotonic()
-                                if now > timeout_time:
-                                    command.on_timeout()
-                                    break
-                                if now + command.interval > timeout_time:
-                                    wait_time = timeout_time - now
-                            time.sleep(wait_time)
-                        self._continue_sending()
-                        continue
+                    #     while self._send_queue_active and not command.done():
+                    #         if self._cancel_await_condition:
+                    #             self._cancel_await_condition = False
+                    #             command.cancel()
+                    #             continue
+                    #         if command.timeout:
+                    #             now = time.monotonic()
+                    #             if now > timeout_time:
+                    #                 command.on_timeout()
+                    #                 break
+                    #             if now + command.interval > timeout_time:
+                    #                 wait_time = timeout_time - now
+                    #         time.sleep(wait_time)
+                    #     self._continue_sending()
+                    #     continue
 
-                    elif isinstance(command, SendQueueMarker):
+                    if isinstance(command, SendQueueMarker):
                         command.run()
                         self._continue_sending()
                         continue
@@ -478,6 +481,7 @@ class Machine(Device, DeviceCallback):
                 # nothing in command queue
                 return False
 
+            done = True
             try:
                 if isinstance(entry, tuple):
                     if not len(entry) == 4:
@@ -491,6 +495,11 @@ class Machine(Device, DeviceCallback):
                     callback = None
                     tags = None
 
+                if isinstance(cmd, AwaitConditionQueueMarker):
+                    done = cmd.done()
+                    if done:
+                        continue
+
                 if self._sendCommand(
                     cmd, cmd_type=cmd_type, on_sent=callback, tags=tags
                 ):
@@ -498,7 +507,8 @@ class Machine(Device, DeviceCallback):
                     # return, we are done here
                     return True
             finally:
-                self._command_queue.task_done()
+                if done:
+                    self._command_queue.task_done()
 
     # def _process_registered_message(
     #     self, line, feedback_matcher, feedback_controls, feedback_errors
@@ -756,7 +766,12 @@ class Machine(Device, DeviceCallback):
     def _sendCommands(
         self,
         commands: List[
-            Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]
+            Tuple[
+                QueueMarker,
+                Optional[str],
+                Optional[Callable[..., None]],
+                Dict[str, str],
+            ]
         ],
     ):
         # Make sure we are only handling one sending job at a time
@@ -937,7 +952,9 @@ class Machine(Device, DeviceCallback):
 
     def pump_command_entry(
         self, device_id: str, command: Callable, *args, **kwargs
-    ) -> Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]:
+    ) -> Tuple[
+        QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]
+    ]:
         return (
             self.pump_command(device_id, command, *args, **kwargs),  # command
             None,  # command_type
@@ -947,7 +964,9 @@ class Machine(Device, DeviceCallback):
 
     def machine_command_entry(
         self, command: Callable, *args, **kwargs
-    ) -> Tuple[QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]]:
+    ) -> Tuple[
+        QueueMarker, Optional[str], Optional[Callable[..., None]], Dict[str, str]
+    ]:
         return (
             MachineCommand(command),  # command
             None,  # command_type
@@ -964,18 +983,27 @@ class Machine(Device, DeviceCallback):
 
         for pump in self._pumps:
             stop_command = self.create_stop_command(pump)
-            command_entry = self.pump_command_entry(pump.id, stop_command, *args, **kwargs)
+            command_entry = self.pump_command_entry(
+                pump.id, stop_command, *args, **kwargs
+            )
             commands += [command_entry]
 
         if volume:
             commands += [
                 self.pump_command_entry(
-                    device_id, lambda: self._get_pump(device_id).pump(volume, speed), *args, **kwargs
+                    device_id,
+                    lambda: self._get_pump(device_id).pump(volume, speed),
+                    *args,
+                    **kwargs,
                 ),
             ]
         else:
             commands += [
-                self.machine_command_entry(lambda: self._get_pump(device_id).run(rot_per_sec=speed), *args, **kwargs),
+                self.machine_command_entry(
+                    lambda: self._get_pump(device_id).run(rot_per_sec=speed),
+                    *args,
+                    **kwargs,
+                ),
             ]
         self._sendCommands(commands)
 
@@ -986,11 +1014,15 @@ class Machine(Device, DeviceCallback):
 
         # stop all pumps
         commands = [
-            self.pump_command_entry(pump.id, self.create_stop_command(pump), *args, **kwargs)
+            self.pump_command_entry(
+                pump.id, self.create_stop_command(pump), *args, **kwargs
+            )
             for pump in self._pumps
         ]
         # open vial valve
-        commands += [self.machine_command_entry(lambda: vial_valve.open(), *args, **kwargs)]
+        commands += [
+            self.machine_command_entry(lambda: vial_valve.open(), *args, **kwargs)
+        ]
         # close all valves except vial valve
         commands += [
             (
@@ -1001,7 +1033,9 @@ class Machine(Device, DeviceCallback):
         ]
         # run media pump
         commands += [
-            self.pump_command_entry(vial_pump.id, lambda: vial_pump.pump(volume, speed), *args, **kwargs)
+            self.pump_command_entry(
+                vial_pump.id, lambda: vial_pump.pump(volume, speed), *args, **kwargs
+            )
         ]
 
         self._sendCommands(commands)

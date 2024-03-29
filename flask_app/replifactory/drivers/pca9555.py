@@ -1,5 +1,4 @@
 import logging
-import threading
 from dataclasses import dataclass
 from typing import Union
 
@@ -91,7 +90,6 @@ class IOPortDriver(Driver):
 
     def __init__(self, port: HardwarePort, init_config: int = 0x0000):
         super().__init__(port=port)
-        self._lock = threading.RLock()
         self._input_value = None
         self._output_value = None
         self._config = init_config
@@ -105,7 +103,7 @@ class IOPortDriver(Driver):
 
     @property
     def input_value(self):
-        with self._lock:
+        with self.port.session:
             if self._input_value is None:
                 return self.read()
             return self._input_value
@@ -117,7 +115,7 @@ class IOPortDriver(Driver):
 
     @property
     def output_value(self):
-        with self._lock:
+        with self.port.session:
             if self._output_value is None:
                 data = self.read_from(REGISTER_OUTPUT_PORT_0, 2)
                 self._output_value = int.from_bytes(data, "little")
@@ -129,7 +127,7 @@ class IOPortDriver(Driver):
 
     @property
     def config(self):
-        with self._lock:
+        with self.port.session:
             if self._config is None:
                 return self.read_config()
             return self._config
@@ -139,7 +137,7 @@ class IOPortDriver(Driver):
         self.write_config(value)
 
     def read_config(self):
-        with self._lock:
+        with self.port.session:
             config = self.read_from(REGISTER_CONFIGURATION_PORT_0, 2)
             self._config = int.from_bytes(config, "little")
             return self._config
@@ -147,7 +145,7 @@ class IOPortDriver(Driver):
     def write_config(self, value: int):
         if value > 0xFFFF:
             raise ValueError("Configuration value {value} bigger than 0xFFFF")
-        with self._lock:
+        with self.port.session:
             self.write_to(REGISTER_CONFIGURATION_PORT_0, value.to_bytes(2, "little"))
             self._config = value
 
@@ -158,26 +156,26 @@ class IOPortDriver(Driver):
         self.write_config(self.config & ~mask)
 
     def read_polarity(self):
-        with self._lock:
+        with self.port.session:
             polarity = self.read_from(REGISTER_POLARITY_INVERSION_PORT_0, 2)
             self._polarity = int.from_bytes(polarity, "little")
             return self._polarity
 
     def write_polarity(self, value: int):
-        with self._lock:
+        with self.port.session:
             self.write_to(
                 REGISTER_POLARITY_INVERSION_PORT_0, value.to_bytes(2, "little")
             )
             self._polarity = value
 
     def read(self):
-        with self._lock:
+        with self.port.session:
             input = self.read_from(REGISTER_INPUT_PORT_0, 2)
             self._input_value = int.from_bytes(input, "little")
             return self._input_value
 
     def write(self, value: int):
-        with self._lock:
+        with self.port.session:
             self.write_to(REGISTER_OUTPUT_PORT_0, value.to_bytes(2, "little"))
             self._input_value = value
 
@@ -217,8 +215,10 @@ class IOPortDriver(Driver):
 
     def write_to(self, register: Register, data: Union[bytes, bytearray, list[int]]):
         regaddr = register.address
-        self.port.write_to(regaddr, data)
+        with self.port.session:
+            self.port.write_to(regaddr, data)
 
     def read_from(self, register: Register, readlen: int):
-        result = self.port.read_from(register.address, readlen)
-        return result
+        with self.port.session:
+            result = self.port.read_from(register.address, readlen)
+            return result

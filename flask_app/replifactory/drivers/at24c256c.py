@@ -31,36 +31,37 @@ class AT24C256C_Driver(EepromDriver):
         next_address = address
         next_data_start = 0
         next_data_length = AT24C256C_Driver.PAGE_SIZE - first_page_offset
-        for page_num in range(start_page, start_page + page_count):
-            address_words = self._split_address_words(next_address)
-            next_data = data[next_data_start:next_data_length]
-            # self.log.debug(
-            #     __(
-            #         "W i2c: {port_name} (0x{port_addr:02X}) address: 0x{regaddr:02X} page: {page_num} of {total_pages} data: [{data}]",
-            #         port_name=self.port._name
-            #         if hasattr(self.port, "_name")
-            #         else "Unknown",
-            #         port_addr=self.port._address,
-            #         regaddr=next_address,
-            #         data=bytearray(next_data).hex(" ").upper(),
-            #         page_num=page_num,
-            #         total_pages=page_count,
-            #     )
-            # )
-            self.port.write(address_words + next_data)
-            next_address = (page_num + 1) * AT24C256C_Driver.PAGE_SIZE
-            next_data_start = next_data_length
-            next_data_length += AT24C256C_Driver.PAGE_SIZE
+        with self.port.session:
+            for page_num in range(start_page, start_page + page_count):
+                address_words = self._split_address_words(next_address)
+                next_data = data[next_data_start:next_data_length]
+                # self.log.debug(
+                #     __(
+                #         "W i2c: {port_name} (0x{port_addr:02X}) address: 0x{regaddr:02X} page: {page_num} of {total_pages} data: [{data}]",
+                #         port_name=self.port._name
+                #         if hasattr(self.port, "_name")
+                #         else "Unknown",
+                #         port_addr=self.port._address,
+                #         regaddr=next_address,
+                #         data=bytearray(next_data).hex(" ").upper(),
+                #         page_num=page_num,
+                #         total_pages=page_count,
+                #     )
+                # )
+                self.port.write(address_words + next_data)
+                next_address = (page_num + 1) * AT24C256C_Driver.PAGE_SIZE
+                next_data_start = next_data_length
+                next_data_length += AT24C256C_Driver.PAGE_SIZE
 
     def read(self, address: Optional[int] = None, readlen: Optional[int] = None):
-        if address is None and readlen is None:
-            result = self.port.read(1)  # Current Address Read
-        else:
-            address = address or 0
-            readlen = readlen or AT24C256C_Driver.EEPROM_SIZE - address  # bytes til end
-            address_words = self._split_address_words(address)
-
-            result = self.port.exchange(address_words, readlen)
+        with self.port.session:
+            if address is None and readlen is None:
+                result = self.port.read(1)  # Current Address Read
+            else:
+                address = address or 0
+                readlen = readlen or AT24C256C_Driver.EEPROM_SIZE - address  # bytes til end
+                address_words = self._split_address_words(address)
+                result = self.port.exchange(address_words, readlen)
             # self.port.write(address_words, relax=False)
             # result = self.port.read(readlen)
         # self.log.debug(

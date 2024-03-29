@@ -35,8 +35,9 @@ class Pump(Device, DeviceCallback):
 
     def stop(self):
         self._log.debug(f"Stoping {self.name}")
+        self._set_state(self.States.STATE_FINISHING)
         self.motor.stop()
-        self._set_state(self.States.STATE_OPERATIONAL)
+        # self._set_state(self.States.STATE_OPERATIONAL)
 
     def set_profile(self, profile):
         self.motor.set_profile(profile)

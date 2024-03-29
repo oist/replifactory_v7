@@ -8,11 +8,10 @@ from typing import Optional, Union
 import usb
 from pyftdi.ftdi import Ftdi, FtdiError
 from pyftdi.i2c import I2cNackError
-from pyftdi.spi import SpiController
 from pyftdi.usbtools import UsbTools
 from usb.core import Device as UsbDevice
 
-from flask_app.replifactory.drivers import Driver, I2cController, I2cPort, LazyPort, SpiPort
+from flask_app.replifactory.drivers import Driver, I2cController, SpiController, I2cPort, LazyPort, SpiPort
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
 
 logger = logging.getLogger(__name__)
@@ -119,19 +118,19 @@ class FtdiDriver(Driver):
         port = self.i2c_controller.get_verbose_port(address, name, registers)
         return port
 
-    def get_spi_hw_port(self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
-        return LazyPort(get_port=self.get_spi_port_callback(cs, freq, mode))
+    def get_spi_hw_port(self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
+        return LazyPort(get_port=self.get_spi_port_callback(name, cs, freq, mode))
 
     def get_spi_port_callback(
-        self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
+        self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
     ):
         def callback():
-            return self.get_spi_port(cs, freq, mode)
+            return self.get_spi_port(name, cs, freq, mode)
 
         return callback
 
     def get_spi_port(
-        self, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
+        self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
     ) -> SpiPort:
         if not self.is_connected:
             raise ConnectionError("FTDI not connected")
@@ -145,7 +144,8 @@ class FtdiDriver(Driver):
                     frequency=self._spi_default_freq,
                     interface=self._spi_interface,
                 )
-        return self._spi_controller.get_port(
+        return self._spi_controller.get_named_port(
+            name=name,
             cs=cs,
             freq=freq or self._spi_default_freq,
             mode=mode or self._spi_default_mode,

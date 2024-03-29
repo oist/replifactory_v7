@@ -344,25 +344,29 @@ class StepMotorDriver(StepperDriver):
 
     @property
     def mode(self) -> StepperMode:
-        mode = self.port.read_from(REGISTER_MODE, 1)
-        self._mode = StepperMode(mode)
-        return self._mode
+        with self.port.session:
+            mode = self.port.read_from(REGISTER_MODE, 1)
+            self._mode = StepperMode(mode)
+            return self._mode
 
     @mode.setter
     def mode(self, value: StepperMode):
-        self.port.write_to(REGISTER_MODE, value.to_bytes())
-        self._mode = value
+        with self.port.session:
+            self.port.write_to(REGISTER_MODE, value.to_bytes())
+            self._mode = value
 
     @property
     def control(self) -> MotorControl:
-        control = self.port.read_from(REGISTER_MCNTL, 1)
-        self._control = MotorControl(control)
-        return self._control
+        with self.port.session:
+            control = self.port.read_from(REGISTER_MCNTL, 1)
+            self._control = MotorControl(control)
+            return self._control
 
     @control.setter
     def control(self, value: MotorControl):
-        self.port.write_to(REGISTER_MCNTL, value.to_bytes())
-        self._control = value
+        with self.port.session:
+            self.port.write_to(REGISTER_MCNTL, value.to_bytes())
+            self._control = value
 
     @property
     def steps_counter(self):

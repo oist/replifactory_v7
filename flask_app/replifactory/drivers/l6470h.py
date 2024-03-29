@@ -1,6 +1,5 @@
 import logging
 import math
-import threading
 from dataclasses import dataclass
 from typing import Optional, Union
 
@@ -490,8 +489,6 @@ ABS_POS_MAX = (1 << parameters.ABS_POS.size) - 1
 
 OCD_TH_SCALE = 375
 
-_lock = threading.RLock()
-
 
 class CommandName:
     def __init__(self, command_code: int):
@@ -608,7 +605,7 @@ class StepMotorDriver(StepperDriver):
         logger.debug(
             __(
                 "Move motor {num} for {steps:d} steps and {direction} direction",
-                num=self._get_port().cs,
+                num=self.port.address,
                 steps=n_steps,
                 direction=reverse,
             )
@@ -693,7 +690,7 @@ class StepMotorDriver(StepperDriver):
         cmd: int,
         data_bytes: Union[list[int], bytes] = [],
         readlen: int = 0,
-    ) -> bytearray:
+    ) -> bytes:
         logger.debug(
             __(
                 "Write to SPI (cs={cs}) cmd: {cmd_name} (0x{cmd:02X}) data: {int_data} {data} readlen: {readlen:d}",
@@ -707,29 +704,14 @@ class StepMotorDriver(StepperDriver):
         )
         payload = [cmd]
         if data_bytes:
-            payload += data_bytes
+            if isinstance(data_bytes, bytes):
+                payload += data_bytes
+            else:
+                for b in data_bytes:
+                    payload.append(b)
         # result = self.spi_port.exchange(out=payload, readlen=readlen)
         # return result
 
         # hack for FTDI SPI mode 3 limitations
-        with _lock:
-            res = bytearray()
-            for b in range(len(payload)):
-                # start = b == 0
-                # stop = readlen <= 0 and b == len(payload) - 1
-                # self.spi_port.write(out=[payload[b]], start=start, stop=stop)
-                self.port.write([payload[b]])
-            if readlen > 0:
-                for b in range(readlen):
-                    # stop = b == readlen - 1
-                    # res += self.spi_port.read(readlen=1, start=False, stop=stop)
-                    res += self.port.read(1)
-                logger.debug(
-                    __(
-                        "Read from SPI (cs={cs}) {int_data} {data}",
-                        cs=self.port.address,
-                        data=res,
-                        int_data=ArrayOfBytesAsInt(res),
-                    )
-                )
-            return res
+        with self.port.session:
+            return self.port.exchange(out=payload, readlen=readlen)
