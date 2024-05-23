@@ -3,6 +3,7 @@ import queue
 import threading
 from collections import OrderedDict
 from time import sleep
+import time
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 from usb.core import Device as UsbDevice
@@ -12,6 +13,7 @@ from flask_app.replifactory.devices.laser import Laser
 from flask_app.replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from flask_app.replifactory.devices.photodiode import Photodiode
 from flask_app.replifactory.devices.pump import Pump
+from flask_app.replifactory.devices.reactor_selector import ReactorSelector
 from flask_app.replifactory.devices.step_motor import (
     Motor,
     MotorProfile_17HS15_1504S_X1,
@@ -60,8 +62,9 @@ VIALS_COUNT = 7
 I2C_PORT_PWM = 0x70  # PCA9685 [1110000]
 # I2C_PORT_ADC = 0x6F
 I2C_PORT_ADC = [*range(0x68, 0x70)]  # it could be in range from 0x68 to 0x6F
-I2C_PORT_IO_ADC = 0x21  # PCA 9555
-I2C_PORT_IO_LASER = 0x20  # PCA 9555
+I2C_PORT_IO_REACTOR = 0x22  # PCA 9555
+I2C_PORT_IO_ADC = [0x21, I2C_PORT_IO_REACTOR]  # PCA 9555
+I2C_PORT_IO_LASER = [0x20, I2C_PORT_IO_REACTOR]  # PCA 9555
 I2C_PORT_IO_STIRRERS = 0x25  # PCA 9555
 I2C_PORT_THERMOMETER_1 = 0x48  # ADT75
 I2C_PORT_THERMOMETER_2 = 0x49  # ADT75
@@ -121,6 +124,7 @@ class Machine(Device, DeviceCallback):
         self._job_queue = JobQueue()
         self._command_queue = CommandQueue()
         self._send_queue = SendQueue()
+        self._high_priority_queue = SendQueue()
 
         self._sendingLock = threading.RLock()
 
@@ -140,12 +144,18 @@ class Machine(Device, DeviceCallback):
             name="comm.clear_to_send", minimum=None, maximum=self._ack_max
         )
         # sending thread
-        self._cancel_await_condition = False
+        self._cancel_await_condition = False  # remove this
         self._send_queue_active = True
         self.sending_thread = threading.Thread(
             target=self._send_loop, name="comm.sending_thread"
         )
         self.sending_thread.daemon = True
+        # high priority commands thread
+        self._high_priority_queue_active = True
+        self.high_priority_thread = threading.Thread(
+            target=self._high_priority_loop, name="comm.high_priority_thread"
+        )
+        self.high_priority_thread.daemon = True
 
         ftdi_driver = FtdiDriver(
             spi_interface=SPI_INTERFACE,
@@ -161,7 +171,9 @@ class Machine(Device, DeviceCallback):
         self._pumps: list[Pump] = []
         # it's important to init pump drivers before valves
         for cs in range(PUMPS_COUNT):
-            step_motor_driver = StepMotorDriver(port=ftdi_driver.get_spi_hw_port(f"Stepper {cs + 1}", cs=cs))
+            step_motor_driver = StepMotorDriver(
+                port=ftdi_driver.get_spi_hw_port(f"Stepper {cs + 1}", cs=cs)
+            )
             profile = (
                 MotorProfile_17HS15_1504S_X1()
                 if cs != 0
@@ -224,18 +236,6 @@ class Machine(Device, DeviceCallback):
         valves_group = ValvesGroup(valves)
         self._devices[valves_group.id] = valves_group
 
-        # laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
-        #     I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
-        # )
-        io_driver_laser = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers))
-        self._drivers += [io_driver_laser]
-        lasers = [
-            Laser(laser_cs=cs, io_driver=io_driver_laser)
-            for cs in range(1, VIALS_COUNT * 2, 2)
-        ]
-        for laser in lasers:
-            self._devices[laser.id] = laser
-
         # adc_port_callback = self._ftdi_driver.get_first_active_i2c_port_callback(
         #     I2C_PORT_ADC, "ADC"
         # )
@@ -253,13 +253,40 @@ class Machine(Device, DeviceCallback):
         # )
         adc_driver = ADCDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_ADC, "ADC"))
         self._drivers += [adc_driver]
-        io_driver_adc = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers))
+
+        io_driver_reactor = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_REACTOR, "IO_REACTOR", IOPortDriver.registers))
+        self._drivers += [io_driver_reactor]
+        reactor_selector = ReactorSelector(io_driver_reactor, callback=self)
+        self._devices[reactor_selector.id] = reactor_selector
+
+        # laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
+        #     I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
+        # )
+        io_driver_laser = IOPortDriver(
+            port=ftdi_driver.get_i2c_hw_port(
+                I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
+            )
+        )
+        self._drivers += [io_driver_laser]
+        lasers = [
+            Laser(laser_cs=cs, io_driver=io_driver_laser, name=f"Laser {cs // 2 + 1}")
+            for cs in range(1, VIALS_COUNT * 2, 2)
+        ]
+        for laser in lasers:
+            self._devices[laser.id] = laser
+
+        io_driver_adc = IOPortDriver(
+            port=ftdi_driver.get_i2c_hw_port(
+                I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers
+            )
+        )
         self._drivers += [io_driver_adc]
         photodiodes = [
             Photodiode(
                 diode_cs=cs,
                 adc_driver=adc_driver,
                 io_driver=io_driver_adc,
+                name=f"Photodiode {VIALS_COUNT - cs}",
             )
             for cs in reversed(range(VIALS_COUNT))
         ]
@@ -392,7 +419,7 @@ class Machine(Device, DeviceCallback):
                     #     self._continue_sending()
                     #     continue
 
-                    if isinstance(command, SendQueueMarker):
+                    if isinstance(command, QueueMarker):
                         command.run()
                         self._continue_sending()
                         continue
@@ -411,6 +438,46 @@ class Machine(Device, DeviceCallback):
             except Exception:
                 self._logger.exception("Caught an exception in the send loop")
         self._logger.info("Closing down send loop")
+
+    def _high_priority_loop(self):
+        self._clear_to_send.wait()
+
+        while self._high_priority_queue_active:
+            try:
+                # wait until we have something in the queue
+                try:
+                    entry = self._high_priority_queue.get()
+                except queue.Empty:
+                    # I haven't yet been able to figure out *why* this can happen but according to #3096 and SERVER-2H
+                    # an Empty exception can fly here due to resend_active being True but nothing being in the resend
+                    # queue of the send queue. So we protect against this possibility...
+                    continue
+
+                try:
+                    # make sure we are still active
+                    if not self._high_priority_queue_active:
+                        break
+
+                    # fetch command, command type and optional linenumber and sent callback from queue
+                    command, linenumber, command_type, on_sent, processed, tags = entry
+
+                    if isinstance(command, QueueMarker):
+                        command.run()
+
+                    # trigger "sent" phase and use up one "ok"
+                    if on_sent is not None and callable(on_sent):
+                        # we have a sent callback for this specific command, let's execute it now
+                        on_sent()
+                finally:
+                    # no matter _how_ we exit this block, we signal that we
+                    # are done processing the last fetched queue entry
+                    self._high_priority_queue.task_done()
+
+                # now we just wait for the next clear and then start again
+                self._clear_to_send.wait()
+            except Exception:
+                self._logger.exception("Caught an exception in the high priority loop")
+        self._logger.info("Closing down high priority loop")
 
     @property
     def _active(self):
@@ -645,6 +712,7 @@ class Machine(Device, DeviceCallback):
 
     def start(self):
         self.sending_thread.start()
+        self.high_priority_thread.start()
 
     def close(self, is_error=False, *args, **kwargs):
         """
@@ -762,6 +830,24 @@ class Machine(Device, DeviceCallback):
                 cmd, command_type=cmd_type, on_sent=on_sent, tags=tags
             )
             return True
+
+    def _sendEmergencyCommand(
+        self, cmd: QueueMarker, cmd_type=None, on_sent=None, tags=None
+    ):
+        # Make sure we are only handling one sending job at a time
+        with self._sendingLock:
+            if self._usb_device is None:
+                return False
+            try:
+                self._high_priority_queue.put(
+                    (cmd, None, cmd_type, on_sent, False, tags),
+                    item_type=cmd_type,
+                    target="send",
+                )
+                return True
+            except TypeAlreadyInQueue as e:
+                self._logger.debug("Type already in hight priority queue: " + e.type)
+                return False
 
     def _sendCommands(
         self,
@@ -892,6 +978,9 @@ class Machine(Device, DeviceCallback):
     def _get_thermometer(self, device_id: str) -> Thermometer:
         return self._get_device(device_id, Thermometer)
 
+    def _get_reactor_selector(self) -> ReactorSelector:
+        return self._get_device("reactor-selector", ReactorSelector)
+
     def _get_od_sensor(self, device_id: str) -> OpticalDensitySensor:
         return self._get_device(device_id, OpticalDensitySensor)
 
@@ -929,7 +1018,13 @@ class Machine(Device, DeviceCallback):
 
     def measure_od(self, device_id: str, *args, **kwargs):
         def command():
-            self._get_od_sensor(device_id).measure_od()
+            od_sensor = self._get_od_sensor(device_id)
+            reactor_num = VIALS_COUNT - od_sensor.photodiode.diode_cs
+            try:
+                self._get_reactor_selector().select(reactor_num)
+            except ValueError:
+                pass
+            od_sensor.measure_od()
 
         self._sendCommand(MachineCommand(command), *args, **kwargs)
 
@@ -977,10 +1072,13 @@ class Machine(Device, DeviceCallback):
     def create_stop_command(self, pump: Pump):
         return lambda: pump.stop()
 
+    def create_wait_command(self, pump: Pump):
+        return lambda: self.log.debug(f"Waiting for pump {pump.id} to finish")
+
     def pump_pump(self, device_id: str, volume: float, speed: float, *args, **kwargs):
-        # stop other pumps
         commands = []
 
+        # stop other pumps
         for pump in self._pumps:
             stop_command = self.create_stop_command(pump)
             command_entry = self.pump_command_entry(
@@ -990,8 +1088,7 @@ class Machine(Device, DeviceCallback):
 
         if volume:
             commands += [
-                self.pump_command_entry(
-                    device_id,
+                self.machine_command_entry(
                     lambda: self._get_pump(device_id).pump(volume, speed),
                     *args,
                     **kwargs,
@@ -1005,6 +1102,17 @@ class Machine(Device, DeviceCallback):
                     **kwargs,
                 ),
             ]
+        commands += [
+            (
+                MachineCommand(
+                    lambda: self._get_pump(device_id).is_idle
+                    or self._get_pump(device_id).is_error
+                ),  # command
+                None,  # command_type
+                None,  # on_sent
+                kwargs["tags"],  # tags
+            )
+        ]
         self._sendCommands(commands)
 
     def _vial_pump(
@@ -1063,7 +1171,9 @@ class Machine(Device, DeviceCallback):
         def command():
             self._get_pump(device_id).stop()
 
-        self._sendCommand(self.pump_command(device_id, command), *args, **kwargs)
+        self._sendEmergencyCommand(
+            self.pump_command(device_id, command), *args, **kwargs
+        )
 
     def pump_set_profile(self, device_id, profile, *args, **kwargs):
         def command():

@@ -72,6 +72,8 @@ class OpticalDensitySensor(Device):
         self.lock = lock
         self.curve_fitting_parameters = curve_fitting_parameters
         self._value = 0
+        self._background = 0
+        self._transmitted = 0
 
     def od_calibration_function(self, x, a, b, c, d, g):
         """
@@ -175,6 +177,7 @@ class OpticalDensitySensor(Device):
         returns the intensity of the background light (no laser)
         :return:
         """
+        self.laser.switch_off()
         mv, err = self.photodiode.measure(gain=8, bitrate=16)
         return mv, err
 
@@ -184,6 +187,8 @@ class OpticalDensitySensor(Device):
         # if self.device.directory is not None:
         #     self.log_mv(background=background, transmitted=transmitted)
         signal = transmitted - background
+        self._background = background
+        self._transmitted = transmitted
         return signal
 
     def measure_od(self):
@@ -191,7 +196,10 @@ class OpticalDensitySensor(Device):
         signal = self._measure_signal()
         if not callable(self.calibration_function):
             self.fit_calibration_function()
-        od = self.calibration_function(signal)
+        if signal < 0:
+            od = signal
+        else:
+            od = self.calibration_function(signal)
         self._value = od
         self._set_state(self.States.STATE_OPERATIONAL)
         return od
@@ -216,6 +224,8 @@ class OpticalDensitySensor(Device):
     def get_data(self):
         data = super().get_data() | {
             "value": self._value,
+            "background": self._background,
+            "transmitted": self._transmitted,
         }
         return data
 

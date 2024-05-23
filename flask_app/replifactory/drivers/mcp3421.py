@@ -54,18 +54,12 @@ class ADCDriver(Driver):
 
         assert new_data_is_ready
         # TODO: replace to bit operators
-        data_bits = "".join([bin(x)[2:].rjust(8, "0") for x in data])[-bitrate:]
-        sign_bit = data_bits[0]
-        digital_signal = sum(
-            [2**i for i in range(len(data_bits)) if data_bits[::-1][i] == "1"]
-        )
-        if sign_bit == "1":
-            digital_signal = digital_signal - 2**bitrate
-        millivolts = 2 * 2.048 / 2**bitrate * digital_signal * 1000 / gain
-        millivolts = round(millivolts, 10)
+        digital_signal = int.from_bytes(data, "big", signed=True)
         lsb_mv = (
-            2.048 * 2 / 2**bitrate * 1000 / gain
+            2 * 2.048 / 2**bitrate * 1000 / gain
         )  # least significant bit millivolts
+        millivolts = lsb_mv * digital_signal
+        millivolts = round(millivolts, 10)
         log.debug(f"exit measure return total: {millivolts} mv, LSB: {lsb_mv} mv")
         return millivolts, lsb_mv
 

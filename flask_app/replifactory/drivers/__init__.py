@@ -14,8 +14,6 @@ from flask_app.replifactory.util import BraceMessage as __
 
 HARDWARE_SESSION = RLock()
 
-logger = logging.getLogger(__name__)
-
 
 class HardwarePort:
 
@@ -54,10 +52,17 @@ class HardwarePort:
 class LazyPort(HardwarePort):
     def __init__(self, get_port: Callable[[], HardwarePort]):
         self._get_port = get_port
+        self._port = None
 
     @property
     def port(self):
-        return self._get_port()
+        if self._port is None:
+            self._port = self._get_port()
+        return self._port
+
+    @property
+    def address(self):
+        return self.port.address
 
     def exchange(
         self,
@@ -99,7 +104,7 @@ class I2cPort(FtdiI2cPort, HardwarePort):
         super().__init__(controller=controller, address=address)
         self._name = name
         self._registers = registers
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     @property
     def address(self):
@@ -143,7 +148,7 @@ class I2cPort(FtdiI2cPort, HardwarePort):
         self, regaddr: int, out: bytes | bytearray | Iterable[int], *args, **kwargs
     ):
         with self.session:
-            logger.debug(
+            self.log.debug(
                 __(
                     "W i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) data: {int_data} [{data}]",
                     port_name=self._name,
@@ -159,7 +164,7 @@ class I2cPort(FtdiI2cPort, HardwarePort):
     def read_from(self, regaddr: int, readlen: int = 0, *args, **kwargs) -> bytes:
         with self.session:
             result = super().read_from(regaddr, readlen, *args, **kwargs)
-            logger.debug(
+            self.log.debug(
                 __(
                     "R i2c: {port_name} (0x{port_addr:02X}) reg: {regname} (0x{regaddr:02X}) len: {readlen} data: {int_data} [{data}]",
                     port_name=self._name,
@@ -207,7 +212,7 @@ class SpiPort(FtdiSpiPort, HardwarePort):
     def write(self, data: bytes | bytearray | Iterable[int], *args, **kwargs):
         with self.session:
             if kwargs.pop("log", True):
-                logger.debug(
+                self.log.debug(
                     __(
                         "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
                         port_name=self._name,
@@ -223,7 +228,7 @@ class SpiPort(FtdiSpiPort, HardwarePort):
             write_log = kwargs.pop("log", True)
             result = super().read(length, *args, **kwargs)
             if write_log:
-                logger.debug(
+                self.log.debug(
                     __(
                         "R spi: {port_name} (CS{cs}) len: {length} data: {int_data} [{data}]",
                         port_name=self._name,
@@ -243,7 +248,7 @@ class SpiPort(FtdiSpiPort, HardwarePort):
         **kwargs,
     ) -> bytes:
         with self.session:
-            logger.debug(
+            self.log.debug(
                     __(
                         "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
                         port_name=self._name,
@@ -267,7 +272,7 @@ class SpiPort(FtdiSpiPort, HardwarePort):
                     # stop = b == readlen - 1
                     # res += self.spi_port.read(readlen=1, start=False, stop=stop)
                     res += self.read(1, log=False, *args, **kwargs)
-                logger.debug(
+                self.log.debug(
                     __(
                         "Read from SPI (cs={cs}) {int_data} {data}",
                         cs=self.address,

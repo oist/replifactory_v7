@@ -197,8 +197,8 @@ class Motor(Device):
         """
         logger.debug(
             __(
-                "Move motor {num} to {revolutions:.4f} revolution with {speed:.4f} revolutoions per second",
-                num=self.driver._get_port().cs,
+                "Move {name} to {revolutions:.4f} revolution with {speed:.4f} revolutoions per second",
+                name=self._name,
                 revolutions=n_revolutions,
                 speed=revolution_per_second,
             )

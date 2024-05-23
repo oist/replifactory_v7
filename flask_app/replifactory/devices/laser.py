@@ -8,6 +8,8 @@ from flask_app.replifactory.drivers.pca9555 import IOPortDriver
 LASER_ON = 0
 LASER_OFF = 1
 
+REACTOR_LASER_EN_PIN = 15
+I2C_PORT_IO_REACTOR = 0x22
 
 log = logging.getLogger(__name__)
 
@@ -28,15 +30,21 @@ class Laser(Device):
         pass
 
     def switch_on(self):
-        log.debug(f"Laser {self.laser_cs} switch ON")
-        self.io_driver.write_pin(self.laser_cs, LASER_ON)
+        log.debug(f"{self.name} switch ON")
+        if self.io_driver.port.address == I2C_PORT_IO_REACTOR:
+            self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 1)
+        else:
+            self.io_driver.write_pin(self.laser_cs, LASER_ON)
 
     def switch_off(self):
-        log.debug(f"Laser {self.laser_cs} switch OFF")
-        self.io_driver.write_pin(self.laser_cs, LASER_OFF)
+        log.debug(f"{self.name} switch OFF")
+        if self.io_driver.port.address == I2C_PORT_IO_REACTOR:
+            self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 0)
+        else:
+            self.io_driver.write_pin(self.laser_cs, LASER_OFF)
 
     def blink(self, times: int = 3, freq: float = 3):
-        log.debug(f"Laser {self.laser_cs} blink {times} times with freq: {freq} Hz")
+        log.debug(f"{self.name} blink {times} times with freq: {freq} Hz")
         delay = 1 / (freq * 2)
         for i in range(times):
             self.switch_on()

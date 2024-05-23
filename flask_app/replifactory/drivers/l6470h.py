@@ -314,6 +314,8 @@ class StepMotorStatusValue(ParameterValue):
         super().__init__(Parameters.STATUS, value)
 
     def raw_to_unit(self):
+        if len(self._raw_value) != 2:
+            raise ValueError("Invalid status value")
         return {
             "HiZ": (0x01 & self._raw_value[1]),
             "BUSY": (0x02 & self._raw_value[1]) >> 1,
@@ -546,7 +548,8 @@ class StepMotorDriver(StepperDriver):
 
     @property
     def status(self) -> StepMotorStatusValue:
-        return StepMotorStatusValue(self.get_param(parameters.STATUS))
+        status_raw_value = self.get_param(parameters.STATUS)
+        return StepMotorStatusValue(status_raw_value)
 
     @property
     def absolute_position(self) -> ParameterValue:

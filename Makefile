@@ -261,3 +261,7 @@ eeprom-write-sn:
 eeprom-read:
 	@test -z "$(DEVICE_URL)" && echo "There is no connected device" && exit 1 || exit 0
 	poetry run ftconf $(DEVICE_URL) -o -
+
+I2C_INTERFACE = $(shell poetry run ftdi_urls.py | grep -o 'ftdi://[^ ]*' | tail -n1)
+i2c_scan:
+	poetry run i2cscan.py $(I2C_INTERFACE)

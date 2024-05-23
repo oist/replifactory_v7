@@ -465,7 +465,7 @@ class StateMonitor:
     def _work(self):
         """
         Every time when something chaged in stateMonitor this worker
-        update self._lust_update time and invoke update_callback passing all data
+        update self._last_update time and invoke update_callback passing all data
         """
         try:
             while True:

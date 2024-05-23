@@ -7,6 +7,19 @@ from flask_app.replifactory.drivers import Driver, HardwarePort
 log = logging.getLogger(__name__)
 
 
+def binary_with_bracket(value: int, pin: int):
+    pin += 1  # values from 0 to 15
+    binary = bin(value)[2:].zfill(16)
+    binary = list(binary)
+    binary.insert(8, " ")
+    if pin <= 8:
+        pin += 1
+    selected_pin_index = 16 - pin
+    binary.insert(selected_pin_index, '[')
+    binary.insert(selected_pin_index + 2, ']')
+    return ''.join(binary)
+
+
 def bitwise_or(items):
     result = items[0]
     for i in range(1, len(items)):
@@ -177,7 +190,19 @@ class IOPortDriver(Driver):
     def write(self, value: int):
         with self.port.session:
             self.write_to(REGISTER_OUTPUT_PORT_0, value.to_bytes(2, "little"))
-            self._input_value = value
+            self._output_value = value
+
+    def write_l(self, value: int):
+        with self.port.session:
+            value = value & 0xFF
+            self.write_to(REGISTER_OUTPUT_PORT_0, value.to_bytes(1, "little"))
+            self._output_value = value if self._output_value is None else (self._output_value & 0xFF) + value
+
+    def write_h(self, value: int):
+        with self.port.session:
+            value = value & 0xFF
+            self.write_to(REGISTER_OUTPUT_PORT_1, value.to_bytes(1, "little"))
+            self._output_value = (value << 8) if self._output_value is None else (self._output_value & 0xFF00) + (value << 8)
 
     def _changebit(self, bitmap, bit: int, value: int):
         if value == 0:
@@ -197,6 +222,11 @@ class IOPortDriver(Driver):
                 f"Pin {pin} at i2c address 0x{self.port.address:02X} is configed as INPUT"
             )
         new_value = self._changebit(self.output_value, pin, value)
+        if log.isEnabledFor(logging.DEBUG):
+            value_with_selected_pin = binary_with_bracket(new_value, pin)
+            log.debug(
+                f"Write pin {pin} at i2c address 0x{self.port.address:02X} value: {value_with_selected_pin}"
+            )
         if pin <= 7:
             self.write_to(REGISTER_OUTPUT_PORT_0, [new_value & 0xFF])
         else:

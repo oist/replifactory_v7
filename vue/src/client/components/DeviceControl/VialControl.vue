@@ -13,6 +13,8 @@
       style="height: 30%"
     >
       <span class="sr-only">OD: {{ od }}</span>
+      <span class="sr-only">BG: {{ background }}</span>
+      <span class="sr-only">TR: {{ transmitted }}</span>
     </div>
   </div>
 </template>
@@ -48,6 +50,22 @@ export default {
     ...mapGetters("machine", ["getDeviceById"]),
     od() {
       const value = this.data.value;
+      if (value != null) {
+        return value.toPrecision(3);
+      } else {
+        return "N/A";
+      }
+    },
+    background() {
+      const value = this.data.background;
+      if (value != null) {
+        return value.toPrecision(3);
+      } else {
+        return "N/A";
+      }
+    },
+    transmitted() {
+      const value = this.data.transmitted;
       if (value != null) {
         return value.toPrecision(3);
       } else {
