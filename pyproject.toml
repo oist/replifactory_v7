@@ -56,6 +56,7 @@ usb-monitor = "^1.15"
 pydantic-yaml = "^1.2.0"
 flask-security-too = {extras = ["common", "fsqla"], version = "^5.3.3"}
 bcrypt = "^4.1.2"
+pyarrow = "^16.1.0"
 
 [tool.poetry.extras]
 replifactory = ["python-pxushover", "python-telegram-bot"]
@@ -82,14 +83,19 @@ build-backend = "poetry.core.masonry.api"
 pythonpath = "."
 addopts = [
     "--import-mode=importlib",
-    "--cov=replifactory",
+    "--cov=flask_app",
     "--cov-report=xml",
     "--cov-report=term",
 ]
 filterwarnings = [
     # note the use of single quote below to denote "raw" strings in TOML
     'ignore::DeprecationWarning:jupyter_client.*:',
+    'ignore::DeprecationWarning:pkg_resources.*:',
+    'ignore::DeprecationWarning:passlib.*:',
+    'ignore::DeprecationWarning:pydantic.*',
 ]
+
+
 
 [tool.isort]
 profile = "black"

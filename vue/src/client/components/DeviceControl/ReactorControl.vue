@@ -27,6 +27,12 @@
       <!-- <StirrerControl :disabled="!deviceControlEnabled" /> -->
       <!-- <ODControl :disabled="!deviceControlEnabled" /> -->
       <!-- <RangeSlider></RangeSlider> -->
+      <LaserControl
+        :key="laser.id"
+        :device-id="laser.id"
+        :title="laser.title"
+        :disabled="disabled"
+      />
       <Stirrer
         :key="stirrer.id"
         :device-id="stirrer.id"
@@ -45,6 +51,7 @@
 // import ODControl from './ODControl';
 import VialControl from "./VialControl.vue";
 import Valve from "./Valve.vue";
+import LaserControl from "./LaserControl.vue";
 import Stirrer from "./Stirrer.vue";
 // import RangeSlider from '@/client/components/widgets/RangeSlider';
 import { CCard, CCardBody, CCardTitle, CCardSubtitle } from "@coreui/vue";
@@ -58,6 +65,7 @@ export default {
     // ODControl,
     VialControl,
     Valve,
+    LaserControl,
     Stirrer,
     // RangeSlider,
     // CFormSwitch,
@@ -92,6 +100,14 @@ export default {
       type: String,
       default: null,
     },
+    laserId: {
+      type: String,
+      default: null,
+    },
+    laserTitle: {
+      type: String,
+      default: null,
+    },
     stirrerId: {
       type: String,
       default: null,
@@ -122,6 +138,12 @@ export default {
       return {
         id: this.valveId != null ? this.valveId : `valve-${this.id}`,
         title: this.valveTitle != null ? this.valveTitle : `Valve ${this.id}`,
+      };
+    },
+    laser() {
+      return {
+        id: this.laserId != null ? this.laserId : `laser-${this.id}`,
+        title: this.laserTitle != null ? this.laserTitle : `Laser ${this.id}`,
       };
     },
     stirrer() {

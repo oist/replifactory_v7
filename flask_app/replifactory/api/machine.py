@@ -47,6 +47,28 @@ def machineValveCommand():
     return NO_CONTENT
 
 
+@api.route("/machine/laser", methods=["POST"])
+@auth_required()
+def machineLaserCommand():
+    valid_commands = {
+        "on": ["deviceId"],
+        "off": ["deviceId"],
+    }
+    command, data, response = get_json_command_from_request(request, valid_commands)
+    if response is not None:
+        return response
+
+    tags = {"source:api", "api:machine.laser"}
+
+    device_id = data["deviceId"]
+    if command == "on":
+        machine.laser_on(device_id, tags=tags)
+    elif command == "off":
+        machine.laser_off(device_id, tags=tags)
+
+    return NO_CONTENT
+
+
 @api.route("/machine/stirrer", methods=["POST"])
 @auth_required()
 def machineStirrerCommand():

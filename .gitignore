@@ -21,6 +21,8 @@ __pycache__/
 /flask_app/develop/
 /db/
 *.db
+.coverage
+coverage.xml
 
 venv/
 .env

@@ -18,7 +18,7 @@ from .od_sensor import OdSensor
 from .pump import Pump
 from .pwm import PwmController
 from .stirrers import Stirrers
-from .test_hardware import Testing
+from .testing_hardware import Testing
 from .thermometers import Thermometers
 from .valves import Valves
 from .workers import QueueWorker

@@ -1,3 +1,30 @@
+
+class ReactorCommand:
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+
+class Reactor:
+    def home(self):
+        """Set reactor to the home state"""
+        pass
+
+    def cmd(self, name: str, *args, **kwargs):
+        """Send a command to the reactor"""
+        method_name = 'cmd_' + name
+        try:
+            method = getattr(self, method_name)
+            return method(*args, **kwargs)
+        except AttributeError:
+            raise AttributeError(f"No command named {name} found")
+
+    def ls_cmd(self):
+        """List available commands"""
+        return [method for method in dir(self) if callable(getattr(self, method)) and method.startswith('cmd_')]
+
+
 class MachineInterface:
     @classmethod
     def get_connection_options(cls, *args, **kwargs):

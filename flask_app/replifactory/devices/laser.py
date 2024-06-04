@@ -1,5 +1,6 @@
 import logging
 import time
+from enum import Enum
 from typing import Optional
 
 from flask_app.replifactory.devices import Device, DeviceCallback
@@ -15,6 +16,10 @@ log = logging.getLogger(__name__)
 
 
 class Laser(Device):
+    class States(Device.States, Enum):
+        STATE_ON = 121
+        STATE_OFF = 122
+
     def __init__(
         self,
         laser_cs: int,
@@ -27,7 +32,7 @@ class Laser(Device):
         self.io_driver = io_driver
 
     def read_state(self):
-        pass
+        self._set_state(self.States.STATE_OPERATIONAL)
 
     def switch_on(self):
         log.debug(f"{self.name} switch ON")
@@ -35,6 +40,7 @@ class Laser(Device):
             self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 1)
         else:
             self.io_driver.write_pin(self.laser_cs, LASER_ON)
+        self._set_state(self.States.STATE_ON)
 
     def switch_off(self):
         log.debug(f"{self.name} switch OFF")
@@ -42,6 +48,7 @@ class Laser(Device):
             self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 0)
         else:
             self.io_driver.write_pin(self.laser_cs, LASER_OFF)
+        self._set_state(self.States.STATE_OFF)
 
     def blink(self, times: int = 3, freq: float = 3):
         log.debug(f"{self.name} blink {times} times with freq: {freq} Hz")

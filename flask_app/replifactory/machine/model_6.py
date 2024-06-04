@@ -204,6 +204,18 @@ class Machine(MachineInterface, comm.MachineCallback):
                 device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"}
             )
 
+    def laser_on(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.laser_on(
+                device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.on"}
+            )
+
+    def laser_off(self, device_id, *args, **kwargs):
+        if self._comm:
+            self._comm.laser_off(
+                device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.off"}
+            )
+
     def stirrer_set_speed(self, device_id, speed, *args, **kwargs):
         if self._comm:
             self._comm.set_stirrer_speed(

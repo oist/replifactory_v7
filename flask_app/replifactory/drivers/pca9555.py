@@ -129,9 +129,9 @@ class IOPortDriver(Driver):
     @property
     def output_value(self):
         with self.port.session:
-            if self._output_value is None:
-                data = self.read_from(REGISTER_OUTPUT_PORT_0, 2)
-                self._output_value = int.from_bytes(data, "little")
+            # if self._output_value is None:
+            data = self.read_from(REGISTER_OUTPUT_PORT_0, 2)
+            self._output_value = int.from_bytes(data, "little")
             return self._output_value
 
     @output_value.setter
