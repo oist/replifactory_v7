@@ -6,7 +6,7 @@ import NgrokTab from "@/client/components/Remote/NgrokTab.vue";
 import HelpTab from "@/client/components/HelpTab/HelpTab.vue";
 import StatusTab from "@/client/components/StatusTab/StatusTab.vue";
 import LogsTab from "@/client/components/LogsTab/LogsTab.vue";
-import store from "@/client/store.js";
+import store from "@/client/store/index.js";
 
 const routes = [
   {

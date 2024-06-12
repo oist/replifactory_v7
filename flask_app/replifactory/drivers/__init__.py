@@ -56,9 +56,7 @@ class LazyPort(HardwarePort):
 
     @property
     def port(self):
-        if self._port is None:
-            self._port = self._get_port()
-        return self._port
+        return self._get_port()
 
     @property
     def address(self):

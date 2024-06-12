@@ -31,7 +31,7 @@
         </CAccordion>
         <CAccordion :active-item-key="3" class="mt-3">
           <CAccordionItem :item-key="3">
-            <CAccordionHeader> Experiment Info </CAccordionHeader>
+            <CAccordionHeader> Experiments </CAccordionHeader>
             <CAccordionBody />
           </CAccordionItem>
         </CAccordion>

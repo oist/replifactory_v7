@@ -1,7 +1,7 @@
 from flask import jsonify, request
 from flask_security.decorators import auth_required
 
-from flask_app import machine, settings
+from flask_app import machine_manager, settings
 from flask_app.replifactory.api import api
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
@@ -10,7 +10,7 @@ from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_
 # @auth_required()
 # @Permissions.STATUS.require(403)
 def connectionState():
-    current = machine.get_current_connection()
+    current = machine_manager.get_current_connection()
     options = _get_options()
     return jsonify({"current": current, "options": options})
 
@@ -37,12 +37,12 @@ def connectionCommand():
         if "autoconnect" in data:
             settings().connection.autoconnect = data["autoconnect"]
         settings().save()
-        machine.connect(device_address=device_id)
+        machine_manager.connect(device_address=device_id)
     elif command == "disconnect":
-        machine.disconnect()
+        machine_manager.disconnect()
 
     return NO_CONTENT
 
 
 def _get_options():
-    return machine.__class__.get_connection_options()
+    return machine_manager.__class__.get_connection_options()

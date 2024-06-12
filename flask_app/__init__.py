@@ -18,14 +18,17 @@ from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
-from flask_app.replifactory.machine.model_6 import Machine
+from flask_app.replifactory.experiment import register_experiment
+from flask_app.replifactory.experiment.endless_growth import EndlessGrowthExperiment
+from flask_app.replifactory.machine import machineRegistry, replifactory_v5
+from flask_app.replifactory.machine_manager import machineManager
 from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
 from flask_app.routes.device_routes import device_routes
 from flask_app.routes.experiment_routes import experiment_routes
 from flask_app.routes.service_routes import service_routes
 
-machine = None
+machine_manager = None
 
 flask_static_digest = FlaskStaticDigest()
 
@@ -135,8 +138,8 @@ def create_app():
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     app.security = Security(app, user_datastore)
 
-    global machine
-    machine = Machine()
+    global machine_manager
+    machine_manager = machineManager()
     usb_manager = usbManager()
 
     CORS(app)
@@ -184,7 +187,7 @@ def create_app():
             path="socket.io",
         )
         socketio.on_namespace(
-            MachineNamespace(app=app, machine=machine, namespace="/machine")
+            MachineNamespace(app=app, machine_manager=machine_manager, namespace="/machine")
         )
         # socketio.run(app)
         usb_manager.start_monitoring()
@@ -219,6 +222,9 @@ def create_app():
 
     _setup_blueprints()
     flask_static_digest.init_app(app)
+
+    register_experiment(EndlessGrowthExperiment)
+    machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
 
     return app
 

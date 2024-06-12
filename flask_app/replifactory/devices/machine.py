@@ -4,7 +4,6 @@ import re
 import threading
 from collections import OrderedDict
 from time import sleep
-import time
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 from usb.core import Device as UsbDevice
@@ -690,7 +689,7 @@ class Machine(Device, DeviceCallback):
     def disconnect(self):
         self.close()
 
-    def on_device_state_change(self, device: Device, state):
+    def _on_device_state_change(self, device: Device, state):
         self._machine_callback.on_change_device_data(device.get_data())
         eventManager().fire(Events.DEVICE_STATE_CHANGED, (device, state))
 

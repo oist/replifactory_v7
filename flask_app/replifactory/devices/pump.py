@@ -30,7 +30,7 @@ class Pump(Device, DeviceCallback):
 
     def read_state(self):
         motor_state = self.motor.read_state()
-        self.on_device_state_change(self.motor, motor_state)
+        self._on_device_state_change(self.motor, motor_state)
         return motor_state
 
     def stop(self):
@@ -42,7 +42,7 @@ class Pump(Device, DeviceCallback):
     def set_profile(self, profile):
         self.motor.set_profile(profile)
 
-    def on_device_state_change(self, device, state):
+    def _on_device_state_change(self, device, state):
         if state == self.States.STATE_ERROR:
             self._set_state(self.States.STATE_ERROR, force=True)
         elif state == self.States.STATE_WORKING:

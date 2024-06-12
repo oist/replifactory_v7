@@ -1,3 +1,19 @@
+import logging
+import queue
+import threading
+from collections import OrderedDict
+from enum import Enum
+from typing import Optional
+
+from usb.core import Device as UsbDevice
+
+from flask_app.replifactory.devices import Device, DeviceCallback
+from flask_app.replifactory.drivers.ft2232h import FtdiDriver
+from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.usb_manager import usbManager
+from flask_app.replifactory.util import StateMixin, slugify
+from flask_app.replifactory.util.module_loading import import_string
+
 
 class ReactorCommand:
     def __init__(self, name, *args, **kwargs):
@@ -6,14 +22,46 @@ class ReactorCommand:
         self.kwargs = kwargs
 
 
+class ReactorException(Exception):
+    pass
+
+
+class ReactorStates(Enum):
+    READY = 1
+    RUNNING = 2
+    PAUSED = 3
+    CANCELLING = 4
+    PAUSING = 5
+    ERROR = 6
+
+
 class Reactor:
+    def __init__(self):
+        self._state = ReactorStates.READY
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    def __str__(self):
+        return f"Reactor {id(self)}"
+
+    @property
+    def state(self):
+        return self._state
+
+    def _set_state(self, state: ReactorStates):
+        self._state = state
+
     def home(self):
         """Set reactor to the home state"""
         pass
 
+    def error(self, message):
+        """Set reactor to the error state"""
+        self._log.warning(f"{self} error: {message}")
+        self._set_state(ReactorStates.ERROR)
+
     def cmd(self, name: str, *args, **kwargs):
         """Send a command to the reactor"""
-        method_name = 'cmd_' + name
+        method_name = "cmd_" + name
         try:
             method = getattr(self, method_name)
             return method(*args, **kwargs)
@@ -22,19 +70,346 @@ class Reactor:
 
     def ls_cmd(self):
         """List available commands"""
-        return [method for method in dir(self) if callable(getattr(self, method)) and method.startswith('cmd_')]
+        return [
+            method
+            for method in dir(self)
+            if callable(getattr(self, method)) and method.startswith("cmd_")
+        ]
 
 
-class MachineInterface:
+class CommandExecutor:
+    def __init__(self, name=None, execute_callback=None):
+        self._name = f"{name}" if name else f"{self.__class__.__name__}{id(self)}"
+        self._execute_callback = execute_callback or self._execute
+        self._command_queue = queue.Queue()
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run)
+        self._thread.start()
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    @property
+    def name(self):
+        return self._name
+
+    def _run(self):
+        while not self._stop_event.is_set():
+            try:
+                command, result_queue, executed = self._command_queue.get()
+                result = self._execute(command)
+                if result_queue:
+                    result_queue.put(result)
+            except queue.Empty:
+                continue
+            except Exception as exc:
+                self._log.exception(exc)
+                if result_queue:
+                    result_queue.put(exc)
+            self._command_queue.task_done()
+            if executed:
+                executed.set()
+        self._log.info(f"Closing {self.name} loop")
+
+    def _execute(self, command):
+        raise NotImplementedError()
+
+    def queue_command_and_wait(self, command, timeout=None):
+        result_queue = queue.Queue()
+        executed = threading.Event()
+        self._command_queue.put((command, result_queue, executed))
+        executed.wait(timeout=timeout)
+        result = result_queue.get()
+        return result
+
+    def queue_command_no_wait(self, command):
+        self._command_queue.put((command, None, None))
+
+    def stop(self):
+        self._stop_event.set()
+        self._thread.join()
+
+
+class DeviceManager:
+    def __init__(self):
+        self._devices = {}
+        self._drivers = set()
+        self._command_executor = CommandExecutor(
+            name="CommandExecutor", execute_callback=self._execute_command
+        )
+        self._high_priority_executor = CommandExecutor(
+            name="HighPriorityExecutor", execute_callback=self._execute_command
+        )
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    def add_devices(self, *devices: Device):
+        for device in devices:
+            if device.id in self._devices:
+                raise ValueError(f"Device {device.id} already exists")
+            self._devices[device.id] = device
+            self._drivers.update(device.get_drivers())
+
+    def initialize_devices(self):
+        self._log.info("Initializing drivers...")
+        for driver in self._drivers:
+            driver.init()
+        self._log.info("Connecting devices...")
+        for device in self._devices.values():
+            # self.execute(device.id, "connect", no_wait=True)
+            device.connect()
+
+    def execute(
+        self,
+        device_id,
+        command,
+        no_wait=False,
+        high_priority=False,
+        timeout=None,
+        *args,
+        **kwargs,
+    ):
+        executor = (
+            self._high_priority_executor if high_priority else self._command_executor
+        )
+        command_tuple = (device_id, command, args, kwargs)
+        if no_wait:
+            executor.queue_command_no_wait(command_tuple)
+            return None
+        else:
+            return executor.queue_command_and_wait(command_tuple, timeout=timeout)
+
+    def _execute_command(self, command):
+        device_id, command, args, kwargs = command
+        device = self._devices.get(device_id)
+        if device is None:
+            raise ValueError(f"Device {device_id} not found")
+        method = getattr(device, command)
+        return method(*args, **kwargs)
+
+
+class MachineCallback:
+    def _on_machine_state_change(self, state, *args, **kwargs):
+        pass
+
+    def _on_change_device_data(self, data, *args, **kwargs):
+        pass
+
+    def _on_machine_send_current_data(self, data, *args, **kwargs):
+        pass
+
+
+class ConnectionAdapterCallbacks:
+    def _on_conn_state_change(self, state):
+        pass
+
+    def _on_conn_connected(self):
+        pass
+
+    def _before_conn_disconnected(self):
+        pass
+
+
+class ConnectionAdapter:
+    class States(Enum):
+        STATE_DISCONNECTED = 1
+        STATE_CONNECTING = 2
+        STATE_OPERATIONAL = 3
+        STATE_RECONNECTING = 4
+
+    def __init__(self, callbacks: Optional[ConnectionAdapterCallbacks] = None, *args, **kwargs):
+        self._callbacks = callbacks or ConnectionAdapterCallbacks()
+        self._state = self.States.STATE_DISCONNECTED
+
+    def connect(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def disconnect(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def _set_state(self, state: States):
+        self._state = state
+        self._callbacks._on_conn_state_change(state)
+
+    @property
+    def is_connected(self):
+        return self._state == self.States.STATE_OPERATIONAL
+
+    @property
+    def is_disconnected(self):
+        return self._state == self.States.STATE_DISCONNECTED
+
+
+class FtdiConnectionAdapter(ConnectionAdapter):
+    def __init__(self, ftdi_driver: FtdiDriver, reconnect: bool = True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._lock = threading.RLock()
+        self._ftdi_driver = ftdi_driver
+        self._usb_device = None
+        self._serial = None
+        self._state = self.States.STATE_DISCONNECTED
+        self._reconnect = reconnect
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    def connect(self, usb_device: Optional[UsbDevice] = None, *args, **kwargs):
+        with self._lock:
+            if self.is_connected:
+                return
+
+            self._set_state(self.States.STATE_CONNECTING)
+            usb_device = usb_device or usbManager().find_device(
+                serial_number=self._serial
+            )
+            if usb_device is None:
+                return
+
+            # eventManager().fire(Events.MACHINE_CONNECTING, self)
+
+            self._ftdi_driver.connect(usb_device)
+            self._usb_device = usb_device
+            self._serial = usb_device.serial_number
+            eventManager().subscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+            eventManager().subscribe(Events.USB_CONNECTED, self._on_usb_connected)
+
+            self._callbacks._on_conn_connected()
+            self._set_state(self.States.STATE_OPERATIONAL)
+            # for driver in self._drivers:
+            #     driver.init()
+
+            # for device in self._devices.values():
+            #     device.connect()
+
+            # eventManager().fire(Events.MACHINE_CONNECTED, self)
+            # self._clear_to_send.set()
+
+    def disconnect(self, *args, **kwargs):
+        with self._lock:
+            if self.is_disconnected:
+                return
+
+            eventManager().unsubscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+            eventManager().unsubscribe(Events.USB_CONNECTED, self._on_usb_connected)
+
+            self._callbacks._before_conn_disconnected()
+            # self._monitoring_active = False
+            try:
+                self._terminate_connection(raise_exception=True)
+            finally:
+                self._set_state(self.States.STATE_DISCONNECTED)
+
+    def get_spi_hw_port(self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
+        return self._ftdi_driver.get_spi_hw_port(name, cs, freq, mode)
+
+    def get_i2c_hw_port(self, address: int | list[int], name: str, registers: dict[int, str] = {}):
+        return self._ftdi_driver.get_i2c_hw_port(address, name, registers)
+
+    def _on_usb_disconnected(self, event, usb_device):
+        if self._serial != usb_device.serial_number:
+            return
+
+        if self._reconnect:
+            self._terminate_connection()
+            self._set_state(self.States.STATE_RECONNECTING)
+        else:
+            self.disconnect()
+
+    def _on_usb_connected(self, event, usb_device):
+        if usb_device.serial_number and usb_device.serial_number != self._serial:
+            return
+
+        if self._state == self.States.STATE_RECONNECTING:
+            self.connect(usb_device=usb_device)
+
+    def _terminate_connection(self, raise_exception=False):
+        if self._usb_device is not None:
+            try:
+                self._ftdi_driver.close()
+            except Exception as exc:
+                self._log.exception("Error while trying to close serial port")
+                if raise_exception:
+                    raise exc
+            # self._ftdi_driver = None
+            self._usb_device = None
+
+
+class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
+
+    def __init__(
+        self,
+        connection_adapter: ConnectionAdapter,
+        dev_manager: Optional[DeviceManager] = None,
+        machine_callback: Optional[MachineCallback] = None,
+        name: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        self._name = name or f"{__name__}.{self.__class__.__name__}"
+        self._id = slugify(self._name)
+        self._dev_manager = dev_manager or DeviceManager()
+        self._conn_adapter = connection_adapter
+        self._machine_callback = machine_callback or MachineCallback()
+        self.changestate_callback = self._machine_callback._on_machine_state_change
+        self._state = self.States.STATE_OFFLINE
+
     @classmethod
     def get_connection_options(cls, *args, **kwargs):
         pass
 
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def name(self):
+        return self._name
+
+    def get_data(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "state_id": self.get_state_id(),
+            "state_string": self.get_state_string(),
+            "error": "",
+        }
+
     def connect(self, *args, **kwargs):
-        pass
+        if self._conn_adapter.is_connected:
+            return
+
+        # self._set_state(self.States.STATE_CONNECTING)
+        self._conn_adapter.connect(*args, **kwargs)
+
+        eventManager().fire(Events.MACHINE_CONNECTED, self)
+        # self._clear_to_send.set()
+
+    def get_error_string(self):
+        return self._errorValue
+
+    # ConnectionAdapterCallbacks
+    def _on_conn_connected(self):
+        self._dev_manager.initialize_devices()
+
+    # ConnectionAdapterCallbacks
+    def _on_conn_state_change(self, state):
+        match state:
+            case ConnectionAdapter.States.STATE_RECONNECTING:
+                self._set_state(self.States.STATE_RECONNECTING)
+            case ConnectionAdapter.States.STATE_CONNECTING:
+                self._set_state(self.States.STATE_CONNECTING)
+            case ConnectionAdapter.States.STATE_DISCONNECTED:
+                self._set_state(self.States.STATE_CLOSED)
+            case ConnectionAdapter.States.STATE_OPERATIONAL:
+                self._set_state(self.States.STATE_OPERATIONAL)
+
+
+    # DeviceCallback
+    def _on_device_state_change(self, state, device, *args, **kwargs):
+        self._machine_callback._on_change_device_data(device.get_data())
+        eventManager().fire(Events.DEVICE_STATE_CHANGED, (device, state))
 
     def disconnect(self, *args, **kwargs):
-        raise NotImplementedError()
+        try:
+            self._conn_adapter.disconnect(*args, **kwargs)
+            self._set_state(self.States.STATE_CLOSED)
+        except Exception:
+            self._set_state(self.States.STATE_CLOSED_WITH_ERROR)
 
     def get_transport(self):
         raise NotImplementedError()
@@ -71,12 +446,6 @@ class MachineInterface:
 
     def cancel_experiment(self):
         raise NotImplementedError()
-
-    def get_state_string(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def get_state_id(self, *args, **kwargs):
-        pass
 
     def get_current_data(self, *args, **kwargs):
         raise NotImplementedError()
@@ -184,58 +553,150 @@ class MachineInterface:
     def firmware_info(self):
         raise NotImplementedError()
 
+    def isClosedOrError(self):
+        return self._state in (
+            self.States.STATE_ERROR,
+            self.States.STATE_CLOSED,
+            self.States.STATE_CLOSED_WITH_ERROR,
+        )
 
-class MachineCallback:
-    def on_machine_add_log(self, data):
-        pass
+    def isOperational(self):
+        return self._state in self.OPERATIONAL_STATES
 
-    def on_machine_add_temperature(self, data):
-        pass
+    def isWorking(self):
+        return self._state in self.WORKING_STATES
 
-    def on_machine_add_optical_density(self, data):
-        pass
+    def isCancelling(self):
+        return self._state == self.States.STATE_CANCELLING
 
-    def on_machine_send_initial_data(self, data):
-        pass
+    def isPausing(self):
+        return self._state == self.States.STATE_PAUSING
 
-    def on_machine_send_current_data(self, data):
-        """
-        Called when the internal state of the :class:`MachineInterface` changes, due to changes in the printer state,
-        temperatures, log lines, job progress etc. Updates via this method are guaranteed to be throttled to a maximum
-        of 2 calls per second.
+    def isPaused(self):
+        return self._state == self.States.STATE_PAUSED
 
-        ``data`` is a ``dict`` of the following structure::
+    def isResuming(self):
+        return self._state == self.States.STATE_RESUMING
 
-            state:
-                text: <current state string>
-                flags:
-                    operational: <whether the printer is currently connected and responding>
-                    printing: <whether the printer is currently printing>
-                    closedOrError: <whether the printer is currently disconnected and/or in an error state>
-                    error: <whether the printer is currently in an error state>
-                    paused: <whether the printer is currently paused>
-                    ready: <whether the printer is operational and ready for jobs>
-                    sdReady: <whether an SD card is present>
-            job:
-                file:
-                    name: <name of the file>,
-                    size: <size of the file in bytes>,
-                    origin: <origin of the file, "local" or "sdcard">,
-                    date: <last modification date of the file>
-                estimatedPrintTime: <estimated print time of the file in seconds>
-                lastPrintTime: <last print time of the file in seconds>
-                filament:
-                    length: <estimated length of filament needed for this file, in mm>
-                    volume: <estimated volume of filament needed for this file, in ccm>
-            progress:
-                completion: <progress of the print job in percent (0-100)>
-                filepos: <current position in the file in bytes>
-                printTime: <current time elapsed for printing, in seconds>
-                printTimeLeft: <estimated time left to finish printing, in seconds>
-            currentZ: <current position of the z axis, in mm>
-            offsets: <current configured temperature offsets, keys are "bed" or "tool[0-9]+", values the offset in degC>
+    def isFinishing(self):
+        return self._state == self.States.STATE_FINISHING
 
-        Arguments:
-            data (dict): The current data in the format as specified above.
-        """
-        pass
+    def isError(self):
+        return self._state in (
+            self.States.STATE_ERROR,
+            self.States.STATE_CLOSED_WITH_ERROR,
+        )
+
+    def isBusy(self):
+        return (
+            self.isWorking()
+            or self.isPaused()
+            or self._state in (self.States.STATE_CANCELLING, self.States.STATE_PAUSING)
+        )
+
+    def isManualControl(self):
+        return self._state in (self.States.STATE_OPERATIONAL, self.States.STATE_PAUSED)
+
+
+# class MachineCallback:
+#     def on_machine_add_log(self, data):
+#         pass
+
+#     def on_machine_add_temperature(self, data):
+#         pass
+
+#     def on_machine_add_optical_density(self, data):
+#         pass
+
+#     def on_machine_send_initial_data(self, data):
+#         pass
+
+#     def on_machine_send_current_data(self, data):
+#         """
+#         Called when the internal state of the :class:`MachineInterface` changes, due to changes in the printer state,
+#         temperatures, log lines, job progress etc. Updates via this method are guaranteed to be throttled to a maximum
+#         of 2 calls per second.
+
+#         ``data`` is a ``dict`` of the following structure::
+
+#             state:
+#                 text: <current state string>
+#                 flags:
+#                     operational: <whether the printer is currently connected and responding>
+#                     printing: <whether the printer is currently printing>
+#                     closedOrError: <whether the printer is currently disconnected and/or in an error state>
+#                     error: <whether the printer is currently in an error state>
+#                     paused: <whether the printer is currently paused>
+#                     ready: <whether the printer is operational and ready for jobs>
+#                     sdReady: <whether an SD card is present>
+#             job:
+#                 file:
+#                     name: <name of the file>,
+#                     size: <size of the file in bytes>,
+#                     origin: <origin of the file, "local" or "sdcard">,
+#                     date: <last modification date of the file>
+#                 estimatedPrintTime: <estimated print time of the file in seconds>
+#                 lastPrintTime: <last print time of the file in seconds>
+#                 filament:
+#                     length: <estimated length of filament needed for this file, in mm>
+#                     volume: <estimated volume of filament needed for this file, in ccm>
+#             progress:
+#                 completion: <progress of the print job in percent (0-100)>
+#                 filepos: <current position in the file in bytes>
+#                 printTime: <current time elapsed for printing, in seconds>
+#                 printTimeLeft: <estimated time left to finish printing, in seconds>
+#             currentZ: <current position of the z axis, in mm>
+#             offsets: <current configured temperature offsets, keys are "bed" or "tool[0-9]+", values the offset in degC>
+
+#         Arguments:
+#             data (dict): The current data in the format as specified above.
+#         """
+#         pass
+
+
+class CommunicationInterface:
+    pass
+
+
+class MachineRegistry:
+
+    def __init__(self):
+        self._machines = OrderedDict()
+
+    def register(self, machine, check_compatible_callback=None):
+        machine_name = f"{machine.__module__}.{machine.__name__}"
+        if machine_name in self._machines:
+            raise ValueError(f"Machine {machine_name} already exists")
+        self._machines[machine_name] = (machine, check_compatible_callback)
+
+    def get(self, name):
+        machine, _ = self._machines.get(name, (None, None))
+        return machine
+
+    def list(self):
+        return list(self._machines.keys())
+
+    def find_compatible(self, *args, **kwargs):
+        for machine, check_compatible in self._machines.values():
+            if check_compatible is not None and check_compatible(*args, **kwargs):
+                return machine
+        return None
+
+
+_machineRegistry = None
+
+
+def machineRegistry():
+    global _machineRegistry
+    if _machineRegistry is None:
+        _machineRegistry = MachineRegistry()
+    return _machineRegistry
+
+
+def register_machine(
+    registerable: type[BaseMachine] | str, check_compatible_callback=None
+):
+    if isinstance(registerable, str):
+        registerable = import_string(registerable)
+    machineRegistry().register(registerable, check_compatible_callback)
+    return registerable

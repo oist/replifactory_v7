@@ -2,7 +2,7 @@ import flask
 from flask import request
 from flask_security.decorators import auth_required
 
-from flask_app import machine
+from flask_app import machine_manager
 from flask_app.replifactory.api import api
 from flask_app.replifactory.devices.step_motor import MotorProfile
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
@@ -19,7 +19,7 @@ def machineCommandQueue():
         return response
 
     if command == "clear":
-        machine.command_queue_clear()
+        machine_manager.command_queue_clear()
 
     return NO_CONTENT
 
@@ -40,9 +40,9 @@ def machineValveCommand():
 
     device_id = data["deviceId"]
     if command == "open":
-        machine.valve_open(device_id, tags=tags)
+        machine_manager.valve_open(device_id, tags=tags)
     elif command == "close":
-        machine.valve_close(device_id, tags=tags)
+        machine_manager.valve_close(device_id, tags=tags)
 
     return NO_CONTENT
 
@@ -62,9 +62,9 @@ def machineLaserCommand():
 
     device_id = data["deviceId"]
     if command == "on":
-        machine.laser_on(device_id, tags=tags)
+        machine_manager.laser_on(device_id, tags=tags)
     elif command == "off":
-        machine.laser_off(device_id, tags=tags)
+        machine_manager.laser_off(device_id, tags=tags)
 
     return NO_CONTENT
 
@@ -84,7 +84,7 @@ def machineStirrerCommand():
     device_id = data["deviceId"]
     if command == "setSpeed":
         speed = int(data["speed"]) / 100.0
-        machine.stirrer_set_speed(device_id, speed, tags=tags)
+        machine_manager.stirrer_set_speed(device_id, speed, tags=tags)
 
     return NO_CONTENT
 
@@ -103,7 +103,7 @@ def machineThermometerCommand():
 
     device_id = data["deviceId"]
     if command == "measure":
-        machine.thermometer_measure(device_id, tags=tags)
+        machine_manager.thermometer_measure(device_id, tags=tags)
 
     return NO_CONTENT
 
@@ -122,7 +122,7 @@ def machineODSensorCommand():
 
     device_id = data["deviceId"]
     if command == "measure":
-        machine.odsensor_measure(device_id, tags=tags)
+        machine_manager.odsensor_measure(device_id, tags=tags)
 
     return NO_CONTENT
 
@@ -155,9 +155,9 @@ def machinePumpCommand():
                 speed = float(data["speed"])
             except ValueError:
                 flask.abort(400, description=f"Wrong speed value: {data['speed']}")
-        machine.pump_pump(device_id, volume, speed, tags=tags)
+        machine_manager.pump_pump(device_id, volume, speed, tags=tags)
     elif command == "stop":
-        machine.pump_stop(device_id, tags=tags)
+        machine_manager.pump_stop(device_id, tags=tags)
     elif command == "set-profile":
         cmd_data = data["profile"]
         profile = MotorProfile(
@@ -181,7 +181,7 @@ def machinePumpCommand():
             alarm_enable=int(cmd_data["alarm_enable"]),
             clockwise=cmd_data["clockwise"] if isinstance(cmd_data["clockwise"], bool) else cmd_data["clockwise"].lower() == "true",
         )
-        machine.pump_set_profile(device_id, profile, tags=tags)
+        machine_manager.pump_set_profile(device_id, profile, tags=tags)
 
     return NO_CONTENT
 
@@ -203,10 +203,10 @@ def machineVialCommand():
     volume = float(data["volume"])
     speed = float(data["speed"])
     if command == "add_media":
-        machine.vial_add_media(device_id, volume, speed, tags=tags)
+        machine_manager.vial_add_media(device_id, volume, speed, tags=tags)
     elif command == "add_drug":
-        machine.vial_add_drug(device_id, volume, speed, tags=tags)
+        machine_manager.vial_add_drug(device_id, volume, speed, tags=tags)
     elif command == "waste":
-        machine.vial_waste(device_id, volume, speed, tags=tags)
+        machine_manager.vial_waste(device_id, volume, speed, tags=tags)
 
     return NO_CONTENT

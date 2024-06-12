@@ -1,3 +1,4 @@
+import copy
 import logging
 import threading
 import time
@@ -6,10 +7,11 @@ import flask
 
 from flask_socketio import emit as socketio_emit
 from flask_socketio.namespace import Namespace
+from flask_app.replifactory.machine_manager import MachineManager
 from flask_app.replifactory.usb_manager import UsbManager
 
 from flask_app.replifactory.events import Events, eventManager
-from flask_app.replifactory.machine import MachineCallback, MachineInterface
+from flask_app.replifactory.machine import MachineCallback, BaseMachine
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ class SocketIOSessionMachineCallback(MachineCallback):
         )
 
     def _on_connected(self, event, comm):
-        usb_device = comm._usb_device
+        usb_device = comm._conn_adapter._usb_device
         payload = UsbManager.get_device_info(usb_device)
         self._emit(event, payload, namespace="/machine", broadcast=True)
 
@@ -90,7 +92,7 @@ class SocketIOSessionMachineCallback(MachineCallback):
         data_to_send["serverTime"] = time.time()
         self._emit("history", data_to_send)
 
-    def on_machine_send_current_data(self, data):
+    def _on_machine_send_current_data(self, data):
         if not self._initial_data_sent:
             self._logger.debug("Initial data not yet send, dropping current message")
             return
@@ -107,7 +109,7 @@ class SocketIOSessionMachineCallback(MachineCallback):
             )
             if delta > 0:
                 self._held_back_current = threading.Timer(
-                    delta, lambda: self.on_machine_send_current_data(data)
+                    delta, lambda: self._on_machine_send_current_data(data)
                 )
                 self._held_back_current.start()
                 return
@@ -123,10 +125,10 @@ class SocketIOSessionMachineCallback(MachineCallback):
 
 
 class MachineNamespace(Namespace):
-    def __init__(self, app, machine: MachineInterface, namespace: Optional[str] = None):
-        super(Namespace, self).__init__(namespace)
+    def __init__(self, app, machine_manager: MachineManager, namespace: Optional[str] = None):
+        super().__init__(namespace)
         self._app = app
-        self._machine = machine
+        self._machine_manager = machine_manager
         self._clients_callbacks: Dict[str, SocketIOSessionMachineCallback] = {}
 
     def on_connect(self):
@@ -137,14 +139,17 @@ class MachineNamespace(Namespace):
         )
         self._clients_callbacks[sid] = client_calback
 
-        self._machine.register_callback(client_calback)
-        self._machine.send_initial_callback(client_calback)
+        self._machine_manager.register_callback(client_calback)
+        self._machine_manager.send_initial_callback(client_calback)
 
-        payload = {
-            "state_id": self._machine.get_state_id(),
-            "state_string": self._machine.get_state_string(),
-        }
-        socketio_emit(Events.MACHINE_STATE_CHANGED, payload)
+        data = self._machine_manager.get_current_data()
+        data_copy = copy.deepcopy(data)
+        # payload = {
+        #     "state_id": self._machine_manager.get_state_id(),
+        #     "state_string": self._machine_manager.get_state_string(),
+        # }
+        client_calback._on_machine_send_current_data(data_copy)
+        # socketio_emit(Events.MACHINE_STATE_CHANGED, payload)
         eventManager().fire(Events.CLIENT_CONNECTED)
 
     def on_disconnect(self):
@@ -152,6 +157,6 @@ class MachineNamespace(Namespace):
         sid = flask.request.sid
         client_calback = self._clients_callbacks.pop(sid, None)
         if client_calback:
-            self._machine.unregister_callback(client_calback)
+            self._machine_manager.unregister_callback(client_calback)
             client_calback.unsubscribe()
         eventManager().fire(Events.CLIENT_DISCONNECTED)
