@@ -53,3 +53,6 @@ class Vial(Device):
 
     def reset(self):
         self._volume = 0.0
+
+    def get_drivers(self):
+        return []

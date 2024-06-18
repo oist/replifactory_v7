@@ -2,6 +2,7 @@ import logging
 import time
 from flask_app.replifactory.devices import Device
 from flask_app.replifactory.devices.stirrer import Stirrer
+from flask_app.replifactory.drivers import Driver
 
 
 class StirrersGroup(Device):
@@ -36,3 +37,6 @@ class StirrersGroup(Device):
         except Exception as e:
             self.log.exception(e)
             return False
+
+    def get_drivers(self) -> list[Driver]:
+        return [stirrer.driver for stirrer in self._stirrers]

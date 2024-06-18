@@ -121,3 +121,6 @@ class Stirrer(Device):
         elif state == self.States.STATE_STIRRING:
             return "Stirring"
         return super().get_state_string(state)
+
+    def get_drivers(self):
+        return [self.driver]

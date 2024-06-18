@@ -1,11 +1,16 @@
 from dataclasses import dataclass
+import time
 from typing import Optional
 
 from flask_app.replifactory.devices.laser import Laser
 from flask_app.replifactory.devices.optical_density_sensor import OpticalDensitySensor
 from flask_app.replifactory.devices.photodiode import Photodiode
 from flask_app.replifactory.devices.pump import Pump
-from flask_app.replifactory.devices.step_motor import Motor, MotorProfile_17HS15_1504S_X1, MotorProfile_XY42STH34_0354A
+from flask_app.replifactory.devices.step_motor import (
+    Motor,
+    MotorProfile_17HS15_1504S_X1,
+    MotorProfile_XY42STH34_0354A,
+)
 from flask_app.replifactory.devices.stirrer import Stirrer
 from flask_app.replifactory.devices.stirrers_group import StirrersGroup
 from flask_app.replifactory.devices.thermometer import Thermometer
@@ -23,6 +28,7 @@ from flask_app.replifactory.machine import (
     Reactor,
     ReactorException,
     ReactorStates,
+    machine_command,
 )
 
 SPI_INTERFACE = 1
@@ -58,22 +64,19 @@ class ReplifactoryMachine(BaseMachine):
 
     def __init__(self, *args, **kwargs):
         self._ftdi_adapter = FtdiConnectionAdapter(
-                ftdi_driver=FtdiDriver(
-                    spi_interface=SPI_INTERFACE,
-                    spi_cs_count=SPI_CS_COUNT,
-                    spi_freq=SPI_FREQ,
-                    spi_mode=SPI_MODE,
-                    spi_turbo=SPI_TURBO,
-                    i2c_interface=I2C_INTERFACE,
-                    i2c_freq=I2C_FREQ,
-                ),
-                callbacks=self,
-                reconnect=True,
-            )
-        super().__init__(
-            connection_adapter=self._ftdi_adapter,
-            *args, **kwargs
+            ftdi_driver=FtdiDriver(
+                spi_interface=SPI_INTERFACE,
+                spi_cs_count=SPI_CS_COUNT,
+                spi_freq=SPI_FREQ,
+                spi_mode=SPI_MODE,
+                spi_turbo=SPI_TURBO,
+                i2c_interface=I2C_INTERFACE,
+                i2c_freq=I2C_FREQ,
+            ),
+            callbacks=self,
+            reconnect=True,
         )
+        super().__init__(reactors_count=7, connection_adapter=self._ftdi_adapter, *args, **kwargs)
 
         # Replifactory v5 layout
 
@@ -163,7 +166,9 @@ class ReplifactoryMachine(BaseMachine):
         # io_port_callback = self._ftdi_driver.get_i2c_port_callback(
         #     I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers
         # )
-        adc_driver = ADCDriver(port=self._ftdi_adapter.get_i2c_hw_port(I2C_PORT_ADC, "ADC"))
+        adc_driver = ADCDriver(
+            port=self._ftdi_adapter.get_i2c_hw_port(I2C_PORT_ADC, "ADC")
+        )
         # self._drivers += [adc_driver]
 
         # io_driver_reactor = IOPortDriver(port=self._ftdi_adapter.get_i2c_hw_port(I2C_PORT_IO_REACTOR, "IO_REACTOR", IOPortDriver.registers))
@@ -182,7 +187,12 @@ class ReplifactoryMachine(BaseMachine):
         )
         # self._drivers += [io_driver_laser]
         lasers = [
-            Laser(laser_cs=cs, io_driver=io_driver_laser, name=f"Laser {cs // 2 + 1}", callback=self)
+            Laser(
+                laser_cs=cs,
+                io_driver=io_driver_laser,
+                name=f"Laser {cs // 2 + 1}",
+                callback=self,
+            )
             for cs in range(1, VIALS_COUNT * 2, 2)
         ]
         # for laser in lasers:
@@ -241,7 +251,9 @@ class ReplifactoryMachine(BaseMachine):
             I2C_PORT_THERMOMETER_3: "THERMOMETER_3",
         }.items():
             thermometer_driver = ADT75Driver(
-                port=self._ftdi_adapter.get_i2c_hw_port(address, name, ADT75Driver.registers)
+                port=self._ftdi_adapter.get_i2c_hw_port(
+                    address, name, ADT75Driver.registers
+                )
             )
             # self._drivers += [thermometer_driver]
             thermometers += [
@@ -255,29 +267,152 @@ class ReplifactoryMachine(BaseMachine):
         #     self._devices[thermometer.id] = thermometer
         self._dev_manager.add_devices(*thermometers)
 
-    def close_valve(self, num: int):
-        pass
+    def cmd_home(self, num, *args, **kwargs):
+        self.close_valve(num)
+        self.stirrer_off(num)
 
+    @machine_command
+    def home(self):
+        self.stop_pumps()
+        self.disconnect_reactors_from_pumps()
+        for reactor in self._reactors:
+            self.stirrer_off(reactor._num, wait_time=None)
+
+    @machine_command
+    def dilute(
+        self,
+        num: int,
+        target_od: float,
+        reactor_volume: float,
+        dilution_volume: float,
+        stirrer_speed: float,
+        stirrer_time: float,
+        stirrer_cooldown_time: float,
+        feed_drug_ratio: float,  # 0 - only feed, 1 - only drug
+        *args,
+        **kwargs,
+    ):
+        if feed_drug_ratio < 0.0:
+            feed_drug_ratio = 0.0
+        if feed_drug_ratio > 1.0:
+            feed_drug_ratio = 1.0
+        feed_volume = dilution_volume * (1 - feed_drug_ratio)
+        dose_volume = dilution_volume * feed_drug_ratio
+        current_od = self.measure_od(num)
+        if current_od is None:
+            self._set_state(ReactorStates.ERROR)
+            raise ReactorException("Failed to measure OD")
+        changed_volume = 0.0
+        while current_od > target_od:
+            changed_volume += dilution_volume
+            if changed_volume > reactor_volume:
+                self._set_state(ReactorStates.ERROR)
+                raise ReactorException("Dilution volume exceeded reactor volume")
+            self.discharge(num, dilution_volume)
+            self.feed(num, feed_volume)
+            self.dose(num, dose_volume)
+            self.stirrer(num, stirrer_speed, stirrer_time)
+            self.stirrer_off(num, stirrer_cooldown_time)
+            current_od = self.measure_od(num)
+
+    @machine_command
+    def close_valve(self, num: int, wait=True):
+        device_id = self._get_valve_id(num)
+        return self.execute(device_id, "close", wait=wait)
+
+    @machine_command
     def open_valve(self, num: int):
-        pass
+        device_id = self._get_valve_id(num)
+        return self.execute(device_id, "open")
 
-    def stirrer(self, num: int, speed_ratio: float, time: Optional[float] = None):
-        pass
+    @machine_command
+    def stirrer(self, num: int, speed_ratio: float, wait_time: Optional[float] = None):
+        device_id = self._get_stirrer_id(num)
+        self.execute(device_id, "set_speed", speed_ratio)
+        if wait_time:
+            time.sleep(wait_time)
 
+    @machine_command
+    def stirrer_off(self, num: int, wait_time: Optional[float] = None):
+        return self.stirrer(num, 0.0, wait_time)
+
+    @machine_command
     def measure_od(self, num: int):
-        return 0.0
+        device_id = self._get_od_sensor_id(num)
+        return self.execute(device_id, "measure_od")
 
-    def dilute(self, num: int, volume: float):
-        pass
+    @machine_command
+    def feed(self, num: int, volume: float):
+        self.stop_pumps()
+        self.connect_reactor_to_pumps(num)
+        device_id = self._get_feed_pump_id()
+        self.execute(device_id, "pump", volume)
+        self.disconnect_reactors_from_pumps()
 
-    def waste(self, num: int, volume: float):
-        pass
+    @machine_command
+    def stop_pumps(self):
+        for i in range(PUMPS_COUNT):
+            self.execute(f"pump-{i+1}", "stop")
 
+    @machine_command
+    def connect_reactor_to_pumps(self, reactor_num: int):
+        for reactor in self._reactors:
+            if reactor._num != reactor_num:
+                self.close_valve(reactor._num, wait=False)
+        self.open_valve(reactor_num)
+
+    @machine_command
+    def disconnect_reactors_from_pumps(self):
+        for reactor in self._reactors:
+            wait = False if reactor._num != self._reactors[-1]._num else True
+            self.close_valve(reactor._num, wait=wait)
+
+    @machine_command
+    def dose(self, num: int, volume: float):
+        self.stop_pumps()
+        self.connect_reactor_to_pumps(num)
+        device_id = self._get_dose_pump_id()
+        self.execute(device_id, "pump", volume)
+        self.disconnect_reactors_from_pumps()
+
+    @machine_command
+    def discharge(self, num: int, volume: float):
+        self.stop_pumps()
+        self.connect_reactor_to_pumps(num)
+        device_id = self._get_discharge_pump_id()
+        self.execute(device_id, "pump", volume)
+        self.disconnect_reactors_from_pumps()
+
+    @machine_command
     def laser_on(self, num: int):
-        pass
+        device_id = self._get_laser_id(num)
+        return self.execute(device_id, "switch_on")
 
+    @machine_command
     def laser_off(self, num: int):
-        pass
+        device_id = self._get_laser_id(num)
+        return self.execute(device_id, "switch_off")
+
+    def _get_stirrer_id(self, num: int):
+        return f"stirrer-{num}"
+
+    def _get_valve_id(self, num: int):
+        return f"valve-{num}"
+
+    def _get_laser_id(self, num: int):
+        return f"laser-{num}"
+
+    def _get_od_sensor_id(self, num: int):
+        return f"optical-density-sensor-{num}"
+
+    def _get_feed_pump_id(self):
+        return "pump-1"
+
+    def _get_dose_pump_id(self):
+        return "pump-2"
+
+    def _get_discharge_pump_id(self):
+        return "pump-4"
 
 
 @dataclass(frozen=True)
@@ -292,10 +427,29 @@ class ReplifactoryReactorParams:
 
 class ReplifactoryReactor(Reactor):
 
-    def __init__(self, num: int, machine: ReplifactoryMachine, **kwargs) -> None:
-        super().__init__()
-        self._num = num
-        self._machine = machine
+    # Reactor states:
+    # Ready - vial is in the reactor ready to work
+    # Operation blocking states:
+    # Empty - no vial
+    # Inoculating - introducing the culture into the vial
+    # Mixing - ensuring the culture is homogenously distributed in the vial
+    # Measuring - measure the optical density of the culture
+    # Sterilizing - cleaning the vial
+    # Diluting - reducing the concentration of the culture
+    # Concentrating - increase the concentration of the culture
+    # Feeding - adding nutrients to the culture
+    # Dosing - adding drugs to the culture
+    # Discharging - removing the culture from the vial
+    # Cooling - cooling the vial
+    # Warming - warming the vial
+    # Sampling - taking a sample from the vial
+
+    def __init__(self, *args, **kwargs) -> None:
+        reactor_num = kwargs.pop("reactor_num", None)
+        super().__init__(reactor_num=reactor_num, *args, **kwargs)
+        self._machine = kwargs.pop("machine", None)
+        if self._machine is None or not isinstance(self._machine, ReplifactoryMachine):
+            raise ValueError("Invalid machine")
         self._params = ReplifactoryReactorParams(**kwargs)
 
     def __str__(self):
@@ -305,17 +459,20 @@ class ReplifactoryReactor(Reactor):
     def params(self):
         return self._params
 
-    def cmd_home(self):
-        self._machine.close_valve(self._num)
-        self.cmd_stirrer_off()
+    def cmd_home(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.cmd_home, (self._num,), {}), *args, **kwargs
+        )
 
-    def cmd_dilute_to_od(
+    def cmd_dilute(
         self,
         target_od: float,
         dilution_volume: Optional[float] = None,
         stirrer_speed: Optional[float] = None,
         stirrer_time: Optional[float] = None,
         stirrer_cooldown_time: Optional[float] = None,
+        *args,
+        **kwargs,
     ):
         dilution_volume = (
             self._params.dilution_volume if dilution_volume is None else dilution_volume
@@ -331,46 +488,77 @@ class ReplifactoryReactor(Reactor):
             if stirrer_cooldown_time is None
             else stirrer_cooldown_time
         )
+        return self._machine.add_operation(
+            (
+                self._machine.cmd_dilute_to_od,
+                (),
+                {
+                    "num": self._num,
+                    "target_od": target_od,
+                    "reactor_volume": self._params.volume,
+                    "dilution_volume": dilution_volume,
+                    "stirrer_speed": stirrer_speed,
+                    "stirrer_time": stirrer_time,
+                    "stirrer_cooldown_time": stirrer_cooldown_time,
+                    "feed_drug_ratio": 0.0,
+                },
+            ),
+            *args,
+            **kwargs,
+        )
 
-        current_od = self.cmd_measure_od()
-        changed_volume = 0.0
-        while current_od > target_od:
-            changed_volume += dilution_volume
-            if changed_volume > self._params.volume:
-                self._set_state(ReactorStates.ERROR)
-                raise ReactorException("Dilution volume exceeded reactor volume")
-            self.cmd_waste(dilution_volume)
-            self.cmd_dilute(dilution_volume)
-            self.cmd_stirrer(stirrer_speed, stirrer_time)
-            self.cmd_stirrer_off(stirrer_cooldown_time)
-            current_od = self.cmd_measure_od()
+    def cmd_discharge(self, volume: float, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.waste, (self._num, volume), {}), *args, **kwargs
+        )
 
-    def cmd_dilute(self, volume: float):
-        self._machine.dilute(self._num, volume)
+    def cmd_dose(self, volume: float, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.dose, (self._num, volume), {}), *args, **kwargs
+        )
 
-    def cmd_waste(self, volume: float):
-        self._machine.waste(self._num, volume)
+    def cmd_feed(self, volume: float, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.feed, (self._num, volume), {}), *args, **kwargs
+        )
 
-    def cmd_measure_od(self):
-        return self._machine.measure_od(self._num)
+    def cmd_measure_od(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.measure_od, (self._num,), {}), *args, **kwargs
+        )
 
-    def cmd_stirrer(self, speed_ratio: float, time: Optional[float] = None):
-        self._machine.stirrer(self._num, speed_ratio, time)
+    def cmd_stirrer(
+        self, speed_ratio: float, time: Optional[float] = None, *args, **kwargs
+    ):
+        return self._machine.add_operation(
+            (self._machine.stirrer, (self._num, speed_ratio, time), {}), *args, **kwargs
+        )
 
-    def cmd_stirrer_off(self, cooldown_time: Optional[float] = None):
-        self.cmd_stirrer(0.0, cooldown_time)
+    def cmd_stirrer_off(self, cooldown_time: Optional[float] = None, *args, **kwargs):
+        return self.cmd_stirrer(0.0, cooldown_time)
 
-    def cmd_open_valve(self):
-        self._machine.open_valve(self._num)
+    def cmd_open_valve(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.open_valve, (self._num,), {}), *args, **kwargs
+        )
 
-    def cmd_close_valve(self):
-        self._machine.close_valve(self._num)
+    def cmd_close_valve(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.close_valve, (self._num,), {}), *args, **kwargs
+        )
 
-    def cmd_laser_on(self):
-        self._machine.laser_on(self._num)
+    def cmd_laser_on(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.laser_on, (self._num,), {}), *args, **kwargs
+        )
 
-    def cmd_laser_off(self):
-        self._machine.laser_off(self._num)
+    def cmd_laser_off(self, *args, **kwargs):
+        return self._machine.add_operation(
+            (self._machine.laser_off, (self._num,), {}), *args, **kwargs
+        )
+
+
+ReplifactoryMachine.reactor_class = ReplifactoryReactor
 
 
 def check_compatible(*args, **kwargs):

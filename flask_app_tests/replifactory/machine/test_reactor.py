@@ -13,14 +13,19 @@ class TestReactor(Reactor):
 
 
 class TestReactorChild(TestReactor):
-    def cmd_d(self):
+    def cmd_d(self, *args, **kwargs):
         return 'd'
 
 
 def test_reactor_ls_cmd():
     test_reactor = TestReactorChild()
 
-    assert test_reactor.ls_cmd() == ['cmd_a', 'cmd_b', 'cmd_c', 'cmd_d']
+    assert test_reactor.ls_cmd() == {
+        'a': [],
+        'b': ['arg1', 'arg2'],
+        'c': ['arg1', 'arg2', 'arg3'],
+        'd': [],
+    }
 
 
 def test_reactor_cmd():

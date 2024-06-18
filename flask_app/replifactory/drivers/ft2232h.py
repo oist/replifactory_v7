@@ -99,8 +99,7 @@ class FtdiDriver(Driver):
                     )
         return self._i2c_controller
 
-    @property
-    def spi_controller(self) -> SpiController:
+    def get_spi_controller(self) -> SpiController:
         if self._spi_controller is None and self.is_connected:
             with self._lock:
                 if self._spi_controller is None:
@@ -160,7 +159,7 @@ class FtdiDriver(Driver):
         if port_id in self._opened_ports:
             return self._opened_ports[port_id]
 
-        port = self.spi_controller.get_named_port(
+        port = self.get_spi_controller().get_named_port(
             name=name,
             cs=cs,
             freq=freq or self._spi_default_freq,

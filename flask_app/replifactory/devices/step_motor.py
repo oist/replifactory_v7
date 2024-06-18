@@ -77,23 +77,20 @@ class Motor(Device):
         profile: MotorProfile = MotorProfile(),
         name: str = "Motor",
     ):
-        super().__init__(name=name, callback=callback)
         self.driver: l6470h.StepMotorDriver = driver
+        super().__init__(name=name, callback=callback)
         self.steps_per_revolution: int = 200  # nema-17 step motor datasheet
         self.max_revolution_per_second = (
             driver.max_steps_per_second / self.steps_per_revolution
         )
         self._profile = profile
 
-    @property
     def is_moving(self):
         return self.driver.get_status().is_busy
 
-    @property
     def is_idle(self):
         return not self.is_moving
 
-    @property
     def is_error(self):
         return (
             self.driver.get_status().is_overcurrent
@@ -460,3 +457,6 @@ class Motor(Device):
         print(df_registers.to_string(formatters=formatters, index=False, header=True))
         print(f"Config [{config.value:016b}]:\n{config}")
         # print(df_registers)
+
+    def get_drivers(self):
+        return [self.driver]

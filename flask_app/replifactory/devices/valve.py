@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Literal, Optional
 
 from flask_app.replifactory.devices import Device, DeviceCallback
+from flask_app.replifactory.drivers import Driver
 from flask_app.replifactory.drivers.pca9685 import PWMDriver
 
 
@@ -48,13 +49,11 @@ class Valve(Device):
         elif self._state == self.States.STATE_CLOSE:
             self.close()
 
-    @property
     def is_close(self) -> bool:
         if self._state not in self.POSITION_STATE:
             self.read_state()
         return self._state == self.States.STATE_CLOSE
 
-    @property
     def is_open(self) -> bool | None:
         if self._state not in self.POSITION_STATE:
             self.read_state()
@@ -109,3 +108,6 @@ class Valve(Device):
         elif state == self.States.STATE_BEETWEEN:
             return "Beetwen"
         return super().get_state_string(state)
+
+    def get_drivers(self) -> list[Driver]:
+        return [self._driver]

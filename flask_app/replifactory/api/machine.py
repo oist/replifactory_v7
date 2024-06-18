@@ -8,6 +8,43 @@ from flask_app.replifactory.devices.step_motor import MotorProfile
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 
 
+@api.route("/reactors", methods=["GET"])
+@auth_required()
+def get_reactors():
+    return NO_CONTENT
+
+@api.route("/reactors/<int:reactor_id>/command", methods=["POST"])
+@auth_required()
+def reactor_command(reactor_id):
+    if not machine_manager.is_manual_control():
+        return "Manual control is not enabled", 400
+    machine = machine_manager.get_machine()
+    if machine is None:
+        return "Machine is not connected", 404
+    try:
+        reactor = machine.get_reactor(reactor_id)
+    except IndexError:
+        return f"There is no reactor with number {reactor_id}", 404
+    valid_commands = reactor.ls_cmd()
+    command, data, _ = get_json_command_from_request(request, valid_commands)
+    reactor.cmd(command, no_wait=True, **data)
+    return NO_CONTENT
+
+
+@api.route("/devices/<device_id>/command", methods=["POST"])
+@auth_required()
+def device_command(device_id):
+    if not machine_manager.is_manual_control():
+        return "Manual control is not enabled", 400
+    machine = machine_manager.get_machine()
+    if machine is None:
+        return "Machine is not connected", 404
+    valid_commands = machine.get_devices_commands_info().get(device_id, {})
+    command, data, _ = get_json_command_from_request(request, valid_commands)
+    machine.execute(device_id, command, **data, no_wait=True)
+    return NO_CONTENT
+
+
 @api.route("/machine/command_queue", methods=["POST"])
 @auth_required()
 def machineCommandQueue():

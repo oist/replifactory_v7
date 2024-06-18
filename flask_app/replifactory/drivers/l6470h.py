@@ -336,7 +336,7 @@ class StepMotorStatusValue(ParameterValue):
 
     @property
     def is_busy(self):
-        return self.value["BUSY"] == 0
+        return self.value["MOT_STATUS"] > 1 or self.value["BUSY"] == 0
 
     @property
     def is_overcurrent(self):

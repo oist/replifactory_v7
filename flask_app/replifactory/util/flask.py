@@ -1,4 +1,9 @@
+import copy
+import logging
 import flask
+
+
+log = logging.getLogger(__name__)
 
 
 SUCCESS = {}
@@ -10,13 +15,18 @@ def get_json_command_from_request(request, valid_commands):
     data = request.get_json()
 
     if "command" not in data or data["command"] not in valid_commands:
+        log.warning(f"Invalid command: {data}")
         flask.abort(400, description="command is invalid")
 
-    command = data["command"]
-    if any(map(lambda x: x not in data, valid_commands[command])):
-        flask.abort(400, description=f"Mandatory parameters missing: {valid_commands[command]}")
+    data_copy = copy.deepcopy(data)
+    command = data_copy.pop("command")
 
-    return command, data, None
+    extra_params = [param for param in data_copy if param not in valid_commands[command]]
+    if extra_params:
+        log.warning(f"Extra parameters found: {extra_params}")
+        flask.abort(400, description=f"Extra parameters found: {extra_params}")
+
+    return command, data_copy, None
 
 
 def make_api_error(message, status):

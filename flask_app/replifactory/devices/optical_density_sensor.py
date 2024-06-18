@@ -234,3 +234,6 @@ class OpticalDensitySensor(Device):
         if state == self.States.STATE_MEASURING:
             return "Measuring"
         return super().get_state_string(state)
+
+    def get_drivers(self):
+        return self.photodiode.get_drivers() + self.laser.get_drivers()

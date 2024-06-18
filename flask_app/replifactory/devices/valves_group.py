@@ -76,3 +76,6 @@ class ValvesGroup(Device):
     def _batch_close(self, valves: list[Valve]):
         for valve in valves:
             valve.close()
+
+    def get_drivers(self):
+        return [valve._driver for valve in self.valves]

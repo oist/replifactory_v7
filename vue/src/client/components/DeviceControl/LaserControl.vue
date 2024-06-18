@@ -59,6 +59,10 @@ export default {
       type: String,
       required: true,
     },
+    reactorId: {
+      type: String,
+      required: true,
+    },
   },
   setup() {
     return {
@@ -102,19 +106,18 @@ export default {
     toggle() {},
     test() {},
     async switch_off() {
-      await this.sendCommand("off");
+      await this.sendCommand("laser_off");
     },
     async switch_on() {
-      await this.sendCommand("on");
+      await this.sendCommand("laser_on");
     },
     async sendCommand(command) {
       this.loading = true;
       this.showAlert = false;
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "laser",
+        .dispatch("machine/reactorCommand", {
+          reactorId: this.reactorId,
           command: command,
-          deviceId: this.deviceId,
         })
         .then((data) => {
           console.debug(data);

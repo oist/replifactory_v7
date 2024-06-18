@@ -1,9 +1,11 @@
+import inspect
 import logging
 import queue
 import threading
 from collections import OrderedDict
 from enum import Enum
-from typing import Optional
+from inspect import signature
+from typing import Any, Callable, Optional
 
 from usb.core import Device as UsbDevice
 
@@ -36,12 +38,17 @@ class ReactorStates(Enum):
 
 
 class Reactor:
-    def __init__(self):
+
+    command_method_prefix = "cmd_"
+
+    def __init__(self, reactor_num: Optional[int] = None, *args, **kwargs):
         self._state = ReactorStates.READY
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self._num = reactor_num or id(self)
+        self._commands_info = None
 
     def __str__(self):
-        return f"Reactor {id(self)}"
+        return f"Reactor {self._num}"
 
     @property
     def state(self):
@@ -61,7 +68,7 @@ class Reactor:
 
     def cmd(self, name: str, *args, **kwargs):
         """Send a command to the reactor"""
-        method_name = "cmd_" + name
+        method_name = self.command_method_prefix + name
         try:
             method = getattr(self, method_name)
             return method(*args, **kwargs)
@@ -70,11 +77,18 @@ class Reactor:
 
     def ls_cmd(self):
         """List available commands"""
-        return [
-            method
-            for method in dir(self)
-            if callable(getattr(self, method)) and method.startswith("cmd_")
-        ]
+        if self._commands_info is not None:
+            return self._commands_info
+        cmd_methods = {}
+        for method_name in dir(self):
+            if callable(getattr(self, method_name)) and method_name.startswith(
+                self.command_method_prefix
+            ):
+                method = getattr(self, method_name)
+                args = inspect.getfullargspec(method).args[1:]
+                cmd_methods[method_name.removeprefix(self.command_method_prefix)] = args
+        self._commands_info = cmd_methods
+        return self._commands_info
 
 
 class CommandExecutor:
@@ -95,7 +109,7 @@ class CommandExecutor:
         while not self._stop_event.is_set():
             try:
                 command, result_queue, executed = self._command_queue.get()
-                result = self._execute(command)
+                result = self._execute_callback(command)
                 if result_queue:
                     result_queue.put(result)
             except queue.Empty:
@@ -139,6 +153,11 @@ class DeviceManager:
             name="HighPriorityExecutor", execute_callback=self._execute_command
         )
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self._commands_info = {}
+
+    @property
+    def commands_info(self):
+        return self._commands_info
 
     def add_devices(self, *devices: Device):
         for device in devices:
@@ -146,6 +165,7 @@ class DeviceManager:
                 raise ValueError(f"Device {device.id} already exists")
             self._devices[device.id] = device
             self._drivers.update(device.get_drivers())
+            self._commands_info[device.id] = device.get_commands_info()
 
     def initialize_devices(self):
         self._log.info("Initializing drivers...")
@@ -160,12 +180,12 @@ class DeviceManager:
         self,
         device_id,
         command,
-        no_wait=False,
-        high_priority=False,
-        timeout=None,
         *args,
         **kwargs,
     ):
+        no_wait = kwargs.pop("no_wait", False)
+        high_priority = kwargs.pop("high_priority", False)
+        timeout = kwargs.pop("timeout", None)
         executor = (
             self._high_priority_executor if high_priority else self._command_executor
         )
@@ -214,7 +234,9 @@ class ConnectionAdapter:
         STATE_OPERATIONAL = 3
         STATE_RECONNECTING = 4
 
-    def __init__(self, callbacks: Optional[ConnectionAdapterCallbacks] = None, *args, **kwargs):
+    def __init__(
+        self, callbacks: Optional[ConnectionAdapterCallbacks] = None, *args, **kwargs
+    ):
         self._callbacks = callbacks or ConnectionAdapterCallbacks()
         self._state = self.States.STATE_DISCONNECTED
 
@@ -238,7 +260,9 @@ class ConnectionAdapter:
 
 
 class FtdiConnectionAdapter(ConnectionAdapter):
-    def __init__(self, ftdi_driver: FtdiDriver, reconnect: bool = True, *args, **kwargs):
+    def __init__(
+        self, ftdi_driver: FtdiDriver, reconnect: bool = True, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self._lock = threading.RLock()
         self._ftdi_driver = ftdi_driver
@@ -284,7 +308,9 @@ class FtdiConnectionAdapter(ConnectionAdapter):
             if self.is_disconnected:
                 return
 
-            eventManager().unsubscribe(Events.USB_DISCONNECTED, self._on_usb_disconnected)
+            eventManager().unsubscribe(
+                Events.USB_DISCONNECTED, self._on_usb_disconnected
+            )
             eventManager().unsubscribe(Events.USB_CONNECTED, self._on_usb_connected)
 
             self._callbacks._before_conn_disconnected()
@@ -294,10 +320,18 @@ class FtdiConnectionAdapter(ConnectionAdapter):
             finally:
                 self._set_state(self.States.STATE_DISCONNECTED)
 
-    def get_spi_hw_port(self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
+    def get_spi_hw_port(
+        self,
+        name: str,
+        cs: int,
+        freq: Optional[float] = None,
+        mode: Optional[int] = None,
+    ):
         return self._ftdi_driver.get_spi_hw_port(name, cs, freq, mode)
 
-    def get_i2c_hw_port(self, address: int | list[int], name: str, registers: dict[int, str] = {}):
+    def get_i2c_hw_port(
+        self, address: int | list[int], name: str, registers: dict[int, str] = {}
+    ):
         return self._ftdi_driver.get_i2c_hw_port(address, name, registers)
 
     def _on_usb_disconnected(self, event, usb_device):
@@ -329,7 +363,14 @@ class FtdiConnectionAdapter(ConnectionAdapter):
             self._usb_device = None
 
 
+def machine_command(func):
+    func.is_machine_command = True
+    return func
+
+
 class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
+
+    reactor_class = Reactor
 
     def __init__(
         self,
@@ -337,6 +378,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         dev_manager: Optional[DeviceManager] = None,
         machine_callback: Optional[MachineCallback] = None,
         name: Optional[str] = None,
+        reactors_count: int = 1,
         *args,
         **kwargs,
     ):
@@ -347,10 +389,28 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         self._machine_callback = machine_callback or MachineCallback()
         self.changestate_callback = self._machine_callback._on_machine_state_change
         self._state = self.States.STATE_OFFLINE
+        self._reactors = [
+            self.reactor_class(reactor_num=index + 1, machine=self, *args, **kwargs)
+            for index in range(reactors_count)
+        ]
+        self._log = logging.getLogger(f"Device ({name})")
+        self._operation_queue = queue.Queue()
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run)
+        self._stop_operation_timeout = 5
+        self._commands_info = self._get_command_info()
 
     @classmethod
     def get_connection_options(cls, *args, **kwargs):
         pass
+
+    def _get_command_info(self):
+        command_info = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if callable(attr) and getattr(attr, 'is_machine_command', False):
+                command_info[attr_name] = list(signature(attr).parameters.keys())
+        return command_info
 
     @property
     def id(self):
@@ -359,6 +419,54 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
     @property
     def name(self):
         return self._name
+
+    def get_commands_info(self):
+        return self._commands_info
+
+    def get_devices_commands_info(self):
+        return self._dev_manager.commands_info
+
+    def _run(self):
+        while not self._stop_event.is_set():
+            try:
+                operation, result_queue, executed = self._operation_queue.get()
+                command, args, kwargs = operation
+                result = command(*args, **kwargs)
+                if result_queue:
+                    result_queue.put(result)
+            except queue.Empty:
+                continue
+            except Exception as exc:
+                self._log.exception(exc)
+                if result_queue:
+                    result_queue.put(exc)
+            self._operation_queue.task_done()
+            if executed:
+                executed.set()
+        self._log.info(f"Closing {self.name} loop")
+
+    @machine_command
+    def execute(self, device_id, command, *args, **kwargs):
+        return self._dev_manager.execute(device_id, command, *args, **kwargs)
+
+    def add_operation(
+        self,
+        operation: tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]],
+        no_wait=False,
+        timeout=None,
+    ):
+        if no_wait:
+            self._operation_queue.put((operation, None, None))
+            return None
+        result_queue = queue.Queue()
+        executed = threading.Event()
+        self._operation_queue.put((operation, result_queue, executed))
+        executed.wait(timeout=timeout)
+        result = result_queue.get()
+        return result
+
+    def get_reactor(self, reactor_num) -> Reactor:
+        return self._reactors[reactor_num - 1]
 
     def get_data(self):
         return {
@@ -375,6 +483,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
 
         # self._set_state(self.States.STATE_CONNECTING)
         self._conn_adapter.connect(*args, **kwargs)
+        self._thread.start()
 
         eventManager().fire(Events.MACHINE_CONNECTED, self)
         # self._clear_to_send.set()
@@ -398,7 +507,6 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
             case ConnectionAdapter.States.STATE_OPERATIONAL:
                 self._set_state(self.States.STATE_OPERATIONAL)
 
-
     # DeviceCallback
     def _on_device_state_change(self, state, device, *args, **kwargs):
         self._machine_callback._on_change_device_data(device.get_data())
@@ -407,6 +515,10 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
     def disconnect(self, *args, **kwargs):
         try:
             self._conn_adapter.disconnect(*args, **kwargs)
+            self._stop_event.set()
+            self._thread.join(timeout=self._stop_operation_timeout)
+            if self._thread.is_alive():
+                self._log.warning("Stop operation timeout")
             self._set_state(self.States.STATE_CLOSED)
         except Exception:
             self._set_state(self.States.STATE_CLOSED_WITH_ERROR)
@@ -549,8 +661,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         """
         raise NotImplementedError()
 
-    @property
-    def firmware_info(self):
+    def get_firmware_info(self):
         raise NotImplementedError()
 
     def isClosedOrError(self):
@@ -597,6 +708,8 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
     def isManualControl(self):
         return self._state in (self.States.STATE_OPERATIONAL, self.States.STATE_PAUSED)
 
+
+Reactor.machine_class = BaseMachine
 
 # class MachineCallback:
 #     def on_machine_add_log(self, data):

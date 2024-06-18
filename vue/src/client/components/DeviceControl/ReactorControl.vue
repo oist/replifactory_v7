@@ -11,6 +11,7 @@
       <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
       <Valve
         :key="valve.id"
+        :reactor-id="reactor.id"
         class="my-1"
         :device-id="valve.id"
         :title="valve.title"
@@ -18,6 +19,7 @@
       />
       <VialControl
         :od-sensor-id="odSensor.id"
+        :reactor-id="reactor.id"
         :disabled="disabled"
         class="my-2 mx-0"
         height="100px"
@@ -29,6 +31,7 @@
       <!-- <RangeSlider></RangeSlider> -->
       <LaserControl
         :key="laser.id"
+        :reactor-id="reactor.id"
         :device-id="laser.id"
         :title="laser.title"
         :disabled="disabled"

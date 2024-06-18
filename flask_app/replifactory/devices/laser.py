@@ -64,3 +64,6 @@ class Laser(Device):
 
     def __exit__(self, *args):
         self.switch_off()
+
+    def get_drivers(self):
+        return [self.io_driver]

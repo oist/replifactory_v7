@@ -41,6 +41,10 @@ export default {
       type: String,
       default: null,
     },
+    reactorId: {
+      type: String,
+      required: true,
+    },
   },
   computed: {
     data() {
@@ -77,10 +81,9 @@ export default {
     updateOpticalDensity(event) {
       console.debug(event);
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "odsensor",
-          command: "measure",
-          deviceId: this.odSensorId,
+        .dispatch("machine/reactorCommand", {
+          reactorId: this.reactorId,
+          command: "measure_od",
         })
         .then((data) => {
           console.debug(data);

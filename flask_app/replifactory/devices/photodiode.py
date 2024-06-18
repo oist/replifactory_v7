@@ -46,3 +46,6 @@ class Photodiode(Device):
                     self.io_driver.write_to(REGISTER_OUTPUT_PORT_1, [self.diode_cs])
                     return self.adc_driver.measure(gain=gain, bitrate=bitrate)
             return (0.0, 0.0)
+
+    def get_drivers(self):
+        return [self.adc_driver, self.io_driver]

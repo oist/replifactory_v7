@@ -20,7 +20,7 @@ def connectionState():
 # @no_firstrun_access
 # @Permissions.CONNECTION.require(403)
 def connectionCommand():
-    valid_commands = {"connect": [], "disconnect": [], "fake_ack": []}
+    valid_commands = {"connect": ["device_id"], "disconnect": [], "fake_ack": []}
 
     command, data, response = get_json_command_from_request(request, valid_commands)
     if response is not None:

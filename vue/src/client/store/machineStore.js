@@ -100,17 +100,32 @@ export default {
           });
       });
     },
-    runCommand(context, payload) {
-      const { device, deviceId, command, ...args } = payload;
-      const endpoint = `/api/machine/${device}`;
+    deviceCommand(context, payload) {
+      const { deviceId, command, ...args } = payload;
+      const endpoint = `/api/devices/${deviceId}/command`;
       return new Promise((resolve, reject) => {
         api
-          .post(endpoint, { deviceId, command, ...args })
+          .post(endpoint, { command, ...args })
           .then((response) => {
             resolve(response.data);
           })
           .catch((error) => {
             console.error(`Error updating ${deviceId} state:`, error);
+            reject(error);
+          });
+      });
+    },
+    reactorCommand(context, payload) {
+      const { reactorId, ...args } = payload;
+      const endpoint = `/api/reactors/${reactorId}/command`;
+      return new Promise((resolve, reject) => {
+        api
+          .post(endpoint, args)
+          .then((response) => {
+            resolve(response.data);
+          })
+          .catch((error) => {
+            console.error(`Error updating reactor state:`, error);
             reject(error);
           });
       });

@@ -429,6 +429,9 @@ class MachineManager(MachineCallback):
     def get_current_data(self):
         return self._stateMonitor.get_current_data()
 
+    def get_machine(self):
+        return self._machine
+
 
 class StateMonitor:
     """

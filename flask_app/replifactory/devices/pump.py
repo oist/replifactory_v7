@@ -1,6 +1,6 @@
 from typing import Optional
 
-from flask_app.replifactory.devices import Device, DeviceCallback
+from flask_app.replifactory.devices import Device, DeviceCallback, device_command
 from flask_app.replifactory.devices.step_motor import Motor
 
 
@@ -28,17 +28,20 @@ class Pump(Device, DeviceCallback):
     def reset(self):
         self.motor.reset()
 
+    @device_command
     def read_state(self):
         motor_state = self.motor.read_state()
         self._on_device_state_change(self.motor, motor_state)
         return motor_state
 
+    @device_command
     def stop(self):
         self._log.debug(f"Stoping {self.name}")
         self._set_state(self.States.STATE_FINISHING)
         self.motor.stop()
         # self._set_state(self.States.STATE_OPERATIONAL)
 
+    @device_command
     def set_profile(self, profile):
         self.motor.set_profile(profile)
 
@@ -53,15 +56,12 @@ class Pump(Device, DeviceCallback):
             self._set_state(state, force=True)
         return self._state
 
-    @property
     def is_pumping(self):
         return self.read_state() == self.States.STATE_WORKING
 
-    @property
     def is_idle(self):
         return self.read_state() == self.States.STATE_OPERATIONAL
 
-    @property
     def is_error(self):
         return self.read_state() == self.States.STATE_ERROR
 
@@ -71,10 +71,12 @@ class Pump(Device, DeviceCallback):
             "motor": self.motor.get_data(),
         }
 
+    @device_command
     def run(self, forward: bool = True, rot_per_sec: Optional[float] = None):
         self._set_state(self.States.STATE_WORKING)
         self.motor.run(forward, rot_per_sec or self.max_speed_rps)
 
+    @device_command
     def pump(self, volume: float, rot_per_sec: Optional[float] = None):
         """Pump certain amount of liquid
 
@@ -143,3 +145,6 @@ class Pump(Device, DeviceCallback):
 
     def test(self):
         return self.motor.test()
+
+    def get_drivers(self):
+        return self.motor.get_drivers()

@@ -1,3 +1,4 @@
+from inspect import signature
 import logging
 from typing import Optional
 
@@ -11,6 +12,11 @@ class DeviceCallback:
 
 
 DUMMY_DEVICE_CALBACK = DeviceCallback()
+
+
+def device_command(func):
+    func.is_device_command = True
+    return func
 
 
 class Device(StateMixin):
@@ -29,6 +35,7 @@ class Device(StateMixin):
         self._error = ""
         self._devices = devices or {}
         self.changestate_callback = self._callback._on_device_state_change
+        self._commands_info = self._get_commands_info()
 
     @property
     def id(self):
@@ -42,8 +49,19 @@ class Device(StateMixin):
     def name(self):
         return self._name
 
+    def get_commands_info(self):
+        return self._commands_info
+
+    def _get_commands_info(self):
+        command_info = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if callable(attr) and getattr(attr, 'is_device_command', False):
+                command_info[attr_name] = list(signature(attr).parameters.keys())
+        return command_info
+
     def get_drivers(self) -> list[Driver]:
-        return []
+        raise NotImplementedError(f"{self.name} has no drivers, it should explicitly return []")
 
     def get_data(self):
         return {
@@ -68,6 +86,7 @@ class Device(StateMixin):
     def reset(self):
         pass
 
+    @device_command
     def read_state(self):
         pass
 
@@ -76,6 +95,7 @@ class Device(StateMixin):
     def _test(self):
         raise NotImplementedError(f"{self.name} has no self test")
 
+    @device_command
     def test(self):
         self._set_state(self.States.STATE_SELF_TESTING)
         try:

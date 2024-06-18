@@ -70,6 +70,10 @@ export default {
       type: String,
       required: true,
     },
+    reactorId: {
+      type: String,
+      required: true,
+    },
   },
   setup() {
     return {
@@ -113,19 +117,18 @@ export default {
     toggle() {},
     test() {},
     async close() {
-      await this.sendCommand("close");
+      await this.sendCommand("close_valve");
     },
     async open() {
-      await this.sendCommand("open");
+      await this.sendCommand("open_valve");
     },
     async sendCommand(command) {
       this.loading = true;
       this.showAlert = false;
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "valve",
+        .dispatch("machine/reactorCommand", {
+          reactorId: this.reactorId,
           command: command,
-          deviceId: this.deviceId,
         })
         .then((data) => {
           console.debug(data);

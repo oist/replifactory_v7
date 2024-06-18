@@ -2,8 +2,8 @@ from typing import Optional
 
 from pyftdi.i2c import I2cNackError
 
-from flask_app.replifactory.devices import Device
-from flask_app.replifactory.drivers import ThermometerDriver
+from flask_app.replifactory.devices import Device, device_command
+from flask_app.replifactory.drivers import Driver, ThermometerDriver
 
 
 class Thermometer(Device):
@@ -12,6 +12,7 @@ class Thermometer(Device):
         self.driver = driver
         self._last_value = 0
 
+    @device_command
     def measure(self):
         self._set_state(self.States.STATE_WORKING)
         value = self.driver.read()
@@ -40,3 +41,6 @@ class Thermometer(Device):
             }
         )
         return data
+
+    def get_drivers(self) -> list[Driver]:
+        return [self.driver]

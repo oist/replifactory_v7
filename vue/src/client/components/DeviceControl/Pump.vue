@@ -4,7 +4,8 @@
     class="m-2 pump-control"
   >
     <CCardBody>
-      <CCardTitle>{{ label }}</CCardTitle>
+      <CCardTitle>{{ label }} <span class="badge text-bg-light">{{ state }}</span></CCardTitle>
+
       <CInputGroup class="mb-3 buttons-group">
         <CButton
           type="button"
@@ -57,6 +58,16 @@
         @click="motorProfileVisisble = !motorProfileVisisble"
       >
         {{ motorProfileVisisble ? "Hide profile" : "Show profile" }}
+      </CButton>
+      <CButton
+        v-if="debug"
+        color="primary"
+        variant="outline"
+        :disabled="disabled"
+        class="ms-1"
+        @click="handleReloadButtonClick"
+      >
+        <CIcon :icon="icon.cilReload" />
       </CButton>
       <CCollapse v-if="debug" :visible="motorProfileVisisble">
         <CCard class="mt-3">
@@ -517,15 +528,35 @@ export default {
     },
   },
   methods: {
-    handlePumpButtonClick() {
+    handleReloadButtonClick() {
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "pump",
-          command: "pump",
+        .dispatch("machine/deviceCommand", {
+          command: "read_state",
           deviceId: this.deviceId,
-          volume: this.inputVolume,
-          speed: this.inputSpeed,
         })
+        .then((data) => {
+          console.debug(data);
+        })
+        .catch((err) => {
+          this.$store.dispatch("notifyWarning", {
+            content: err.response.data,
+          });
+        });
+    },
+    handlePumpButtonClick() {
+      let pumpData = {
+        command: "run",
+        deviceId: this.deviceId,
+      };
+      if (this.inputVolume) {
+        pumpData.volume = parseFloat(this.inputVolume);
+        pumpData.command = "pump";
+      }
+      if (this.inputSpeed) {
+        pumpData.rot_per_sec = parseFloat(this.inputSpeed);
+      }
+      this.$store
+        .dispatch("machine/deviceCommand", pumpData)
         .then((data) => {
           console.debug(data);
         })
@@ -537,8 +568,7 @@ export default {
     },
     handleStopButtonClick() {
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "pump",
+        .dispatch("machine/deviceCommand", {
           command: "stop",
           deviceId: this.deviceId,
         })
@@ -553,9 +583,8 @@ export default {
     },
     handleSetProfileButtonClick() {
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "pump",
-          command: "set-profile",
+        .dispatch("machine/deviceCommand", {
+          command: "set_profile",
           deviceId: this.deviceId,
           profile: this.motor.profile,
         })

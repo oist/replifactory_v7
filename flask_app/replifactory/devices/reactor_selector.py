@@ -30,3 +30,6 @@ class ReactorSelector(Device, DeviceCallback):
     def select(self, reactor_index: int):
         log.debug(f"Select reactor {reactor_index}")
         self.io_driver.write_l(reactor_index - 1)
+
+    def get_drivers(self):
+        return [self.io_driver]

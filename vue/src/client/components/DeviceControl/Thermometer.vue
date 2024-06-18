@@ -99,10 +99,9 @@ export default {
   methods: {
     handleRefreshClick() {
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "thermometer",
-          command: "measure",
+        .dispatch("machine/deviceCommand", {
           deviceId: this.deviceId,
+          command: "measure",
         })
         .then((data) => {
           console.debug(data);
