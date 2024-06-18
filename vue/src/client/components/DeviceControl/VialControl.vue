@@ -13,14 +13,14 @@
       style="height: 30%"
     >
       <span class="sr-only">OD: {{ od }}</span>
-      <span class="sr-only">BG: {{ background }}</span>
-      <span class="sr-only">TR: {{ transmitted }}</span>
+      <span v-if="debug" class="sr-only">BG: {{ background }}</span>
+      <span v-if="debug" class="sr-only">TR: {{ transmitted }}</span>
     </div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 export default {
   name: "ValvesGroupControl",
   components: {},
@@ -52,6 +52,7 @@ export default {
       return device;
     },
     ...mapGetters("machine", ["getDeviceById"]),
+    ...mapState(["debug"]),
     od() {
       const value = this.data.value;
       if (value != null) {

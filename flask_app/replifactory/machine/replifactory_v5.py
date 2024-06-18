@@ -290,9 +290,11 @@ class ReplifactoryMachine(BaseMachine):
         stirrer_time: float,
         stirrer_cooldown_time: float,
         feed_drug_ratio: float,  # 0 - only feed, 1 - only drug
+        od_measurment_error: float = 0.01,
         *args,
         **kwargs,
     ):
+        reactor = self.get_reactor(num)
         if feed_drug_ratio < 0.0:
             feed_drug_ratio = 0.0
         if feed_drug_ratio > 1.0:
@@ -301,20 +303,24 @@ class ReplifactoryMachine(BaseMachine):
         dose_volume = dilution_volume * feed_drug_ratio
         current_od = self.measure_od(num)
         if current_od is None:
-            self._set_state(ReactorStates.ERROR)
+            reactor._set_state(ReactorStates.ERROR)
             raise ReactorException("Failed to measure OD")
         changed_volume = 0.0
         while current_od > target_od:
             changed_volume += dilution_volume
             if changed_volume > reactor_volume:
-                self._set_state(ReactorStates.ERROR)
+                reactor._set_state(ReactorStates.ERROR)
                 raise ReactorException("Dilution volume exceeded reactor volume")
             self.discharge(num, dilution_volume)
             self.feed(num, feed_volume)
             self.dose(num, dose_volume)
             self.stirrer(num, stirrer_speed, stirrer_time)
             self.stirrer_off(num, stirrer_cooldown_time)
+            previous_od = current_od
             current_od = self.measure_od(num)
+            if current_od - od_measurment_error > previous_od:
+                reactor._set_state(ReactorStates.ERROR)
+                raise ReactorException("OD increased after dilution")
 
     @machine_command
     def close_valve(self, num: int, wait=True):

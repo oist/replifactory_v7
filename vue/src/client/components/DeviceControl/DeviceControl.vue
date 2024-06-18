@@ -20,7 +20,7 @@
         :disabled="!deviceControlEnabled"
       />
     </CRow>
-    <CRow>
+    <CRow v-if="debug">
       <Pump
         :disabled="!deviceControlEnabled"
         device-id="pump-1"
@@ -96,6 +96,7 @@ export default {
       "valves",
       "ods",
     ]),
+    ...mapState(["debug"]),
     ...mapGetters("machine", {
       deviceConnected: "isConnected",
       deviceControlEnabled: "isManualControlEnabled",

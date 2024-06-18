@@ -1,5 +1,5 @@
 <template>
-  <CCard style="width: 11rem" class="m-2">
+  <CCard style="width: 14rem" class="m-2">
     <CCardBody>
       <CCardTitle>{{ reactor.title }}</CCardTitle>
       <CCardSubtitle class="mb-2 text-muted">
@@ -10,6 +10,7 @@
             </CCardText> -->
       <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
       <Valve
+        v-if="debug"
         :key="valve.id"
         :reactor-id="reactor.id"
         class="my-1"
@@ -30,6 +31,7 @@
       <!-- <ODControl :disabled="!deviceControlEnabled" /> -->
       <!-- <RangeSlider></RangeSlider> -->
       <LaserControl
+        v-if="debug"
         :key="laser.id"
         :reactor-id="reactor.id"
         :device-id="laser.id"
@@ -43,6 +45,10 @@
         :title="stirrer.title"
         :disabled="disabled"
       />
+      <!-- <ReactorPumpControl
+        :reactor-id="reactor.id"
+        :disabled="disabled"
+      /> -->
     </CCardBody>
   </CCard>
 </template>
@@ -58,7 +64,9 @@ import Valve from "./Valve.vue";
 import LaserControl from "./LaserControl.vue";
 import Stirrer from "./Stirrer.vue";
 // import RangeSlider from '@/client/components/widgets/RangeSlider';
+import ReactorPumpControl from "./ReactorPumpControl.vue";
 import { CCard, CCardBody, CCardTitle, CCardSubtitle } from "@coreui/vue";
+import { mapState } from "vuex";
 
 export default {
   components: {
@@ -71,6 +79,7 @@ export default {
     Valve,
     LaserControl,
     Stirrer,
+    // ReactorPumpControl,
     // RangeSlider,
     // CFormSwitch,
     CCard,
@@ -169,6 +178,7 @@ export default {
             : `Optical Density Sensor ${this.id}`,
       };
     },
+    ...mapState(["debug"]),
   },
 };
 </script>
