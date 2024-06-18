@@ -130,5 +130,20 @@ export default {
           });
       });
     },
+    machineCommand(context, payload) {
+      const { command, ...args } = payload;
+      const endpoint = `/api/machine/command`;
+      return new Promise((resolve, reject) => {
+        api
+          .post(endpoint, { command, ...args })
+          .then((response) => {
+            resolve(response.data);
+          })
+          .catch((error) => {
+            console.error(`Error updating machine state:`, error);
+            reject(error);
+          });
+      });
+    },
   },
 };

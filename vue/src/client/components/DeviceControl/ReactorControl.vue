@@ -38,6 +38,7 @@
       />
       <Stirrer
         :key="stirrer.id"
+        :reactor-id="reactor.id"
         :device-id="stirrer.id"
         :title="stirrer.title"
         :disabled="disabled"

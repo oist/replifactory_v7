@@ -1,7 +1,7 @@
 <template>
   <div>
     <CFormRange
-      v-model="value"
+      v-model.number="value"
       :min="min"
       :max="max"
       :step="step"
@@ -30,6 +30,10 @@ export default {
       type: String,
       required: true,
     },
+    reactorId: {
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
@@ -53,11 +57,10 @@ export default {
     handleChange(event) {
       console.debug(event);
       this.$store
-        .dispatch("machine/runCommand", {
-          device: "stirrer",
-          command: "setSpeed",
-          deviceId: this.deviceId,
-          speed: event.target.value,
+        .dispatch("machine/reactorCommand", {
+          reactorId: this.reactorId,
+          command: "stirrer",
+          speed_ratio: parseFloat(event.target.value) / 100,
         })
         .then((data) => {
           console.debug(data);

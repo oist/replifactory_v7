@@ -39,13 +39,11 @@ class ReactorStates(Enum):
 
 class Reactor:
 
-    command_method_prefix = "cmd_"
-
     def __init__(self, reactor_num: Optional[int] = None, *args, **kwargs):
         self._state = ReactorStates.READY
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._num = reactor_num or id(self)
-        self._commands_info = None
+        self._commands_info = self.ls_cmd()
 
     def __str__(self):
         return f"Reactor {self._num}"
@@ -53,6 +51,9 @@ class Reactor:
     @property
     def state(self):
         return self._state
+
+    def get_command_info(self):
+        return self._commands_info
 
     def _set_state(self, state: ReactorStates):
         self._state = state
@@ -66,29 +67,33 @@ class Reactor:
         self._log.warning(f"{self} error: {message}")
         self._set_state(ReactorStates.ERROR)
 
-    def cmd(self, name: str, *args, **kwargs):
+    def cmd(self, method_name: str, *args, **kwargs):
         """Send a command to the reactor"""
-        method_name = self.command_method_prefix + name
         try:
             method = getattr(self, method_name)
             return method(*args, **kwargs)
         except AttributeError:
-            raise AttributeError(f"No command named {name} found")
+            raise AttributeError(f"No command named {method_name} found")
 
     def ls_cmd(self):
         """List available commands"""
-        if self._commands_info is not None:
-            return self._commands_info
-        cmd_methods = {}
-        for method_name in dir(self):
-            if callable(getattr(self, method_name)) and method_name.startswith(
-                self.command_method_prefix
-            ):
-                method = getattr(self, method_name)
-                args = inspect.getfullargspec(method).args[1:]
-                cmd_methods[method_name.removeprefix(self.command_method_prefix)] = args
-        self._commands_info = cmd_methods
-        return self._commands_info
+        command_info = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if callable(attr) and getattr(attr, 'is_reactor_command', False):
+                args = inspect.getfullargspec(attr).args[1:]
+                command_info[attr_name] = args
+                # command_info[attr_name] = list(signature(attr).parameters.keys())
+        return command_info
+        # for method_name in dir(self):
+        #     if callable(getattr(self, method_name)) and method_name.startswith(
+        #         self.command_method_prefix
+        #     ):
+        #         method = getattr(self, method_name)
+        #         args = inspect.getfullargspec(method).args[1:]
+        #         cmd_methods[method_name.removeprefix(self.command_method_prefix)] = args
+        # self._commands_info = cmd_methods
+        # return self._commands_info
 
 
 class CommandExecutor:
@@ -368,6 +373,11 @@ def machine_command(func):
     return func
 
 
+def reactor_command(func):
+    func.is_reactor_command = True
+    return func
+
+
 class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
 
     reactor_class = Reactor
@@ -445,9 +455,16 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
                 executed.set()
         self._log.info(f"Closing {self.name} loop")
 
-    @machine_command
-    def execute(self, device_id, command, *args, **kwargs):
+    def execute_device_command(self, device_id, command, *args, **kwargs):
         return self._dev_manager.execute(device_id, command, *args, **kwargs)
+
+    def cmd(self, method_name: str, no_wait=False, timeout=None, *args, **kwargs):
+        """Execute machine command"""
+        try:
+            method = getattr(self, method_name)
+            self.add_operation((method, args, kwargs), no_wait=no_wait, timeout=timeout)
+        except AttributeError:
+            raise AttributeError(f"No command named {method_name} found")
 
     def add_operation(
         self,

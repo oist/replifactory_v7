@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 
@@ -131,7 +131,9 @@ class Motor(Device):
             "profile": self._profile.__dict__,
         }
 
-    def set_profile(self, profile: MotorProfile):
+    def set_profile(self, profile: MotorProfile | dict[str, Any]):
+        if isinstance(profile, dict):
+            profile = MotorProfile(**profile)
         self._profile = profile
         self.driver.set_acceleration(profile.acceleration)
         self.driver.set_deceleration(profile.deceleration)
