@@ -14,7 +14,7 @@
         variant="outline"
         @click="switch_off"
       >
-        <CIcon :icon="icon.cilLightbulb" size="xl" />
+        <CIcon icon="cilLightbulb" size="xl" />
       </CButton>
       <CButton
         v-c-tooltip="{ content: 'On', placement: 'top' }"
@@ -24,7 +24,7 @@
         variant="outline"
         @click="switch_on"
       >
-        <CIcon :icon="icon.cilLightbulb" size="xl" />
+        <CIcon icon="cilLightbulb" size="xl" />
       </CButton>
     </CButtonGroup>
 </template>
@@ -33,7 +33,6 @@
 import { mapGetters } from "vuex";
 import { CButton, CButtonGroup } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
 
 export default {
   name: "LaserControl",
@@ -60,14 +59,9 @@ export default {
       required: true,
     },
     reactorId: {
-      type: String,
+      type: Number,
       required: true,
     },
-  },
-  setup() {
-    return {
-      icon,
-    };
   },
   computed: {
     offButtonClasses() {

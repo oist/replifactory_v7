@@ -64,7 +64,7 @@ import Valve from "./Valve.vue";
 import LaserControl from "./LaserControl.vue";
 import Stirrer from "./Stirrer.vue";
 // import RangeSlider from '@/client/components/widgets/RangeSlider';
-import ReactorPumpControl from "./ReactorPumpControl.vue";
+// import ReactorPumpControl from "./ReactorPumpControl.vue";
 import { CCard, CCardBody, CCardTitle, CCardSubtitle } from "@coreui/vue";
 import { mapState } from "vuex";
 

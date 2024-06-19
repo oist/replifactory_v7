@@ -14,7 +14,7 @@
           :disabled="disabled"
           @click="handleRefreshClick"
         >
-          <CIcon :icon="icon.cilLoopCircular" size="xl" />
+          <CIcon icon="cilLoopCircular" size="xl" />
         </CButton>
         <CFormInput
           :id="deviceId + '-value'"
@@ -44,7 +44,7 @@ import {
   CCardSubtitle,
 } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
+// import { cilLoopCircular } from "@coreui/icons";
 import { mapGetters, mapState } from "vuex";
 
 export default {
@@ -76,7 +76,9 @@ export default {
   },
   setup() {
     return {
-      icon,
+      // icon: {
+      //   cilLoopCircular,
+      // },
     };
   },
   computed: {

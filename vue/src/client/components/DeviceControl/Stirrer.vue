@@ -1,7 +1,7 @@
 <template>
   <div>
     <CFormRange
-      v-model.number="value"
+      v-model="value"
       :min="min"
       :max="max"
       :step="step"
@@ -31,7 +31,7 @@ export default {
       required: true,
     },
     reactorId: {
-      type: String,
+      type: Number,
       required: true,
     },
   },
@@ -49,7 +49,7 @@ export default {
       return device;
     },
     value() {
-      return (this.data.speed * 100) | 0;
+      return ((this.data.speed * 100) | 0).toString();
     },
     ...mapGetters("machine", ["getDeviceById"]),
   },

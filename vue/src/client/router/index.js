@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import DeviceControl from "@/client/components/DeviceControl/DeviceControl.vue";
 import ExperimentTab from "@/client/components/ExperimentTab/ExperimentTab.vue";
-import NgrokTab from "@/client/components/Remote/NgrokTab.vue";
 import HelpTab from "@/client/components/HelpTab/HelpTab.vue";
 import StatusTab from "@/client/components/StatusTab/StatusTab.vue";
 import LogsTab from "@/client/components/LogsTab/LogsTab.vue";
@@ -25,11 +24,6 @@ const routes = [
         path: "/experiment",
         name: "Experiment",
         component: ExperimentTab,
-      },
-      {
-        path: "/remote",
-        name: "Remote",
-        component: NgrokTab,
       },
       {
         path: "/status",

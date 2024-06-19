@@ -15,7 +15,7 @@
           :disabled="disabled"
           @click="handleStopButtonClick"
         >
-          <CIcon :icon="icon.cilXCircle" size="xl" />
+          <CIcon icon="cilXCircle" size="xl" />
         </CButton>
         <CButton
           type="button"
@@ -25,7 +25,7 @@
           :disabled="disabled"
           @click="handlePumpButtonClick"
         >
-          <CIcon :icon="icon.cilShower" size="xl" />
+          <CIcon icon="cilShower" size="xl" />
         </CButton>
         <CFormInput
           :id="deviceId + '-volume'"
@@ -67,7 +67,7 @@
         class="ms-1"
         @click="handleReloadButtonClick"
       >
-        <CIcon :icon="icon.cilReload" />
+        <CIcon icon="cilReload" />
       </CButton>
       <CCollapse v-if="debug" :visible="motorProfileVisisble">
         <CCard class="mt-3">
@@ -372,18 +372,20 @@
                 :disabled="disabled"
               />
             </CInputGroup>
-            <CInputGroup class="mb-1">
+            <!-- <CInputGroup class="mb-1">
               <CInputGroupText :id="deviceId + '-profile-clockwise-text'">
                 Clockwise
-              </CInputGroupText>
-              <CFormInput
+              </CInputGroupText> -->
+              <CFormCheck
                 :id="deviceId + '-profile-clockwise'"
-                v-model.boolean="motor.profile.clockwise"
+                v-model="motor.profile.clockwise"
                 :aria-label="deviceId + ' clockwise'"
                 :aria-describedby="deviceId + '-profile-clockwise-text'"
                 :disabled="disabled"
+                label="Clockwise"
+                :reverse="true"
               />
-            </CInputGroup>
+            <!-- </CInputGroup> -->
             <CButton
               type="button"
               color="success"
@@ -406,12 +408,12 @@ import {
   CInputGroup,
   CButton,
   CFormInput,
+  CFormCheck,
   CInputGroupText,
   CCardTitle,
   CCollapse,
 } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
 import { mapGetters, mapState } from "vuex";
 
 export default {
@@ -421,6 +423,7 @@ export default {
     CCardBody,
     CButton,
     CFormInput,
+    CFormCheck,
     CIcon,
     CInputGroup,
     CInputGroupText,
@@ -440,11 +443,6 @@ export default {
       type: String,
       required: true,
     },
-  },
-  setup() {
-    return {
-      icon,
-    };
   },
   data() {
     return {

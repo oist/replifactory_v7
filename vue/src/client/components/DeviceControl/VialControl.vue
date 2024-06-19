@@ -42,7 +42,7 @@ export default {
       default: null,
     },
     reactorId: {
-      type: String,
+      type: Number,
       required: true,
     },
   },

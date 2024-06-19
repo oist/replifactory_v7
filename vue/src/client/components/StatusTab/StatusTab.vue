@@ -4,18 +4,18 @@
     <div class="d-flex justify-content-start mt-3">
       <!-- Camera button -->
       <CButton color="info" class="mr-3" @click="capture_image">
-        <CIcon :icon="cilCamera" size="xl" /> photo
+        <CIcon icon="cilCamera" size="xl" /> photo
       </CButton>
 
       <!--       Download button -->
       <CButton color="success" class="mr-3" @click="download_db">
-        <CIcon :icon="cilCloudDownload" size="xl" />
+        <CIcon icon="cilCloudDownload" size="xl" />
         download database
       </CButton>
 
       <!-- Status button -->
       <CButton color="primary" @click="get_info">
-        <CIcon :icon="cilInfo" size="xl" />
+        <CIcon icon="cilInfo" size="xl" />
       </CButton>
     </div>
 
@@ -66,7 +66,6 @@
 import api from "@/api";
 import { CButton, CFormSelect } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import { cilCamera, cilCloudDownload, cilGraph, cilInfo } from "@coreui/icons";
 
 export default {
   name: "StatusTab",
@@ -81,10 +80,6 @@ export default {
       msg: "StatusTab",
       camera_image: null,
       selectedFormat: "html",
-      cilCamera,
-      cilCloudDownload,
-      cilGraph,
-      cilInfo,
     };
   },
 

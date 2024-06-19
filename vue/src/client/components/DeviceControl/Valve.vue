@@ -14,7 +14,7 @@
       variant="outline"
       @click="close"
     >
-      <CIcon :icon="icon.cilX" size="xl" />
+      <CIcon icon="cilX" size="xl" />
     </CButton>
     <CButton
       v-c-tooltip="{ content: 'Beetween', placement: 'top' }"
@@ -25,7 +25,7 @@
       :disabled="disabled"
       variant="outline"
     >
-      <CIcon :icon="icon.cilLoopCircular" size="xl" />
+      <CIcon icon="cilLoopCircular" size="xl" />
     </CButton>
     <CButton
       v-c-tooltip="{ content: 'Open', placement: 'top' }"
@@ -35,7 +35,7 @@
       variant="outline"
       @click="open"
     >
-      <CIcon :icon="icon.cilCheckAlt" size="xl" />
+      <CIcon icon="cilCheckAlt" size="xl" />
     </CButton>
   </CButtonGroup>
 </template>
@@ -44,7 +44,6 @@
 import { mapGetters } from "vuex";
 import { CButton, CButtonGroup } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
 
 export default {
   name: "ValveControl",
@@ -71,14 +70,9 @@ export default {
       required: true,
     },
     reactorId: {
-      type: String,
+      type: Number,
       required: true,
     },
-  },
-  setup() {
-    return {
-      icon,
-    };
   },
   computed: {
     closeButtonClasses() {

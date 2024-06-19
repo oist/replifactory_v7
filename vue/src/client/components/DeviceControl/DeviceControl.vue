@@ -11,7 +11,7 @@
         @change="toggleCalibrationMode" />
     </div> -->
 
-    <PumpControl :disabled="!deviceControlEnabled" />
+    <!-- <PumpControl :disabled="!deviceControlEnabled" /> -->
     <CRow>
       <ReactorControl
         v-for="i in 7"
@@ -88,6 +88,11 @@ export default {
     CRow,
     // CFormSwitch,
   },
+  data() {
+    return {
+      controlsVisible: false,
+    };
+  },
   computed: {
     ...mapState("device", [
       "calibrationModeEnabled",
@@ -101,11 +106,6 @@ export default {
       deviceConnected: "isConnected",
       deviceControlEnabled: "isManualControlEnabled",
     }),
-  },
-  data() {
-    return {
-      controlsVisible: false,
-    };
   },
   // watch: {
   //   deviceControlEnabled(newVal) {

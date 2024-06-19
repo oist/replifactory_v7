@@ -15,7 +15,8 @@
       :disabled="!deviceControlEnabled"
       @click="handleCleanCommandQueueClick"
     >
-      <CIcon :icon="icon.cilXCircle" size="xl" /> Abort
+      <CIcon icon="cilXCircle" size="xl" />
+      Abort
     </CButton>
   </div>
 </template>
@@ -24,17 +25,11 @@
 import { mapState, mapGetters } from "vuex";
 import { CButton } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
 
 export default {
   components: {
     CButton,
     CIcon,
-  },
-  setup() {
-    return {
-      icon,
-    };
   },
   computed: {
     ...mapState("machine", {

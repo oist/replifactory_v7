@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import CoreuiVue from "@coreui/vue";
 import BootstrapVueNext from "bootstrap-vue-next";
+import * as icons from "@coreui/icons";
 
 import App from "./client/App.vue";
 import store from "./client/store";
@@ -36,4 +37,5 @@ app.use(CoreuiVue);
 app.use(BootstrapVueNext);
 app.use(store);
 app.use(router);
+app.provide("icons", icons);
 app.mount("#replifactory");

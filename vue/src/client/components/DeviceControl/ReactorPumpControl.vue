@@ -8,7 +8,7 @@
       :disabled="disabled"
       @click="handlePumpButtonClick"
     >
-      <CIcon :icon="icon.cilMediaPlay" size="xl" />
+      <CIcon icon="cilMediaPlay" size="xl" />
     </CButton>
     <CFormInput
       :id="deviceId + '-volume'"
@@ -37,7 +37,6 @@
 <script>
 import { CInputGroup, CButton, CFormInput, CInputGroupText } from "@coreui/vue";
 import { CIcon } from "@coreui/icons-vue";
-import * as icon from "@coreui/icons";
 import { mapGetters, mapState } from "vuex";
 
 export default {
@@ -62,11 +61,6 @@ export default {
       type: String,
       required: true,
     },
-  },
-  setup() {
-    return {
-      icon,
-    };
   },
   data() {
     return {
