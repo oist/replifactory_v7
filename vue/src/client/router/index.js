@@ -15,8 +15,8 @@ const routes = [
     beforeEnter: requireAuth,
     children: [
       {
-        path: "/",
-        alias: "/device",
+        path: "/device",
+        alias: "/",
         name: "Device",
         component: DeviceControl,
       },
