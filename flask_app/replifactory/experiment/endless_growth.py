@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
-import logging
 from flask_app.replifactory.experiment import Experiment
-from flask_app.replifactory.machine import Reactor, ReactorException, ReactorStates
+from flask_app.replifactory.machine import BaseMachine, ReactorException, ReactorStates
 
 
 @dataclass(frozen=True)
@@ -17,18 +16,18 @@ class EndlessGrowthExperiment(Experiment):
     """Measure optical density and dilute if value more that threshold until it reaches target value.
     Abort with arror if growth timeout is reached.
     """
+    name = "Endless Growth"
 
-    def __init__(self, reactors: list[Reactor], **kwargs):
-        super().__init__()
-        self._reactors = reactors
+    def __init__(self, machine: BaseMachine, *args, **kwargs):
+        super().__init__(machine,  *args, **kwargs)
+        self._reactors = self._machine.get_reactors()
         self._params = EndlessGrowthParams(**kwargs)
-        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._start_growth_time = {}
 
-    def run(self, *args, **kwargs):
+    def _experiment_loop(self, *args, **kwargs):
         for reactor in self._reactors:
             self._reset_growth_timeout(reactor)
-        return super().run(*args, **kwargs)
+        return super()._experiment_loop(*args, **kwargs)
 
     def warmup(self):
         for reactor in self._reactors:
@@ -36,6 +35,8 @@ class EndlessGrowthExperiment(Experiment):
 
     def routine(self):
         for reactor in self._reactors:
+            if self._abort:
+                return
             if reactor.state != ReactorStates.READY:
                 self._log.warning(f"Reactor {reactor} is not ready")
                 continue
@@ -45,7 +46,7 @@ class EndlessGrowthExperiment(Experiment):
                     continue
                 self._reset_growth_timeout(reactor)
                 reactor.cmd(
-                    "dilute_to_od",
+                    "dilute",
                     self._params.dilution_target_od,
                     self._params.dilution_volume,
                 )

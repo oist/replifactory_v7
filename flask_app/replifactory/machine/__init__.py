@@ -9,6 +9,7 @@ from typing import Any, Callable, Optional
 
 from usb.core import Device as UsbDevice
 
+from flask_app.experiment.experiment import Experiment
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.events import Events, eventManager
@@ -17,11 +18,11 @@ from flask_app.replifactory.util import StateMixin, slugify
 from flask_app.replifactory.util.module_loading import import_string
 
 
-class ReactorCommand:
-    def __init__(self, name, *args, **kwargs):
-        self.name = name
-        self.args = args
-        self.kwargs = kwargs
+# class ReactorCommand:
+#     def __init__(self, name, *args, **kwargs):
+#         self.name = name
+#         self.args = args
+#         self.kwargs = kwargs
 
 
 class ReactorException(Exception):
@@ -102,7 +103,7 @@ class CommandExecutor:
         self._execute_callback = execute_callback or self._execute
         self._command_queue = queue.Queue()
         self._stop_event = threading.Event()
-        self._thread = threading.Thread(target=self._run)
+        self._thread = threading.Thread(name=f"{self._name}Thread", target=self._command_executor_loop)
         self._thread.start()
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
@@ -110,7 +111,7 @@ class CommandExecutor:
     def name(self):
         return self._name
 
-    def _run(self):
+    def _command_executor_loop(self):
         while not self._stop_event.is_set():
             try:
                 command, result_queue, executed = self._command_queue.get()
@@ -146,6 +147,9 @@ class CommandExecutor:
         self._stop_event.set()
         self._thread.join()
 
+    def cancel_current_commands(self):
+        self._command_queue.queue.clear()
+
 
 class DeviceManager:
     def __init__(self):
@@ -179,7 +183,10 @@ class DeviceManager:
         self._log.info("Connecting devices...")
         for device in self._devices.values():
             # self.execute(device.id, "connect", no_wait=True)
-            device.connect()
+            try:
+                device.connect()
+            except Exception as exc:
+                raise ValueError(f"Error while connecting device {device.id}: {exc}")
 
     def execute(
         self,
@@ -406,9 +413,12 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         self._log = logging.getLogger(f"Device ({name})")
         self._operation_queue = queue.Queue()
         self._stop_event = threading.Event()
-        self._thread = threading.Thread(target=self._run)
+        self._thread = threading.Thread(target=self._machine_operation_queue_loop)
         self._stop_operation_timeout = 5
         self._commands_info = self._get_command_info()
+        self._experiment = None
+        self._lock = threading.RLock()
+        self._cancel_long_operation_event = threading.Event()
 
     @classmethod
     def get_connection_options(cls, *args, **kwargs):
@@ -436,7 +446,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
     def get_devices_commands_info(self):
         return self._dev_manager.commands_info
 
-    def _run(self):
+    def _machine_operation_queue_loop(self):
         while not self._stop_event.is_set():
             try:
                 operation, result_queue, executed = self._operation_queue.get()
@@ -466,6 +476,26 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         except AttributeError:
             raise AttributeError(f"No command named {method_name} found")
 
+    def run_experiment(self, experiment: Experiment, *args, **kwargs):
+        with self._lock:
+            if self._experiment is not None:
+                raise ValueError("Experiment already running")
+            self._experiment = experiment
+            self._experiment.start()
+
+    def pause_experiment(self, *args, **kwargs):
+        with self._lock:
+            if self._experiment is None:
+                raise ValueError("No experiment running")
+            self._experiment.pause()
+
+
+    def resume_experiment(self, *args, **kwargs):
+        pass
+
+    def stop_experiment(self, *args, **kwargs):
+        pass
+
     def add_operation(
         self,
         operation: tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]],
@@ -482,8 +512,14 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         result = result_queue.get()
         return result
 
+    def cancel_long_operation(self):
+        self._cancel_long_operation_event.set()
+
     def get_reactor(self, reactor_num) -> Reactor:
         return self._reactors[reactor_num - 1]
+
+    def get_reactors(self):
+        return self._reactors
 
     def get_data(self):
         return {
@@ -549,107 +585,107 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
     def commands(self, commands, force=False, *args, **kwargs):
         raise NotImplementedError()
 
-    def experiment(self, experiment, *args, **kwargs):
-        raise NotImplementedError()
+    # def experiment(self, experiment, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def valve_open(self, device_id, *args, **kwargs):
-        raise NotImplementedError()
+    # def valve_open(self, device_id, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def valve_close(self, device_id, *args, **kwargs):
-        raise NotImplementedError()
+    # def valve_close(self, device_id, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def start_experiment(self):
-        raise NotImplementedError()
+    # def start_experiment(self):
+    #     raise NotImplementedError()
 
-    def pause_experiment(self):
-        raise NotImplementedError()
+    # def pause_experiment(self):
+    #     raise NotImplementedError()
 
-    def resume_experiment(self):
-        raise NotImplementedError()
+    # def resume_experiment(self):
+    #     raise NotImplementedError()
 
-    def togle_pause_experiment(self):
-        if self.is_running():
-            self.pause_experiment()
-        elif self.is_paused():
-            self.resume_experiment()
+    # def togle_pause_experiment(self):
+    #     if self.is_running():
+    #         self.pause_experiment()
+    #     elif self.is_paused():
+    #         self.resume_experiment()
 
-    def cancel_experiment(self):
-        raise NotImplementedError()
+    # def cancel_experiment(self):
+    #     raise NotImplementedError()
 
-    def get_current_data(self, *args, **kwargs):
-        raise NotImplementedError()
+    # def get_current_data(self, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def get_current_job(self, *args, **kwargs):
-        raise NotImplementedError()
+    # def get_current_job(self, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def get_current_temperatures(self, *args, **kwargs):
-        """
-        Returns:
-            (dict) The current temperatures.
-        """
-        raise NotImplementedError()
+    # def get_current_temperatures(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (dict) The current temperatures.
+    #     """
+    #     raise NotImplementedError()
 
-    def get_temperature_history(self, *args, **kwargs):
-        """
-        Returns:
-            (list) The temperature history.
-        """
-        raise NotImplementedError()
+    # def get_temperature_history(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (list) The temperature history.
+    #     """
+    #     raise NotImplementedError()
 
-    def get_current_connection(self, *args, **kwargs):
-        raise NotImplementedError()
+    # def get_current_connection(self, *args, **kwargs):
+    #     raise NotImplementedError()
 
-    def is_closed_or_error(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently disconnected and/or in an error state.
-        """
-        raise NotImplementedError()
+    # def is_closed_or_error(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently disconnected and/or in an error state.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_operational(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently connected and available.
-        """
-        raise NotImplementedError()
+    # def is_operational(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently connected and available.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_running(self):
-        pass
+    # def is_running(self):
+    #     pass
 
-    def is_cancelling(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently cancelling an experiment.
-        """
-        raise NotImplementedError()
+    # def is_cancelling(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently cancelling an experiment.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_pausing(self, *args, **kwargs):
-        """
-        Returns:
-                (boolean) Whether the machine is currently pausing an experiment.
-        """
-        raise NotImplementedError()
+    # def is_pausing(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #             (boolean) Whether the machine is currently pausing an experiment.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_paused(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently paused.
-        """
-        raise NotImplementedError()
+    # def is_paused(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently paused.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_error(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently in an error state.
-        """
-        raise NotImplementedError()
+    # def is_error(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently in an error state.
+    #     """
+    #     raise NotImplementedError()
 
-    def is_ready(self, *args, **kwargs):
-        """
-        Returns:
-            (boolean) Whether the machine is currently operational and ready for new experiment jobs (not running).
-        """
-        raise NotImplementedError()
+    # def is_ready(self, *args, **kwargs):
+    #     """
+    #     Returns:
+    #         (boolean) Whether the machine is currently operational and ready for new experiment jobs (not running).
+    #     """
+    #     raise NotImplementedError()
 
     def register_callback(self, callback, *args, **kwargs):
         """
@@ -687,6 +723,9 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
             self.States.STATE_CLOSED,
             self.States.STATE_CLOSED_WITH_ERROR,
         )
+
+    def isIdle(self):
+        return self._state == self.States.STATE_OPERATIONAL
 
     def isOperational(self):
         return self._state in self.OPERATIONAL_STATES

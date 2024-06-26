@@ -152,11 +152,11 @@ class EventManager:
         self._queue = queue.Queue()
         self._held_back = queue.Queue()
 
-        self._worker = threading.Thread(target=self._work)
+        self._worker = threading.Thread(target=self._event_manager_loop)
         self._worker.daemon = True
         self._worker.start()
 
-    def _work(self):
+    def _event_manager_loop(self):
         try:
             while not self._shutdown_signaled:
                 event, payload = self._queue.get(True)

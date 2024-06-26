@@ -20,6 +20,7 @@ from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
 from flask_app.replifactory.experiment.endless_growth import EndlessGrowthExperiment
+from flask_app.replifactory.experiment_manager import experimentManager
 from flask_app.replifactory.machine import machineRegistry, replifactory_v5
 from flask_app.replifactory.machine_manager import machineManager
 from flask_app.replifactory.socketio import MachineNamespace
@@ -35,7 +36,9 @@ flask_static_digest = FlaskStaticDigest()
 logging.basicConfig(
     level=os.environ.get("LOGGING_LEVEL", logging.INFO),
 )
-logging.getLogger("pyftdi.eeprom").setLevel(logging.DEBUG)
+logging.getLogger("pyftdi.eeprom").setLevel(logging.INFO)
+logging.getLogger("flask_app.replifactory.drivers").setLevel(logging.INFO)
+logging.getLogger("flask_app.replifactory.events").setLevel(logging.INFO)
 
 log = logging.getLogger(__name__)
 
@@ -138,8 +141,9 @@ def create_app():
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     app.security = Security(app, user_datastore)
 
-    global machine_manager
+    global machine_manager, usb_manager, experiment_manager
     machine_manager = machineManager()
+    experiment_manager = experimentManager()
     usb_manager = usbManager()
 
     CORS(app)

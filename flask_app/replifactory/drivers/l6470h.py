@@ -311,11 +311,11 @@ class StepMotorConfigValue(ParameterValue):
 
 class StepMotorStatusValue(ParameterValue):
     def __init__(self, value: bytes):
+        if len(value) != 2 or all(byte == 0xFF for byte in value):
+            raise ValueError("Invalid status data")
         super().__init__(Parameters.STATUS, value)
 
     def raw_to_unit(self):
-        if len(self._raw_value) != 2:
-            raise ValueError("Invalid status value")
         return {
             "HiZ": (0x01 & self._raw_value[1]),
             "BUSY": (0x02 & self._raw_value[1]) >> 1,

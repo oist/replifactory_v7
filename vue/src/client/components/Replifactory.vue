@@ -1,12 +1,22 @@
 <template>
   <div id="alerts">
-    <BAlert :model-value="true" :variant="backendConnectedAlertVariant"
-      class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between align-content-center flex-wrap">
+    <BAlert
+      :model-value="true"
+      :variant="backendConnectedAlertVariant"
+      class="m-0 py-1 rounded-0 border border-0 d-flex justify-content-between align-content-center flex-wrap"
+    >
       <div class="flex-fill">
         Backend <strong>{{ connected ? "connected" : "disconnected" }}</strong>
       </div>
-      <CFormSwitch id="switchDebug" v-model="debug" label="Debug" @input="debugHandleSwitchChange" />
-      <a href="/security/logout" class="btn btn-outline-danger btn-sm ms-2">Logout</a>
+      <CFormSwitch
+        id="switchDebug"
+        v-model="debug"
+        label="Debug"
+        @input="debugHandleSwitchChange"
+      />
+      <a href="/security/logout" class="btn btn-outline-danger btn-sm ms-2"
+        >Logout</a
+      >
       <MachineNotification />
     </BAlert>
   </div>
@@ -44,17 +54,30 @@
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/device" class="nav-link"> Device </BootstrapRouterLink>
+            <BootstrapRouterLink to="/archive" class="nav-link">
+              Archive
+            </BootstrapRouterLink>
+          </li>
+          <li class="nav-item">
+            <BootstrapRouterLink to="/device" class="nav-link">
+              Device
+            </BootstrapRouterLink>
           </li>
           <!-- <li class="nav-item"><BootstrapRouterLink to="/remote">Remote</BootstrapRouterLink></li> -->
           <li class="nav-item">
-            <BootstrapRouterLink to="/help" class="nav-link"> Help </BootstrapRouterLink>
+            <BootstrapRouterLink to="/help" class="nav-link">
+              Help
+            </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/status" class="nav-link"> Status </BootstrapRouterLink>
+            <BootstrapRouterLink to="/status" class="nav-link">
+              Status
+            </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/logs" class="nav-link"> Logs </BootstrapRouterLink>
+            <BootstrapRouterLink to="/logs" class="nav-link">
+              Logs
+            </BootstrapRouterLink>
           </li>
         </ul>
         <div class="tab-content">
@@ -145,7 +168,7 @@ export default {
   vertical-align: middle !important;
 }
 
-.form-switch>label {
+.form-switch > label {
   margin: 0 !important;
 }
 </style>

@@ -146,7 +146,7 @@ class MachineManager(MachineCallback):
     def _getStateFlags(self):
         return self._dict(
             operational=self.is_operational(),
-            working=self.is_running(),
+            working=self.is_working(),
             cancelling=self.is_cancelling(),
             pausing=self.is_pausing(),
             resuming=self.is_resuming(),
@@ -207,60 +207,60 @@ class MachineManager(MachineCallback):
         else:
             eventManager().fire(Events.MACHINE_DISCONNECTED)
 
-    def valve_open(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.open_valve(
-                device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.open"}
-            )
+    # def valve_open(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.open_valve(
+    #             device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.open"}
+    #         )
 
-    def valve_close(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.close_valve(
-                device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"}
-            )
+    # def valve_close(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.close_valve(
+    #             device_id, tags=kwargs.get("tags", set()) | {"trigger:valve.close"}
+    #         )
 
-    def laser_on(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.laser_on(
-                device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.on"}
-            )
+    # def laser_on(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.laser_on(
+    #             device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.on"}
+    #         )
 
-    def laser_off(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.laser_off(
-                device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.off"}
-            )
+    # def laser_off(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.laser_off(
+    #             device_id, tags=kwargs.get("tags", set()) | {"trigger:laser.off"}
+    #         )
 
-    def stirrer_set_speed(self, device_id, speed, *args, **kwargs):
-        if self._machine:
-            self._machine.set_stirrer_speed(
-                device_id,
-                speed,
-                tags=kwargs.get("tags", set()) | {"trigger:stirrer.set_speed"},
-            )
+    # def stirrer_set_speed(self, device_id, speed, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.set_stirrer_speed(
+    #             device_id,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:stirrer.set_speed"},
+    #         )
 
-    def thermometer_measure(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.measure_temperature(
-                device_id,
-                tags=kwargs.get("tags", set()) | {"trigger:thermometer.measure"},
-            )
+    # def thermometer_measure(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.measure_temperature(
+    #             device_id,
+    #             tags=kwargs.get("tags", set()) | {"trigger:thermometer.measure"},
+    #         )
 
-    def odsensor_measure(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.measure_od(
-                device_id,
-                tags=kwargs.get("tags", set()) | {"trigger:odsensor.measure"},
-            )
+    # def odsensor_measure(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.measure_od(
+    #             device_id,
+    #             tags=kwargs.get("tags", set()) | {"trigger:odsensor.measure"},
+    #         )
 
-    def pump_pump(self, device_id, volume, speed, *args, **kwargs):
-        if self._machine:
-            self._machine.pump_pump(
-                device_id,
-                volume,
-                speed,
-                tags=kwargs.get("tags", set()) | {"trigger:pump.pump"},
-            )
+    # def pump_pump(self, device_id, volume, speed, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.pump_pump(
+    #             device_id,
+    #             volume,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:pump.pump"},
+    #         )
 
     # def pump_pump_to_vial(self, device_id, vial_id, volume, speed, *args, **kwargs):
     #     if self._comm:
@@ -272,51 +272,51 @@ class MachineManager(MachineCallback):
     #             tags=kwargs.get("tags", set()) | {"trigger:pump.pump_to_vial"},
     #         )
 
-    def pump_stop(self, device_id, *args, **kwargs):
-        if self._machine:
-            self._machine.pump_stop(
-                device_id,
-                tags=kwargs.get("tags", set()) | {"trigger:pump.stop"},
-            )
+    # def pump_stop(self, device_id, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.pump_stop(
+    #             device_id,
+    #             tags=kwargs.get("tags", set()) | {"trigger:pump.stop"},
+    #         )
 
-    def pump_set_profile(self, device_id, profile,  *args, **kwargs):
-        if self._machine:
-            self._machine.pump_set_profile(
-                device_id,
-                profile,
-                tags=kwargs.get("tags", set()) | {"trigger:pump.set_profile"},
-            )
+    # def pump_set_profile(self, device_id, profile,  *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.pump_set_profile(
+    #             device_id,
+    #             profile,
+    #             tags=kwargs.get("tags", set()) | {"trigger:pump.set_profile"},
+    #         )
 
-    def vial_add_media(self, device_id, volume, speed, *args, **kwargs):
-        if self._machine:
-            self._machine.vial_add_media(
-                device_id,
-                volume,
-                speed,
-                tags=kwargs.get("tags", set()) | {"trigger:vial.add_media"},
-            )
+    # def vial_add_media(self, device_id, volume, speed, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.vial_add_media(
+    #             device_id,
+    #             volume,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:vial.add_media"},
+    #         )
 
-    def vial_add_drug(self, device_id, volume, speed, *args, **kwargs):
-        if self._machine:
-            self._machine.vial_add_drug(
-                device_id,
-                volume,
-                speed,
-                tags=kwargs.get("tags", set()) | {"trigger:vial.add_drug"},
-            )
+    # def vial_add_drug(self, device_id, volume, speed, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.vial_add_drug(
+    #             device_id,
+    #             volume,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:vial.add_drug"},
+    #         )
 
-    def vial_waste(self, device_id, volume, speed, *args, **kwargs):
-        if self._machine:
-            self._machine.vial_waste(
-                device_id,
-                volume,
-                speed,
-                tags=kwargs.get("tags", set()) | {"trigger:vial.waste"},
-            )
+    # def vial_waste(self, device_id, volume, speed, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.vial_waste(
+    #             device_id,
+    #             volume,
+    #             speed,
+    #             tags=kwargs.get("tags", set()) | {"trigger:vial.waste"},
+    #         )
 
-    def command_queue_clear(self, *args, **kwargs):
-        if self._machine:
-            self._machine.command_queue_clear()
+    # def command_queue_clear(self, *args, **kwargs):
+    #     if self._machine:
+    #         self._machine.command_queue_clear()
 
     def is_closed_or_error(self, *args, **kwargs):
         return self._machine is None or self._machine.isClosedOrError()
@@ -324,8 +324,8 @@ class MachineManager(MachineCallback):
     def is_operational(self, *args, **kwargs):
         return self._machine is not None and self._machine.isOperational()
 
-    def is_running(self, *args, **kwargs):
-        return self._machine is not None and self._machine.is_running()
+    def is_idle(self, *args, **kwargs):
+        return self._machine is not None and self._machine.isIdle()
 
     def is_working(self, *args, **kwargs):
         return self._machine is not None and self._machine.isWorking()
@@ -462,7 +462,7 @@ class StateMonitor:
         self._state_lock = threading.Lock()
 
         self._last_update = time.monotonic()
-        self._worker = threading.Thread(target=self._work)
+        self._worker = threading.Thread(target=self._machine_state_monitor_loop)
         self._worker.daemon = True
         self._worker.start()
 
@@ -503,7 +503,7 @@ class StateMonitor:
         self._experiment_data = experiment_data
         self._change_event.set()
 
-    def _work(self):
+    def _machine_state_monitor_loop(self):
         """
         Every time when something chaged in stateMonitor this worker
         update self._last_update time and invoke update_callback passing all data

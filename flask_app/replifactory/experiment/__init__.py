@@ -2,15 +2,17 @@
 
 from datetime import datetime
 from enum import Enum
+import logging
 from threading import Thread
 import threading
 import time
 
 from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.machine import BaseMachine
 from flask_app.replifactory.util.module_loading import import_string
 
 
-class ExperimentStatuses(Enum):
+class ExperimentStatuses(str, Enum):
     READY = "ready"
     STARTING = "starting"
     RESTORING = "restoring"
@@ -23,8 +25,10 @@ class ExperimentStatuses(Enum):
 
 class Experiment:
     """Base class to create experiment"""
+    name = "Experiment"
 
-    def __init__(self):
+    def __init__(self, machine: BaseMachine,  *args, **kwargs):
+        self._machine = machine
         self._thread = None
         self._abort = False
         self._startTime = None
@@ -33,6 +37,11 @@ class Experiment:
         self._warmupEnabled = True
         self._lock = threading.RLock()
         self._status = ExperimentStatuses.READY
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    @classmethod
+    def get_name(cls):
+        return cls.name
 
     def status(self):
         return {
@@ -49,9 +58,10 @@ class Experiment:
         with self._lock:
             if self._thread is not None:
                 raise Exception("Experiment is already running")
+            self._log.info("Starting experiment")
             self._set_status(ExperimentStatuses.STARTING)
             self._startTime = datetime.now()
-            self._thread = Thread(target=self.run, args=({},), daemon=True)
+            self._thread = Thread(target=self._experiment_loop, args=({},), daemon=True)
             eventManager().fire(Events.EXPERIMENT_STARTED, payload={"time": self._startTime})
             self._thread.start()
 
@@ -63,7 +73,7 @@ class Experiment:
             self._set_status(ExperimentStatuses.RESTORING)
             self._cycles = cycle_num
             self._warmupEnabled = False
-            self._thread = Thread(target=self.run, args=({},), daemon=True)
+            self._thread = Thread(target=self._experiment_loop, args=({},), daemon=True)
             eventManager().fire(Events.EXPERIMENT_RESTORED, payload={"time": datetime.now()})
             self._thread.start()
 
@@ -77,10 +87,13 @@ class Experiment:
                     aborting_thread.join()
                     self._status = ExperimentStatuses.CANCELLED
                     eventManager().fire(Events.EXPERIMENT_CANCELLED, payload={"time": datetime.now()})
+                    self._log.info("Experiment cancelled")
 
                 self._abort = True
                 eventManager().fire(Events.EXPERIMENT_CANCELLING, payload={"time": datetime.now()})
                 Thread(target=wait_and_fire, daemon=True).start()
+
+                self._machine.cancel_long_operation()
 
     def pause(self):
         pass
@@ -88,13 +101,14 @@ class Experiment:
     def resume(self):
         pass
 
-    def run(self, *args, **kwargs):
+    def _experiment_loop(self, *args, **kwargs):
         self._set_status(ExperimentStatuses.RUNING)
         if self._warmupEnabled:
             self.warmup()
         while self._abort is False:
             start_cycle_time = datetime.now()
             self._cycles += 1
+            self._log.info(f"Cycle {self._cycles} started")
             eventManager().fire(Events.EXPERIMENT_NEW_CYCLE, payload={"time": start_cycle_time, "cycle": self._cycles})
             routine_result = self.routine()
             routine_result = routine_result if routine_result else {}
@@ -119,12 +133,13 @@ class Experiment:
         if self._status != ExperimentStatuses.FAILED:
             self._set_status(ExperimentStatuses.DONE)
         self._thread = None
+        self._log.info("Experiment loop end")
 
     def routine(self):
         return {}
 
     def success_condition(self, **kawrgs):
-        return self._cycles > 10
+        return self._abort or self._cycles > 10
 
     def error_condition(self, **kwargs):
         return (False, 'No errors')
@@ -149,13 +164,14 @@ class ExperimentRegistry:
         self._experiments = {}
 
     def register(self, experiment):
-        self._experiments[experiment.__name__] = experiment
+        key = f"{experiment.__module__}.{experiment.__name__}"
+        self._experiments[key] = experiment
 
     def get(self, name):
         return self._experiments.get(name)
 
     def list(self):
-        return list(self._experiments.keys())
+        return {id: experiment.get_name() for id, experiment in self._experiments.items()}
 
 
 experimentRegistry = ExperimentRegistry()

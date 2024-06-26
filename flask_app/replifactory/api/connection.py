@@ -37,7 +37,10 @@ def connectionCommand():
         if "autoconnect" in data:
             settings().connection.autoconnect = data["autoconnect"]
         settings().save()
-        machine_manager.connect(device_address=device_id)
+        try:
+            machine_manager.connect(device_address=device_id)
+        except Exception as e:
+            return str(e), 500
     elif command == "disconnect":
         machine_manager.disconnect()
 

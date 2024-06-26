@@ -40,7 +40,7 @@ SPI_TURBO = True
 I2C_INTERFACE = 2
 I2C_FREQ = 5e4  # try 100e3
 
-PUMPS_COUNT = 4
+USED_PUMPS = [1, 2, 4]
 
 VIALS_COUNT = 7
 VAVLE_PWM_CHANNEL_START_ADDR = 8
@@ -83,17 +83,17 @@ class ReplifactoryMachine(BaseMachine):
 
         # self._pumps: list[Pump] = []
         # it's important to init pump drivers before valves
-        for cs in range(PUMPS_COUNT):
+        for pump_num in USED_PUMPS:
             step_motor_driver = StepMotorDriver(
-                port=self._ftdi_adapter.get_spi_hw_port(f"Stepper {cs + 1}", cs=cs)
+                port=self._ftdi_adapter.get_spi_hw_port(f"Stepper {pump_num}", cs=pump_num - 1)
             )
             profile = (
                 MotorProfile_17HS15_1504S_X1()
-                if cs != 0
+                if pump_num != 1
                 else MotorProfile_XY42STH34_0354A()
             )
-            motor = Motor(step_motor_driver, profile=profile, name=f"Motor {cs + 1}")
-            pump = Pump(motor, name=f"Pump {cs + 1}", callback=self)
+            motor = Motor(step_motor_driver, profile=profile, name=f"Motor {pump_num}")
+            pump = Pump(motor, name=f"Pump {pump_num}", callback=self)
             # self._pumps.append(pump)
             self._dev_manager.add_devices(pump)
             # self._devices[pump.id] = pump
@@ -294,6 +294,7 @@ class ReplifactoryMachine(BaseMachine):
         *args,
         **kwargs,
     ):
+        self._log.info(f"Diluting reactor {num} to OD {target_od}")
         reactor = self.get_reactor(num)
         if feed_drug_ratio < 0.0:
             feed_drug_ratio = 0.0
@@ -307,13 +308,18 @@ class ReplifactoryMachine(BaseMachine):
             raise ReactorException("Failed to measure OD")
         changed_volume = 0.0
         while current_od > target_od:
+            if self._cancel_long_operation_event.is_set():
+                # reactor._set_state(ReactorStates.READY)
+                self._cancel_long_operation_event.clear()
+                self._log.info(f"Cancelled dilution of reactor {num}")
+                break;
             changed_volume += dilution_volume
             if changed_volume > reactor_volume:
                 reactor._set_state(ReactorStates.ERROR)
                 raise ReactorException("Dilution volume exceeded reactor volume")
-            self.discharge(num, dilution_volume)
-            self.feed(num, feed_volume)
-            self.dose(num, dose_volume)
+            self.discharge(num, dilution_volume, disconnect_reactors=False)
+            self.feed(num, feed_volume, disconnect_reactors=False)
+            self.dose(num, dose_volume, disconnect_reactors=False)
             self.stirrer(num, stirrer_speed, stirrer_time)
             self.stirrer_off(num, stirrer_cooldown_time)
             previous_od = current_od
@@ -321,6 +327,8 @@ class ReplifactoryMachine(BaseMachine):
             if current_od - od_measurment_error > previous_od:
                 reactor._set_state(ReactorStates.ERROR)
                 raise ReactorException("OD increased after dilution")
+        self.disconnect_reactors_from_pumps()
+        self._log.info(f"Reactor {num} diluted to OD {current_od}")
 
     @machine_command
     def close_valve(self, num: int, wait=True):
@@ -349,17 +357,9 @@ class ReplifactoryMachine(BaseMachine):
         return self.execute_device_command(device_id, "measure_od")
 
     @machine_command
-    def feed(self, num: int, volume: float):
-        self.stop_pumps()
-        self.connect_reactor_to_pumps(num)
-        device_id = self._get_feed_pump_id()
-        self.execute_device_command(device_id, "pump", volume)
-        self.disconnect_reactors_from_pumps()
-
-    @machine_command
     def stop_pumps(self):
-        for i in range(PUMPS_COUNT):
-            self.stop_pump(f"pump-{i+1}")
+        for pump_num in USED_PUMPS:
+            self.stop_pump(f"pump-{pump_num}")
 
     @machine_command
     def stop_pump(self, device_id: str):
@@ -381,20 +381,31 @@ class ReplifactoryMachine(BaseMachine):
             self.close_valve(reactor._num, wait=wait)
 
     @machine_command
-    def dose(self, num: int, volume: float):
+    def feed(self, num: int, volume: float, disconnect_reactors=True):
+        self.stop_pumps()
+        self.connect_reactor_to_pumps(num)
+        device_id = self._get_feed_pump_id()
+        self.execute_device_command(device_id, "pump", volume)
+        if disconnect_reactors:
+            self.disconnect_reactors_from_pumps()
+
+    @machine_command
+    def dose(self, num: int, volume: float, disconnect_reactors=True):
         self.stop_pumps()
         self.connect_reactor_to_pumps(num)
         device_id = self._get_dose_pump_id()
         self.execute_device_command(device_id, "pump", volume)
-        self.disconnect_reactors_from_pumps()
+        if disconnect_reactors:
+            self.disconnect_reactors_from_pumps()
 
     @machine_command
-    def discharge(self, num: int, volume: float):
+    def discharge(self, num: int, volume: float, disconnect_reactors=True):
         self.stop_pumps()
         self.connect_reactor_to_pumps(num)
         device_id = self._get_discharge_pump_id()
         self.execute_device_command(device_id, "pump", volume)
-        self.disconnect_reactors_from_pumps()
+        if disconnect_reactors:
+            self.disconnect_reactors_from_pumps()
 
     @machine_command
     def laser_on(self, num: int):
@@ -460,7 +471,7 @@ class ReplifactoryReactor(Reactor):
     def __init__(self, *args, **kwargs) -> None:
         reactor_num = kwargs.pop("reactor_num", None)
         super().__init__(reactor_num=reactor_num, *args, **kwargs)
-        self._machine = kwargs.pop("machine", None)
+        self._machine: ReplifactoryMachine = kwargs.pop("machine", None)
         if self._machine is None or not isinstance(self._machine, ReplifactoryMachine):
             raise ValueError("Invalid machine")
         self._params = ReplifactoryReactorParams(**kwargs)
@@ -504,7 +515,7 @@ class ReplifactoryReactor(Reactor):
         )
         return self._machine.add_operation(
             (
-                self._machine.cmd_dilute_to_od,
+                self._machine.dilute,
                 (),
                 {
                     "num": self._num,
@@ -524,7 +535,7 @@ class ReplifactoryReactor(Reactor):
     @reactor_command
     def discharge(self, volume: float, *args, **kwargs):
         return self._machine.add_operation(
-            (self._machine.waste, (self._num, volume), {}), *args, **kwargs
+            (self._machine.discharge, (self._num, volume), {}), *args, **kwargs
         )
 
     @reactor_command

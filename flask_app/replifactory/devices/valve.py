@@ -60,6 +60,7 @@ class Valve(Device):
         return self._state == self.States.STATE_OPEN
 
     def open(self, wait: bool = True) -> None:
+        self._log.debug(f"{self.name} open")
         self._set_state(self.States.STATE_OPENING)
         self._driver.set_duty_cycle(self._pwm_channel, self._open_duty_cycle)
         if wait:
@@ -68,6 +69,7 @@ class Valve(Device):
         self._set_state(self.States.STATE_OPEN)
 
     def close(self, wait: bool = True) -> None:
+        self._log.debug(f"{self.name} close")
         self._set_state(self.States.STATE_CLOSING)
         self._driver.set_duty_cycle(self._pwm_channel, self._closed_duty_cycle)
         if wait:
