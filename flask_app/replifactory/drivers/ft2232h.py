@@ -14,8 +14,6 @@ from usb.core import Device as UsbDevice
 from flask_app.replifactory.drivers import Driver, I2cController, SpiController, I2cPort, LazyPort, SpiPort
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass
 class ParsedDescriptor:
@@ -25,6 +23,8 @@ class ParsedDescriptor:
 
 
 class FtdiDriver(Driver):
+    _log = logging.getLogger(f"{__name__}.FtdiDriver")
+
     def __init__(
         self,
         usb_device: Optional[UsbDevice] = None,
@@ -216,7 +216,7 @@ class FtdiDriver(Driver):
                 except FtdiError:
                     pass
                 except Exception:
-                    logger.exception("Can't read device serial number")
+                    cls._log.exception("Can't read device serial number")
         return device
 
     @classmethod
@@ -245,7 +245,7 @@ class FtdiDriver(Driver):
             except FtdiError:
                 pass
             except Exception:
-                logger.exception("Can't read device serial number")
+                cls._log.exception("Can't read device serial number")
             else:
                 devices_with_serial_number.append(dev)
         return devices_with_serial_number
@@ -264,9 +264,9 @@ class FtdiDriver(Driver):
             if exc.errno == errno.EBUSY or [
                 True for arg in exc.args if f"Errno {errno.EBUSY}" in arg
             ]:
-                logger.info(f"Device {device._str()} is busy")
+                cls._log.info(f"Device {device._str()} is busy")
             else:
-                logger.exception("Read usb device configuration failed")
+                cls._log.exception("Read usb device configuration failed")
             raise exc
         finally:
             eeprom.close()

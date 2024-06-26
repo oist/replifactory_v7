@@ -5,7 +5,7 @@ import time
 from collections import deque
 from typing import Optional
 
-import flask_app.replifactory.devices.machine as comm
+import flask_app.replifactory.devices._machine as comm
 from flask_app import settings
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback, BaseMachine, machineRegistry

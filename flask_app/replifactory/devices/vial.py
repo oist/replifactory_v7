@@ -23,7 +23,6 @@ class Vial(Device):
         **kwargs,
     ):
         super().__init__(name or "Vial", **kwargs)
-        self._log = logging.getLogger(__name__)
         self._min_volume = min_volume
         self._max_volume = max_volume
         self._volume = min_volume

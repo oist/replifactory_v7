@@ -4,8 +4,6 @@ from typing import Union
 
 from flask_app.replifactory.drivers import Driver, HardwarePort
 
-log = logging.getLogger(__name__)
-
 
 def binary_with_bracket(value: int, pin: int):
     pin += 1  # values from 0 to 15
@@ -222,9 +220,9 @@ class IOPortDriver(Driver):
                 f"Pin {pin} at i2c address 0x{self.port.address:02X} is configed as INPUT"
             )
         new_value = self._changebit(self.output_value, pin, value)
-        if log.isEnabledFor(logging.DEBUG):
+        if self._log.isEnabledFor(logging.DEBUG):
             value_with_selected_pin = binary_with_bracket(new_value, pin)
-            log.debug(
+            self._log.debug(
                 f"Write pin {pin} at i2c address 0x{self.port.address:02X} value: {value_with_selected_pin}"
             )
         if pin <= 7:

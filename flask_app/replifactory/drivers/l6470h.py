@@ -7,8 +7,6 @@ from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
 from flask_app.replifactory.drivers import HardwarePort, StepperDriver
 
-logger = logging.getLogger(__name__)
-
 
 def to_float(x: int, n: int) -> float:
     """Convert fixed point number to float
@@ -605,7 +603,7 @@ class StepMotorDriver(StepperDriver):
         reverse: bool = False,
         wait: bool = False,
     ):
-        logger.debug(
+        self._log.debug(
             __(
                 "Move motor {num} for {steps:d} steps and {direction} direction",
                 num=self.port.address,
@@ -694,7 +692,7 @@ class StepMotorDriver(StepperDriver):
         data_bytes: Union[list[int], bytes] = [],
         readlen: int = 0,
     ) -> bytes:
-        logger.debug(
+        self._log.debug(
             __(
                 "Write to SPI (cs={cs}) cmd: {cmd_name} (0x{cmd:02X}) data: {int_data} {data} readlen: {readlen:d}",
                 cs=self.port.address,

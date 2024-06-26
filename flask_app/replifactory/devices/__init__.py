@@ -31,7 +31,7 @@ class Device(StateMixin):
         self._id = slugify(name)
         self._callback = callback or DUMMY_DEVICE_CALBACK
         self._state = self.States.STATE_OFFLINE
-        self._log = logging.getLogger(f"Device ({name})")
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._error = ""
         self._devices = devices or {}
         self.changestate_callback = self._callback._on_device_state_change

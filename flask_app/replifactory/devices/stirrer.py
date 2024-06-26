@@ -8,8 +8,6 @@ import flask_app.replifactory.drivers.pca9685 as pca9685
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.util import BraceMessage as __
 
-logger = logging.getLogger(__name__)
-
 
 class Stirrer(Device):
     class States(Device.States, Enum):
@@ -68,7 +66,7 @@ class Stirrer(Device):
         raise ValueError("Speed should be in [0, 1, 2]")
 
     def set_speed(self, speed: Union[float, int], accelerate=True):
-        logger.debug(
+        self._log.debug(
             __(
                 "enter set_speed(speed={speed}, accelerate={accelerate})",
                 speed=speed,
@@ -80,25 +78,25 @@ class Stirrer(Device):
         else:
             duty_cycle = speed
         if duty_cycle > 1.0:
-            logger.warning(
+            self._log.warning(
                 f"Duty cycle {duty_cycle} bigger than range [0.0, 1.0]. Set to 1.0"
             )
             duty_cycle = 1.0
         elif duty_cycle < 0:
-            logger.warning(
+            self._log.warning(
                 f"Duty cycle {duty_cycle} lower than range [0.0, 1.0]. Set to 0.0"
             )
             duty_cycle = 0.0
         with self.lock:
             if 0 < duty_cycle < self.accelerate_threshold and accelerate:
-                logger.debug(
+                self._log.debug(
                     f"Duty cycle {duty_cycle} lower than accelerate threshold {self.accelerate_threshold}. Accelerating."
                 )
                 self._set_speed(self.fast_speed)
-                logger.debug(f"Wait {self.acceleration_delay} sec to accelerate")
+                self._log.debug(f"Wait {self.acceleration_delay} sec to accelerate")
                 time.sleep(self.acceleration_delay)
             self._set_speed(duty_cycle)
-        logger.debug("exit set_speed")
+        self._log.debug("exit set_speed")
 
     def _set_speed(self, speed: float):
         self.driver.set_duty_cycle(self.pwm_channel, speed)

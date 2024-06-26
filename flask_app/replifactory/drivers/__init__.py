@@ -297,6 +297,7 @@ class Driver:
 
     def __init__(self, port: HardwarePort):
         self._port = port
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     @property
     def port(self):

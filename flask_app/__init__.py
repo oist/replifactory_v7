@@ -39,6 +39,7 @@ logging.basicConfig(
 logging.getLogger("pyftdi.eeprom").setLevel(logging.INFO)
 logging.getLogger("flask_app.replifactory.drivers").setLevel(logging.INFO)
 logging.getLogger("flask_app.replifactory.events").setLevel(logging.INFO)
+logging.getLogger("flask_app.replifactory.devices").setLevel(logging.INFO)
 
 log = logging.getLogger(__name__)
 

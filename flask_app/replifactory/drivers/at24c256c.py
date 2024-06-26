@@ -18,7 +18,6 @@ class AT24C256C_Driver(EepromDriver):
         self._size = AT24C256C_Driver.EEPROM_SIZE
         self._config = OrderedDict()
         self._dirty = set()
-        self.log = logging.getLogger(__name__)
 
     def write(self, address: int, data: bytes | bytearray):
         if self._is_write_overflow(address, data):

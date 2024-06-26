@@ -5,7 +5,6 @@ from flask_app.replifactory.drivers import Driver, HardwarePort
 from flask_app.replifactory.util import ArrayOfBytesAsInt
 from flask_app.replifactory.util import BraceMessage as __
 
-log = logging.getLogger(__name__)
 
 # CONFIGURATION REGISTER
 # Bits:                         RDY | C1 | C0 | O/C | S1 | S0 | G1 | G0
@@ -21,7 +20,7 @@ class ADCDriver(Driver):
         self._continous_conversion = True
 
     def measure(self, gain=8, bitrate=16, continuous_conversion=False):
-        log.debug(
+        self._log.debug(
             f"enter measure(gain={gain}, bitrate={bitrate}, continuous_conversion={continuous_conversion})"
         )
         with self.port.session:
@@ -41,7 +40,7 @@ class ADCDriver(Driver):
             samples_per_second = bitrate_to_samples_per_second[bitrate]
             seconds_per_sample = 1 / samples_per_second
             for _ in range(100):  # try reading until conversion ready
-                log.debug(f"wait {seconds_per_sample:2f} seconds to complete sample")
+                self._log.debug(f"wait {seconds_per_sample:2f} seconds to complete sample")
                 time.sleep(seconds_per_sample)
 
                 data, config = self.read()
@@ -60,7 +59,7 @@ class ADCDriver(Driver):
         )  # least significant bit millivolts
         millivolts = lsb_mv * digital_signal
         millivolts = round(millivolts, 10)
-        log.debug(f"exit measure return total: {millivolts} mv, LSB: {lsb_mv} mv")
+        self._log.debug(f"exit measure return total: {millivolts} mv, LSB: {lsb_mv} mv")
         return millivolts, lsb_mv
 
     def configure(self, gain=8, bitrate=16, continuous_conversion=False):
@@ -97,7 +96,7 @@ class ADCDriver(Driver):
 
     def write(self, configuration: int):
         with self.port.session:
-            log.debug(
+            self._log.debug(
                 __(
                     "W i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config})",
                     port_addr=self.port.address,
@@ -111,7 +110,7 @@ class ADCDriver(Driver):
             response = self.port.read(4)  # read 4 bytes from ADC
             data = response[:3] if self._bitrate == 18 else response[:2]
             config = response[3:]
-            log.debug(
+            self._log.debug(
                 __(
                     "R i2c: ADC 0x{port_addr:02X} configuration: b{config:08b} ({config}) value: {value} [{hex_value}] data: [{hex_data}]",
                     port_addr=self.port.address,

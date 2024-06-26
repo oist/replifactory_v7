@@ -8,7 +8,6 @@ from flask_app.replifactory.drivers import Driver
 class StirrersGroup(Device):
     def __init__(self, stirrers: list[Stirrer], name: str = "Stirrers Group"):
         super().__init__(name)
-        self.log = logging.getLogger(__name__)
         self._stirrers = stirrers
 
     def read_state(self):
@@ -35,7 +34,7 @@ class StirrersGroup(Device):
             self.stop_all(0.0)
             return True
         except Exception as e:
-            self.log.exception(e)
+            self._log.exception(e)
             return False
 
     def get_drivers(self) -> list[Driver]:

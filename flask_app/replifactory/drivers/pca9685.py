@@ -5,7 +5,6 @@ from typing import Union
 from flask_app.replifactory.drivers import Driver, HardwarePort
 from flask_app.replifactory.util import BraceMessage as __
 
-logger = logging.getLogger(__name__)
 
 REGISTER_MODE_1 = 0x00
 REGISTER_MODE_2 = 0x01
@@ -85,34 +84,34 @@ class PWMDriver(Driver):
 
     def reset(self, frequency: float = 50):
         with self.port.session:
-            logger.debug(__("enter reset(frequency={frequency})", frequency=frequency))
+            self._log.debug(__("enter reset(frequency={frequency})", frequency=frequency))
             self.set_frequency(frequency)
             self._write_to_register(REGISTER_ALL_LED_ON_L, [0])
             self._write_to_register(REGISTER_ALL_LED_ON_H, [0])
             self.start_all()
-            logger.debug("exit reset")
+            self._log.debug("exit reset")
 
     def software_reset(self):
         with self.port.session:
-            logger.debug("enter software_reset")
+            self._log.debug("enter software_reset")
             self._write_to_register(REGISTER_MODE_1, [0])  # reset
-            logger.debug("exit software_reset")
+            self._log.debug("exit software_reset")
 
     def sleep_mode(self):
         with self.port.session:
-            logger.debug("enter sleep_mode")
+            self._log.debug("enter sleep_mode")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_SLEEP_BIT | MODE1_ALLCALL_BIT]
             )
-            logger.debug("exit sleep_mode")
+            self._log.debug("exit sleep_mode")
 
     def restart_mode(self):
         with self.port.session:
-            logger.debug("enter restart_mode")
+            self._log.debug("enter restart_mode")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_RESTART_BIT | MODE1_ALLCALL_BIT]
             )
-            logger.debug("exit restart_mode")
+            self._log.debug("exit restart_mode")
 
     def set_frequency(self, frequency: float):
         """Set the PWM frequency.
@@ -121,7 +120,7 @@ class PWMDriver(Driver):
             frequency (float): in Hz
         """
         with self.port.session:
-            logger.debug(
+            self._log.debug(
                 __("enter set_frequency(frequency={frequency})", frequency=frequency)
             )
             check_range(RANGE_PWM_FREQUENCY, frequency)
@@ -133,7 +132,7 @@ class PWMDriver(Driver):
                 self.sleep_mode()
                 self._write_to_register(REGISTER_PRE_SCALE, [pre_scale])
                 self.restart_mode()
-            logger.debug("exit set_frequency")
+            self._log.debug("exit set_frequency")
 
     def get_duty_cycle(self, led_number: int) -> float:
         """
@@ -142,7 +141,7 @@ class PWMDriver(Driver):
         :return:
         """
         with self.port.session:
-            logger.debug(
+            self._log.debug(
                 __(
                     "enter get_duty_cycle(led_number={led_number})",
                     led_number=led_number,
@@ -155,7 +154,7 @@ class PWMDriver(Driver):
             duty_cycle_read = (
                 (msbr & 0xF) << 8 | lsbr
             ) / LED_MAX_VALUE  # keep only first 4 bits of MSBR
-            logger.debug("exit get_duty_cycle")
+            self._log.debug("exit get_duty_cycle")
             return duty_cycle_read
 
     def set_duty_cycle(self, led_number: int, duty_cycle: float):
@@ -166,7 +165,7 @@ class PWMDriver(Driver):
             duty_cycle (float): Duty cycle from 0 to 1
         """
         with self.port.session:
-            logger.debug(
+            self._log.debug(
                 __(
                     "enter set_duty_cycle(led_number={led_number}, duty_cycle={duty_cycle})",
                     led_number=led_number,
@@ -179,7 +178,7 @@ class PWMDriver(Driver):
             led_off_l, led_off_h = get_led_off_registers(led_number)
             self._write_to_register(led_off_l, [value_low(value)])
             self._write_to_register(led_off_h, [value_high(value)])
-            logger.debug("exit set_duty_cycle")
+            self._log.debug("exit set_duty_cycle")
 
     def stop_all(self):
         """
@@ -195,7 +194,7 @@ class PWMDriver(Driver):
         Start all PWM signals.
         """
         with self.port.session:
-            logger.debug("enter start_all")
+            self._log.debug("enter start_all")
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_ALLCALL_BIT]
             )  # sleep mode off
@@ -203,7 +202,7 @@ class PWMDriver(Driver):
             self._write_to_register(
                 REGISTER_MODE_1, [MODE1_RESTART_BIT | MODE1_ALLCALL_BIT]
             )
-            logger.debug("exit start_all")
+            self._log.debug("exit start_all")
 
     def is_sleeping(self) -> bool:
         """Check if the PWM controller is sleeping.

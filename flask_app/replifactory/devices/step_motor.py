@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import logging
 from typing import Any, Optional
 
 import pandas as pd
@@ -7,8 +6,6 @@ import pandas as pd
 import flask_app.replifactory.drivers.l6470h as l6470h
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.util import BraceMessage as __
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -98,7 +95,7 @@ class Motor(Device):
         )
 
     def reset(self):
-        logger.debug("Configure")
+        self._log.debug("Configure")
         self.driver.hard_stop()
         self.set_profile(self._profile)
 
@@ -114,7 +111,7 @@ class Motor(Device):
 
     def test(self):
         success = False
-        logger.debug(f"Start self test for motor {self.driver._get_port()._cs}")
+        self._log.debug(f"Start self test for motor {self.driver._get_port()._cs}")
         self.driver.set_param(l6470h.parameters.OCD_TH, 0)
         self.move(1)
         status = self.driver.status
@@ -194,7 +191,7 @@ class Motor(Device):
             n_revolutions (float, optional): Count of revolutions (can be negative to move backward). Defaults to 1.
             revolution_per_second (float, optional): Move speed. Defaults to None - instance default value.
         """
-        logger.debug(
+        self._log.debug(
             __(
                 "Move {name} to {revolutions:.4f} revolution with {speed:.4f} revolutoions per second",
                 name=self._name,

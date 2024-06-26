@@ -6,8 +6,6 @@ from typing import Iterable, Optional, SupportsBytes, SupportsIndex
 
 from flask_app.replifactory.drivers import HardwarePort, StepperDriver
 
-logger = logging.getLogger(__name__)
-
 TICKS_PER_SECOND = 1_000_000  # 1MHz internal oscilator
 
 AUTOINCREMENT_BIT = 1 << 7
@@ -376,6 +374,7 @@ class StepMotorDriver(StepperDriver):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
     from flask_app.replifactory.drivers.ft2232h import FtdiDriver
     from flask_app.replifactory.usb_manager import usbManager
 

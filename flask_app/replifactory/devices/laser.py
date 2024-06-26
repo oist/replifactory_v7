@@ -12,8 +12,6 @@ LASER_OFF = 1
 REACTOR_LASER_EN_PIN = 15
 I2C_PORT_IO_REACTOR = 0x22
 
-log = logging.getLogger(__name__)
-
 
 class Laser(Device):
     class States(Device.States, Enum):
@@ -35,7 +33,7 @@ class Laser(Device):
         self._set_state(self.States.STATE_OPERATIONAL)
 
     def switch_on(self):
-        log.debug(f"{self.name} switch ON")
+        self._log.debug(f"{self.name} switch ON")
         if self.io_driver.port.address == I2C_PORT_IO_REACTOR:
             self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 1)
         else:
@@ -43,7 +41,7 @@ class Laser(Device):
         self._set_state(self.States.STATE_ON)
 
     def switch_off(self):
-        log.debug(f"{self.name} switch OFF")
+        self._log.debug(f"{self.name} switch OFF")
         if self.io_driver.port.address == I2C_PORT_IO_REACTOR:
             self.io_driver.write_pin(REACTOR_LASER_EN_PIN, 0)
         else:
@@ -51,7 +49,7 @@ class Laser(Device):
         self._set_state(self.States.STATE_OFF)
 
     def blink(self, times: int = 3, freq: float = 3):
-        log.debug(f"{self.name} blink {times} times with freq: {freq} Hz")
+        self._log.debug(f"{self.name} blink {times} times with freq: {freq} Hz")
         delay = 1 / (freq * 2)
         for i in range(times):
             self.switch_on()

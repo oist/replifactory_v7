@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 import time
 from typing import Optional
 
@@ -81,8 +82,7 @@ class ReplifactoryMachine(BaseMachine):
 
         # Replifactory v5 layout
 
-        # self._pumps: list[Pump] = []
-        # it's important to init pump drivers before valves
+        # it's important to init pump drivers before valves, to stop motors before valves closing
         for pump_num in USED_PUMPS:
             step_motor_driver = StepMotorDriver(
                 port=self._ftdi_adapter.get_spi_hw_port(f"Stepper {pump_num}", cs=pump_num - 1)
@@ -94,17 +94,14 @@ class ReplifactoryMachine(BaseMachine):
             )
             motor = Motor(step_motor_driver, profile=profile, name=f"Motor {pump_num}")
             pump = Pump(motor, name=f"Pump {pump_num}", callback=self)
-            # self._pumps.append(pump)
             self._dev_manager.add_devices(pump)
-            # self._devices[pump.id] = pump
-            # self._drivers += [step_motor_driver]
 
+        # instantiate stirrers and valves
         pwm_driver = PWMDriver(
             port=self._ftdi_adapter.get_i2c_hw_port(
                 address=I2C_PORT_PWM, name="PWM", registers=PWMDriver.registers
             )
         )
-        # self._drivers += [pwm_driver]
         stirrers = [
             Stirrer(
                 pwm_channel=pwm_channel,
@@ -122,11 +119,8 @@ class ReplifactoryMachine(BaseMachine):
             )
         ]
         self._dev_manager.add_devices(*stirrers)
-
         stirrers_group = StirrersGroup(stirrers)
         self._dev_manager.add_devices(stirrers_group)
-        # self._devices[stirrers_group.id] = stirrers_group
-
         valves = [
             Valve(
                 pwm_channel=pwm_channel,
@@ -143,50 +137,19 @@ class ReplifactoryMachine(BaseMachine):
                 VAVLE_PWM_CHANNEL_START_ADDR + VALVES_COUNT,
             )
         ]
-        # self._valves = valves
         self._dev_manager.add_devices(*valves)
-        # for valve in valves:
-        #     self._devices[valve.id] = valve
-
         valves_group = ValvesGroup(valves)
         self._dev_manager.add_devices(valves_group)
-        # self._devices[valves_group.id] = valves_group
 
-        # adc_port_callback = self._ftdi_driver.get_first_active_i2c_port_callback(
-        #     I2C_PORT_ADC, "ADC"
-        # )
-        # if isinstance(I2C_PORT_ADC, Iterable):
-        #     try:
-        #         i2c_adc_port = ftdi_driver.get_first_active_port(I2C_PORT_ADC, "ADC")
-        #     except ConnectionError as e:
-        #         self.log.error("Failed connection to ADC", exc_info=e)
-        #         i2c_adc_port = None
-        # else:
-        #     i2c_adc_port = ftdi_driver.get_i2c_port(I2C_PORT_ADC, "ADC")
-        # if i2c_adc_port:
-        # io_port_callback = self._ftdi_driver.get_i2c_port_callback(
-        #     I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers
-        # )
+        # instantiate optical density sensors
         adc_driver = ADCDriver(
             port=self._ftdi_adapter.get_i2c_hw_port(I2C_PORT_ADC, "ADC")
         )
-        # self._drivers += [adc_driver]
-
-        # io_driver_reactor = IOPortDriver(port=self._ftdi_adapter.get_i2c_hw_port(I2C_PORT_IO_REACTOR, "IO_REACTOR", IOPortDriver.registers))
-        # self._drivers += [io_driver_reactor]
-        # reactor_selector = ReactorSelector(io_driver_reactor, callback=self)
-        # self._devices[reactor_selector.id] = reactor_selector
-        # self._dev_manager.add_devices(reactor_selector)
-
-        # laser_port_callback = self._ftdi_driver.get_i2c_port_callback(
-        #     I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
-        # )
         io_driver_laser = IOPortDriver(
             port=self._ftdi_adapter.get_i2c_hw_port(
                 I2C_PORT_IO_LASER, "IO_LASERS", IOPortDriver.registers
             )
         )
-        # self._drivers += [io_driver_laser]
         lasers = [
             Laser(
                 laser_cs=cs,
@@ -196,8 +159,6 @@ class ReplifactoryMachine(BaseMachine):
             )
             for cs in range(1, VIALS_COUNT * 2, 2)
         ]
-        # for laser in lasers:
-        #     self._devices[laser.id] = laser
         self._dev_manager.add_devices(*lasers)
 
         io_driver_adc = IOPortDriver(
@@ -205,7 +166,6 @@ class ReplifactoryMachine(BaseMachine):
                 I2C_PORT_IO_ADC, "IO_ADC", IOPortDriver.registers
             )
         )
-        # self._drivers += [io_driver_adc]
         photodiodes = [
             Photodiode(
                 diode_cs=cs,
@@ -224,27 +184,9 @@ class ReplifactoryMachine(BaseMachine):
             )
             for i in range(VIALS_COUNT)
         ]
-        # for od_sensor in od_sensors:
-        #     self._devices[od_sensor.id] = od_sensor
         self._dev_manager.add_devices(*od_sensors)
 
-        # _vials = []
-        # for i in range(VIALS_COUNT):
-        #     num = i + 1
-        #     vial = Vial(
-        #         name=f"Vial {num}",
-        #         valve=self._get_valve(f"valve-{num}"),
-        #         stirrer=self._get_stirrer(f"stirrer-{num}"),
-        #         od_sensor=self._get_od_sensor(f"optical-density-sensor-{num}"),
-        #         media_pump=self._get_pump("pump-1"),
-        #         drug_pump=self._get_pump("pump-2"),
-        #         waste_pump=self._get_pump("pump-4"),
-        #         callback=self,
-        #     )
-        #     # self._devices[vial.id] = vial
-        #     _vials.append(vial)
-        # self._dev_manager.add_devices(*_vials)
-
+        # instantiate thermometers
         thermometers = []
         for address, name in {
             I2C_PORT_THERMOMETER_1: "THERMOMETER_1 (MB)",
@@ -256,7 +198,6 @@ class ReplifactoryMachine(BaseMachine):
                     address, name, ADT75Driver.registers
                 )
             )
-            # self._drivers += [thermometer_driver]
             thermometers += [
                 Thermometer(
                     driver=thermometer_driver,
@@ -264,8 +205,6 @@ class ReplifactoryMachine(BaseMachine):
                     callback=self,
                 )
             ]
-        # for thermometer in thermometers:
-        #     self._devices[thermometer.id] = thermometer
         self._dev_manager.add_devices(*thermometers)
 
     def cmd_home(self, num, *args, **kwargs):
@@ -274,6 +213,7 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def home(self):
+        self._log.debug("Homing all reactors")
         self.stop_pumps()
         self.disconnect_reactors_from_pumps()
         for reactor in self._reactors:
@@ -294,7 +234,11 @@ class ReplifactoryMachine(BaseMachine):
         *args,
         **kwargs,
     ):
-        self._log.info(f"Diluting reactor {num} to OD {target_od}")
+        if self._log.isEnabledFor(logging.DEBUG):
+            method_params = locals()
+            self._log.debug(f"Diluting with args: {method_params}")
+        else:
+            self._log.info(f"Diluting reactor {num} to OD {target_od}")
         reactor = self.get_reactor(num)
         if feed_drug_ratio < 0.0:
             feed_drug_ratio = 0.0
@@ -316,6 +260,7 @@ class ReplifactoryMachine(BaseMachine):
             changed_volume += dilution_volume
             if changed_volume > reactor_volume:
                 reactor._set_state(ReactorStates.ERROR)
+                self._log.warning(f"Reactor {num} dilution volume exceeded reactor volume")
                 raise ReactorException("Dilution volume exceeded reactor volume")
             self.discharge(num, dilution_volume, disconnect_reactors=False)
             self.feed(num, feed_volume, disconnect_reactors=False)
@@ -326,22 +271,26 @@ class ReplifactoryMachine(BaseMachine):
             current_od = self.measure_od(num)
             if current_od - od_measurment_error > previous_od:
                 reactor._set_state(ReactorStates.ERROR)
+                self._log.warning(f"Reactor {num} OD increased after dilution")
                 raise ReactorException("OD increased after dilution")
         self.disconnect_reactors_from_pumps()
         self._log.info(f"Reactor {num} diluted to OD {current_od}")
 
     @machine_command
     def close_valve(self, num: int, wait=True):
+        self._log.debug(f"Closing valve {num}")
         device_id = self._get_valve_id(num)
         return self.execute_device_command(device_id, "close", wait=wait)
 
     @machine_command
     def open_valve(self, num: int):
+        self._log.debug(f"Opening valve {num}")
         device_id = self._get_valve_id(num)
         return self.execute_device_command(device_id, "open")
 
     @machine_command
     def stirrer(self, num: int, speed_ratio: float, wait_time: Optional[float] = None):
+        self._log.debug(f"Setting stirrer {num} speed to {speed_ratio}")
         device_id = self._get_stirrer_id(num)
         self.execute_device_command(device_id, "set_speed", speed_ratio)
         if wait_time:
@@ -349,26 +298,31 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def stirrer_off(self, num: int, wait_time: Optional[float] = None):
+        self._log.debug(f"Turning off stirrer {num}")
         return self.stirrer(num, 0.0, wait_time)
 
     @machine_command
     def measure_od(self, num: int):
+        self._log.debug(f"Measuring OD of reactor {num}")
         device_id = self._get_od_sensor_id(num)
         return self.execute_device_command(device_id, "measure_od")
 
     @machine_command
     def stop_pumps(self):
+        self._log.debug("Stopping all pumps")
         for pump_num in USED_PUMPS:
             self.stop_pump(f"pump-{pump_num}")
 
     @machine_command
     def stop_pump(self, device_id: str):
+        self._log.debug(f"Stopping pump {device_id}")
         self.execute_device_command(device_id, "stop")
         while self.execute_device_command(device_id, "read_state") == Pump.States.STATE_WORKING:
             time.sleep(0.1)
 
     @machine_command
     def connect_reactor_to_pumps(self, reactor_num: int):
+        self._log.debug(f"Connecting reactor {reactor_num} to pumps")
         for reactor in self._reactors:
             if reactor._num != reactor_num:
                 self.close_valve(reactor._num, wait=False)
@@ -376,12 +330,14 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def disconnect_reactors_from_pumps(self):
+        self._log.debug("Disconnecting reactors from pumps")
         for reactor in self._reactors:
             wait = False if reactor._num != self._reactors[-1]._num else True
             self.close_valve(reactor._num, wait=wait)
 
     @machine_command
     def feed(self, num: int, volume: float, disconnect_reactors=True):
+        self._log.debug(f"Feeding reactor {num} with {volume} mL")
         self.stop_pumps()
         self.connect_reactor_to_pumps(num)
         device_id = self._get_feed_pump_id()
@@ -391,6 +347,7 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def dose(self, num: int, volume: float, disconnect_reactors=True):
+        self._log.debug(f"Dosing reactor {num} with {volume} mL")
         self.stop_pumps()
         self.connect_reactor_to_pumps(num)
         device_id = self._get_dose_pump_id()
@@ -400,6 +357,7 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def discharge(self, num: int, volume: float, disconnect_reactors=True):
+        self._log.debug(f"Discharging reactor {num} with {volume} mL")
         self.stop_pumps()
         self.connect_reactor_to_pumps(num)
         device_id = self._get_discharge_pump_id()
@@ -409,11 +367,13 @@ class ReplifactoryMachine(BaseMachine):
 
     @machine_command
     def laser_on(self, num: int):
+        self._log.debug(f"Turning on laser {num}")
         device_id = self._get_laser_id(num)
         return self.execute_device_command(device_id, "switch_on")
 
     @machine_command
     def laser_off(self, num: int):
+        self._log.debug(f"Turning off laser {num}")
         device_id = self._get_laser_id(num)
         return self.execute_device_command(device_id, "switch_off")
 

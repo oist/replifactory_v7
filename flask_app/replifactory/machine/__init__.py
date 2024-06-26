@@ -72,6 +72,10 @@ class Reactor:
         """Send a command to the reactor"""
         try:
             method = getattr(self, method_name)
+            if self._log.isEnabledFor(logging.DEBUG):
+                self._log.debug(f"Executing {method_name} with args: {args} and kwargs: {kwargs}")
+            else:
+                self._log.info(f"Reactor {self._num} {method_name}")
             return method(*args, **kwargs)
         except AttributeError:
             raise AttributeError(f"No command named {method_name} found")
@@ -410,13 +414,13 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
             self.reactor_class(reactor_num=index + 1, machine=self, *args, **kwargs)
             for index in range(reactors_count)
         ]
-        self._log = logging.getLogger(f"Device ({name})")
+        self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._operation_queue = queue.Queue()
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._machine_operation_queue_loop)
         self._stop_operation_timeout = 5
         self._commands_info = self._get_command_info()
-        self._experiment = None
+        # self._experiment = None
         self._lock = threading.RLock()
         self._cancel_long_operation_event = threading.Event()
 
@@ -476,25 +480,24 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         except AttributeError:
             raise AttributeError(f"No command named {method_name} found")
 
-    def run_experiment(self, experiment: Experiment, *args, **kwargs):
-        with self._lock:
-            if self._experiment is not None:
-                raise ValueError("Experiment already running")
-            self._experiment = experiment
-            self._experiment.start()
+    # def run_experiment(self, experiment: Experiment, *args, **kwargs):
+    #     with self._lock:
+    #         if self._experiment is not None:
+    #             raise ValueError("Experiment already running")
+    #         self._experiment = experiment
+    #         self._experiment.start()
 
-    def pause_experiment(self, *args, **kwargs):
-        with self._lock:
-            if self._experiment is None:
-                raise ValueError("No experiment running")
-            self._experiment.pause()
+    # def pause_experiment(self, *args, **kwargs):
+    #     with self._lock:
+    #         if self._experiment is None:
+    #             raise ValueError("No experiment running")
+    #         self._experiment.pause()
 
+    # def resume_experiment(self, *args, **kwargs):
+    #     pass
 
-    def resume_experiment(self, *args, **kwargs):
-        pass
-
-    def stop_experiment(self, *args, **kwargs):
-        pass
+    # def stop_experiment(self, *args, **kwargs):
+    #     pass
 
     def add_operation(
         self,
