@@ -1,4 +1,5 @@
 <template>
+  <MachineNotification />
   <header
     class="navbar navbar-expand-lg bd-navbar sticky-top p-0 bg-body d-print-none"
   >
@@ -72,7 +73,13 @@
         </ul>
       </div>
       <!-- user -->
-      <div>
+      <div class="d-flex align-items-baseline">
+        <CFormSwitch
+          id="switchDebug"
+          v-model="debug"
+          label="Debug"
+          @input="debugHandleSwitchChange"
+        />
         <a href="/security/logout" class="btn btn-outline-danger btn-sm ms-2"
           >Logout</a
         >
@@ -97,15 +104,21 @@
 
 <script>
 import { socket } from "@/socket";
-import { mapState } from "vuex";
+import { mapState, mapMutations } from "vuex";
 import { CIcon } from "@coreui/icons-vue";
 import BootstrapRouterLink from "@/client/router/BootstrapRouterLink.vue";
+import MachineNotification from "@/client/components/machine/MachineNotification.vue";
+import {
+  CFormSwitch,
+} from "@coreui/vue";
 
 export default {
   name: "HomePage",
   components: {
     CIcon,
     BootstrapRouterLink,
+    MachineNotification,
+    CFormSwitch,
   },
   data() {
     return {
@@ -113,13 +126,25 @@ export default {
     };
   },
   computed: {
-    ...mapState(["backendConnected"]),
+    ...mapState(["backendConnected", "debug"]),
     logoColor() {
       return this.backendConnected ? "#6f42c1" : "#cccccc";
     },
   },
   async mounted() {
     socket.connect();
+  },
+  beforeCreate() {
+    this.$store.commit("initialiseStore");
+    this.$store.subscribe((mutation, state) => {
+      localStorage.setItem("store", JSON.stringify(state));
+    });
+  },
+  methods: {
+    ...mapMutations(["setDebug"]),
+    debugHandleSwitchChange(event) {
+      this.setDebug(event.target.checked);
+    },
   },
 };
 </script>

@@ -2,8 +2,14 @@
   <div>
     <!-- <button @click="createToast">Show Toaster</button> -->
     <CToaster placement="top-end" class="pt-5">
-      <CToast v-for="(toast, index) in messages" :key="index" :delay="toast.delay" :autohide="toast.autohide"
-        :color="toast.color" visible>
+      <CToast
+        v-for="(toast, index) in messages"
+        :key="index"
+        :delay="toast.delay"
+        :autohide="toast.autohide"
+        :color="toast.color"
+        visible
+      >
         <CToastHeader close-button>
           <span class="me-auto fw-bold">{{ toast.title }}</span>
           <!-- <small>7 min ago</small> -->

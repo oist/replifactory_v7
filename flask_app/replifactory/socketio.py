@@ -1,4 +1,5 @@
 import copy
+import datetime
 import logging
 import threading
 import time
@@ -7,11 +8,11 @@ import flask
 
 from flask_socketio import emit as socketio_emit
 from flask_socketio.namespace import Namespace
-from flask_app.replifactory.machine_manager import MachineManager
+from flask_app.replifactory.machine_manager import machineManager
 from flask_app.replifactory.usb_manager import UsbManager
 
 from flask_app.replifactory.events import Events, eventManager
-from flask_app.replifactory.machine import MachineCallback, BaseMachine
+from flask_app.replifactory.machine import MachineCallback
 
 log = logging.getLogger(__name__)
 
@@ -128,14 +129,17 @@ class SocketIOSessionMachineCallback(MachineCallback):
         self._emit("current", data)
 
     def _on_experiment_status_change(self, event, payload):
+        for key, value in payload.items():
+            if isinstance(value, datetime.datetime):
+                payload[key] = value.isoformat()
         self._emit(event, payload)
 
 
 class MachineNamespace(Namespace):
-    def __init__(self, app, machine_manager: MachineManager, namespace: Optional[str] = None):
+    def __init__(self, app, namespace: Optional[str] = None, *args, **kwargs):
         super().__init__(namespace)
         self._app = app
-        self._machine_manager = machine_manager
+        # self._machine_manager = machine_manager
         self._clients_callbacks: Dict[str, SocketIOSessionMachineCallback] = {}
 
     def on_connect(self):
@@ -146,10 +150,11 @@ class MachineNamespace(Namespace):
         )
         self._clients_callbacks[sid] = client_calback
 
-        self._machine_manager.register_callback(client_calback)
-        self._machine_manager.send_initial_callback(client_calback)
+        machineManager().register_callback(client_calback)
+        machineManager().send_initial_callback(client_calback)
+        # experimentManager().send_initial_callback(client_callback)
 
-        data = self._machine_manager.get_current_data()
+        data = machineManager().get_current_data()
         data_copy = copy.deepcopy(data)
         # payload = {
         #     "state_id": self._machine_manager.get_state_id(),
@@ -164,6 +169,6 @@ class MachineNamespace(Namespace):
         sid = flask.request.sid
         client_calback = self._clients_callbacks.pop(sid, None)
         if client_calback:
-            self._machine_manager.unregister_callback(client_calback)
+            machineManager().unregister_callback(client_calback)
             client_calback.unsubscribe()
         eventManager().fire(Events.CLIENT_DISCONNECTED)

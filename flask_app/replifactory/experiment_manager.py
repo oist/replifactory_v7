@@ -24,8 +24,8 @@ class ExperimentManager(ExperimentCallback):
             self._experiment_id = experiment_id
 
         def _on_experiment_status_change(self, state, *args, **kwargs):
-            payload = state.update({"experiment_id": self._experiment_id})
-            eventManager().fire(Events.EXPERIMENT_STATUS_CHANGE, payload)
+            state.update({"experiment_id": self._experiment_id})
+            eventManager().fire(Events.EXPERIMENT_STATUS_CHANGE, state)
 
     def __init__(self):
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
@@ -45,8 +45,8 @@ class ExperimentManager(ExperimentCallback):
             if not machine.isIdle():
                 raise ValueError("Machine is not ready to start experiment")
 
-            experiment = experiment_class(machine=machine, *args, **kwargs)
             callback = self.NamedExperimentCallback(experiment_id)
+            experiment = experiment_class(machine=machine, experiment_callback=callback, *args, **kwargs)
 
             self._experiments[experiment_id] = (experiment, callback)
             experiment.start()
@@ -55,7 +55,7 @@ class ExperimentManager(ExperimentCallback):
 
     def stop_experiment(self, experiment_id: str):
         with self._lock:
-            experiment = self._experiments.get(experiment_id)
+            experiment = self._get_experiment(experiment_id)
             if experiment is None:
                 raise ValueError(f"Experiment {experiment_id} not found")
             experiment.stop()
@@ -65,7 +65,7 @@ class ExperimentManager(ExperimentCallback):
 
     def pause_experiment(self, experiment_id: str):
         with self._lock:
-            experiment = self._experiments.get(experiment_id)
+            experiment = self._get_experiment(experiment_id)
             if experiment is None:
                 raise ValueError(f"Experiment {experiment_id} not found")
             experiment.pause()
@@ -74,9 +74,13 @@ class ExperimentManager(ExperimentCallback):
 
     def resume_experiment(self, experiment_id: str):
         with self._lock:
-            experiment = self._experiments.get(experiment_id)
+            experiment = self._get_experiment(experiment_id)
             if experiment is None:
                 raise ValueError(f"Experiment {experiment_id} not found")
             experiment.resume()
             self._log.info(f"Resumed experiment {experiment_id}")
             return experiment.status()
+
+    def _get_experiment(self, experiment_id: str):
+        experiment, _ = self._experiments.get(experiment_id, None)
+        return experiment

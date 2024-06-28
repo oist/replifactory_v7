@@ -1,54 +1,68 @@
 <template>
-  <div class="card">
-    <!-- <div class="card-header">Setup</div> -->
-    <div class="card-body">
-      <h5 class="card-title">{{ experimentTitle }}</h5>
-      <form>
-        <div class="row mb-3">
-          <label for="experimentClassSelect" class="col-sm-2 col-form-label"
-            >Choise experiment class</label
-          >
-          <div class="col-sm-10">
-            <CInputGroup>
-              <CFormSelect
-                id="experimentClassSelect"
-                v-model="selectedExperimentClass"
-                aria-label="Select experiment class"
-                :disabled="isExperimentRunning"
-              >
-                <option
-                  v-for="(value, id) in experimentClassesOptions"
-                  :key="id"
-                  :value="id"
+  <div class="container">
+    <div class="card">
+      <!-- <div class="card-header">Setup</div> -->
+      <div class="card-body">
+        <h5 class="card-title">{{ experimentTitle }}</h5>
+        <form>
+          <div class="row mb-3">
+            <label for="experimentClassSelect" class="col-sm-2 col-form-label"
+              >Choise experiment class</label
+            >
+            <div class="col-sm-10">
+              <CInputGroup>
+                <CFormSelect
+                  id="experimentClassSelect"
+                  v-model="selectedExperimentClass"
+                  aria-label="Select experiment class"
+                  :disabled="isExperimentRunning"
                 >
-                  {{ value }} ({{ id }})
-                </option>
-              </CFormSelect>
-              <CButton type="button" color="success" variant="outline" @click="startExperiment"
-                >Start</CButton
-              >
-              <CButton type="button" color="warning" variant="outline" @click="pauseExperiment"
-                >Pause</CButton
-              >
-              <CButton type="button" color="danger" variant="outline" @click="stopExperiment"
-                >Stop</CButton
-              >
-            </CInputGroup>
+                  <option
+                    v-for="(value, id) in experimentClassesOptions"
+                    :key="id"
+                    :value="id"
+                  >
+                    {{ value }} ({{ id }})
+                  </option>
+                </CFormSelect>
+                <CButton
+                  type="button"
+                  color="success"
+                  variant="outline"
+                  @click="startExperiment"
+                  >Start</CButton
+                >
+                <CButton
+                  type="button"
+                  color="warning"
+                  variant="outline"
+                  @click="pauseExperiment"
+                  >Pause</CButton
+                >
+                <CButton
+                  type="button"
+                  color="danger"
+                  variant="outline"
+                  @click="stopExperiment"
+                  >Stop</CButton
+                >
+              </CInputGroup>
+            </div>
           </div>
-        </div>
-      </form>
-      <component
-        :is="selectedExperiment.description"
-        v-if="selectedExperiment"
-      ></component>
-      <component
-        :is="selectedExperiment.parameters"
-        v-if="selectedExperiment"
-      ></component>
-      <component
-        :is="selectedExperiment.dashboard"
-        v-if="selectedExperiment"
-      ></component>
+        </form>
+        <component
+          :is="selectedExperiment.description"
+          v-if="selectedExperiment"
+        ></component>
+        <component
+          :is="selectedExperiment.parameters"
+          v-if="selectedExperiment"
+        ></component>
+        <component
+          :is="selectedExperiment.dashboard"
+          v-if="selectedExperiment"
+        ></component>
+      </div>
     </div>
   </div>
 </template>
@@ -130,12 +144,13 @@ export default {
         experimentId: this.selectedExperimentClass,
         command: command,
         ...args,
-      }
+      };
       this.$store
         .dispatch("experiment/experimentCommand", data)
         .catch((err) => {
+          const message = err.response.data.error || err.response.data;
           this.$store.dispatch("notifyWarning", {
-            content: err.response.data,
+            content: message,
           });
         });
     },

@@ -20,6 +20,7 @@ from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
 from flask_app.replifactory.experiment.endless_growth import EndlessGrowthExperiment
+from flask_app.replifactory.experiment.od_measure import ODMeasureExperiment
 from flask_app.replifactory.experiment_manager import experimentManager
 from flask_app.replifactory.machine import machineRegistry, replifactory_v5
 from flask_app.replifactory.machine_manager import machineManager
@@ -192,7 +193,7 @@ def create_app():
             path="socket.io",
         )
         socketio.on_namespace(
-            MachineNamespace(app=app, machine_manager=machine_manager, namespace="/machine")
+            MachineNamespace(app=app, namespace="/machine")
         )
         # socketio.run(app)
         usb_manager.start_monitoring()
@@ -229,6 +230,7 @@ def create_app():
     flask_static_digest.init_app(app)
 
     register_experiment(EndlessGrowthExperiment)
+    register_experiment(ODMeasureExperiment)
     machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
 
     return app
