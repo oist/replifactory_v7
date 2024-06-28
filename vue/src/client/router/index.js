@@ -1,57 +1,67 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import DeviceControl from "@/client/components/DeviceControl/DeviceControl.vue";
-import ExperimentTab from "@/client/components/ExperimentTab/ExperimentTab.vue";
-import HelpTab from "@/client/components/HelpTab/HelpTab.vue";
-import StatusTab from "@/client/components/StatusTab/StatusTab.vue";
-import LogsTab from "@/client/components/LogsTab/LogsTab.vue";
-import ArchiveTab from "@/client/components/ArchiveTab/ArchiveTab.vue";
 import store from "@/client/store/index.js";
 
 const routes = [
   {
     path: "/",
     name: "Home",
-    component: () => import("@/client/components/Replifactory.vue"),
+    // component: () => import("@/client/components/Replifactory.vue"),
+    component: () => import("@/client/pages/ReplifactoryPage.vue"),
     beforeEnter: requireAuth,
     children: [
       {
-        path: "/device",
+        path: "/home",
         alias: "/",
-        name: "Device",
-        component: DeviceControl,
+        name: "Home",
+        component: () => import("@/client/components/HomeSection.vue"),
+      },
+      {
+        path: "/machine",
+        name: "Machine",
+        component: () => import("@/client/components/DeviceControl/DeviceControl.vue"),
+      },
+      {
+        path: "/experiments",
+        name: "Experiments",
+        component: () => import("@/client/components/ExperimentTab/ExperimentTab.vue"),
+      },
+      {
+        path: "/maintance",
+        name: "Maintance",
+        component: () => import("@/client/components/MaintanceSection.vue"),
       },
       {
         path: "/archive",
         name: "Archive",
-        component: ArchiveTab,
-      },
-      {
-        path: "/experiment",
-        name: "Experiment",
-        component: ExperimentTab,
+        component: () => import("@/client/components/ArchiveTab/ArchiveTab.vue"),
       },
       {
         path: "/status",
         name: "Status",
-        component: StatusTab,
+        component: () => import("@/client/components/StatusTab/StatusTab.vue"),
       },
       {
         path: "/logs",
         name: "Logs",
-        component: LogsTab,
+        component: () => import("@/client/components/LogsTab/LogsTab.vue"),
       },
       {
         path: "/help",
         name: "Help",
-        component: HelpTab,
+        component: () => import("@/client/components/HelpTab/HelpTab.vue"),
       },
     ],
   },
   {
     path: "/login",
     name: "Login",
-    component: () => import("@/client/components/Login.vue"),
+    component: () => import("@/client/pages/LoginPage.vue"),
+  },
+  {
+    path: "/help",
+    name: "Help",
+    component: () => import("@/client/components/HelpTab/HelpTab.vue"),
   },
 ];
 

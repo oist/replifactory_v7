@@ -54,6 +54,7 @@ class Events:
     DEVICE_STATE_CHANGED = "DevicesStateChanged"
 
     # experiment job
+    EXPERIMENT_STATUS_CHANGE = "ExperimentStatusChange"
     EXPERIMENT_STARTED = "ExperimentStarted"
     EXPERIMENT_RESTORED = "ExperimentRestored"
     EXPERIMENT_DONE = "ExperimentDone"

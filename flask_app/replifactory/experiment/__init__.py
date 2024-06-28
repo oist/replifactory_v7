@@ -1,11 +1,12 @@
 
 
-from datetime import datetime
-from enum import Enum
 import logging
-from threading import Thread
 import threading
 import time
+from datetime import datetime
+from enum import Enum
+from threading import Thread
+from typing import Optional
 
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import BaseMachine
@@ -23,11 +24,16 @@ class ExperimentStatuses(str, Enum):
     FAILED = "failed"
 
 
+class ExperimentCallback():
+    def _on_experiment_status_change(self, status, *args, **kwargs):
+        pass
+
+
 class Experiment:
     """Base class to create experiment"""
     name = "Experiment"
 
-    def __init__(self, machine: BaseMachine,  *args, **kwargs):
+    def __init__(self, machine: BaseMachine, experiment_callback: Optional[ExperimentCallback] = None,  *args, **kwargs):
         self._machine = machine
         self._thread = None
         self._abort = False
@@ -37,6 +43,7 @@ class Experiment:
         self._warmupEnabled = True
         self._lock = threading.RLock()
         self._status = ExperimentStatuses.READY
+        self._experiment_callback = experiment_callback or ExperimentCallback()
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     @classmethod
@@ -156,6 +163,7 @@ class Experiment:
 
     def _set_status(self, status: ExperimentStatuses):
         self._status = status
+        self._experiment_callback._on_experiment_status_change(self.status())
 
 
 class ExperimentRegistry:

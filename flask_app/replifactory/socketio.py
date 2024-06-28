@@ -39,6 +39,7 @@ class SocketIOSessionMachineCallback(MachineCallback):
         eventManager().subscribe(Events.MACHINE_CONNECTED, self._on_connected)
         eventManager().subscribe(Events.COMMAND_QUEUE_UPDATED, self._on_command_queue)
         eventManager().subscribe(Events.SEND_QUEUE_UPDATED, self._on_send_queue)
+        eventManager().subscribe(Events.EXPERIMENT_STATUS_CHANGE, self._on_experiment_status_change)
 
     def __del__(self):
         self.unsubscribe()
@@ -48,6 +49,9 @@ class SocketIOSessionMachineCallback(MachineCallback):
             Events.CONNECTION_OPTIONS_UPDATED, self._on_connection_options_updated
         )
         eventManager().unsubscribe(Events.MACHINE_CONNECTED, self._on_connected)
+        eventManager().unsubscribe(Events.COMMAND_QUEUE_UPDATED, self._on_command_queue)
+        eventManager().unsubscribe(Events.SEND_QUEUE_UPDATED, self._on_send_queue)
+        eventManager().unsubscribe(Events.EXPERIMENT_STATUS_CHANGE, self._on_experiment_status_change)
 
     def _emit(self, event, *args, **kwargs):
         if "to" not in kwargs:
@@ -122,6 +126,9 @@ class SocketIOSessionMachineCallback(MachineCallback):
             }
         )
         self._emit("current", data)
+
+    def _on_experiment_status_change(self, event, payload):
+        self._emit(event, payload)
 
 
 class MachineNamespace(Namespace):

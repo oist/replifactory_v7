@@ -1,10 +1,11 @@
 import logging
 import threading
 from typing import Optional
-from flask_app.replifactory.experiment import experimentRegistry
+
+from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.experiment import ExperimentCallback, experimentRegistry
 from flask_app.replifactory.machine import BaseMachine
 from flask_app.replifactory.machine_manager import machineManager
-
 
 _instance = None
 
@@ -16,7 +17,15 @@ def experimentManager():
     return _instance
 
 
-class ExperimentManager():
+class ExperimentManager(ExperimentCallback):
+
+    class NamedExperimentCallback(ExperimentCallback):
+        def __init__(self, experiment_id):
+            self._experiment_id = experiment_id
+
+        def _on_experiment_status_change(self, state, *args, **kwargs):
+            payload = state.update({"experiment_id": self._experiment_id})
+            eventManager().fire(Events.EXPERIMENT_STATUS_CHANGE, payload)
 
     def __init__(self):
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
@@ -37,7 +46,9 @@ class ExperimentManager():
                 raise ValueError("Machine is not ready to start experiment")
 
             experiment = experiment_class(machine=machine, *args, **kwargs)
-            self._experiments[experiment_id] = experiment
+            callback = self.NamedExperimentCallback(experiment_id)
+
+            self._experiments[experiment_id] = (experiment, callback)
             experiment.start()
             self._log.info(f"Started experiment {experiment_id}")
             return experiment.status()

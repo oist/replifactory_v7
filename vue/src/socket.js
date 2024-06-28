@@ -43,3 +43,7 @@ socket.on("SendQueueUpdated", (payload) => {
 socket.on("CommandQueueUpdated", (payload) => {
   store.commit("machine/updateCommandQueue", payload);
 });
+
+socket.on("ExperimentStatusChange", (payload) => {
+  store.commit("experiment/updateExperimentStatus", payload);
+});

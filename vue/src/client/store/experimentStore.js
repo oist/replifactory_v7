@@ -4,6 +4,7 @@ export default {
   namespaced: true,
   state: {
     experimentClassesOptions: {},
+    experiments: {},
 
     // hostname: "replifactory_GUI",
     // errorMessage: null,
@@ -28,6 +29,9 @@ export default {
     updateExperimentsClassesOptions(state, data) {
       state.experimentClassesOptions = data;
     },
+    updateExperimentStatus(state, data) {
+      state.experiments[data.experiment_id] = data;
+    }
   },
   actions: {
     getExperimentsClassesOptions({ commit }) {
