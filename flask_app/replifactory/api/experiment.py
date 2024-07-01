@@ -1,20 +1,30 @@
+import logging
 from flask import jsonify, request
 from flask_app.replifactory.api import api
 from flask_app.replifactory.experiment import experimentRegistry
 from flask_app.replifactory.experiment_manager import experimentManager
 
 
-@api.route("/experiments", methods=["GET"])
-def get_experiments():
+logger = logging.getLogger(__name__)
+
+
+@api.route("/experiments/classes", methods=["GET"])
+def get_experiments_classes():
     return jsonify(experimentRegistry.list())
 
 
 @api.route("/experiments/<experiment_id>", methods=["GET"])
-def get_experiment_status(experiment_id):
-    experiment = experimentRegistry.get(experiment_id)
-    if experiment is None:
-        return jsonify({"error": "Experiment not found"}), 404
-    return jsonify(experiment.status())
+def get_experiment_state(experiment_id):
+    try:
+        experiment_state = experimentManager().get_state(experiment_id)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(experiment_state)
+
+
+@api.route("/experiments", methods=["GET"])
+def get_running_experiments():
+    return jsonify(experimentManager().get_states())
 
 
 @api.route("/experiments/<experiment_id>/start", methods=["POST"])
@@ -34,5 +44,6 @@ def experiment_command(experiment_id, command):
         params = request.get_json()
         experiment_status = method(experiment_id, **params)
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        logger.exception(f"Error while executing command {command} for experiment {experiment_id}")
+        return jsonify({"error": str(e)}), 500
     return jsonify(experiment_status)

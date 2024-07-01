@@ -31,13 +31,30 @@ export default {
     },
     updateExperimentStatus(state, data) {
       state.experiments[data.experiment_id] = data;
-    }
+    },
+    updateExperimentsStatuses(state, data) {
+      state.experiments = data;
+    },
   },
   actions: {
-    getExperimentsClassesOptions({ commit }) {
+    getExperiments({ commit }) {
       return new Promise((resolve, reject) => {
         api
           .get("/api/experiments")
+          .then((response) => {
+            commit("updateExperimentsStatuses", response.data);
+            resolve(response.data);
+          })
+          .catch((error) => {
+            console.error(error);
+            reject(error);
+          });
+      });
+    },
+    getExperimentsClassesOptions({ commit }) {
+      return new Promise((resolve, reject) => {
+        api
+          .get("/api/experiments/classes")
           .then((response) => {
             commit("updateExperimentsClassesOptions", response.data);
             resolve(response.data);

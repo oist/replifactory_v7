@@ -26,7 +26,7 @@
           Sign in
         </button>
         <p class="mt-3 mb-3 text-body-secondary">
-          <BootstrapRouterLink to="/help" class="text-decoration-none"> Help </BootstrapRouterLink>
+          <BootstrapRouterLink to="/man" class="text-decoration-none"> Help </BootstrapRouterLink>
         </p>
       </form>
       <div v-else class="m-auto">

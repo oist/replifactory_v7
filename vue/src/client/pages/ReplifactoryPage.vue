@@ -1,7 +1,7 @@
 <template>
   <MachineNotification />
   <header
-    class="navbar navbar-expand-lg bd-navbar sticky-top p-0 bg-body d-print-none"
+    class="navbar navbar-expand-lg bd-navbar sticky-top p-0 bg-body d-print-none shadow-sm"
   >
     <nav
       class="container-xxl bd-gutter flex-wrap flex-lg-nowrap"

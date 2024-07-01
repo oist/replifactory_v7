@@ -3,7 +3,7 @@
 import logging
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from threading import Thread
 from typing import Optional
@@ -52,6 +52,7 @@ class Experiment:
 
     def status(self):
         return {
+            "name": self.get_name(),
             "startTime": self._startTime,
             "cycles": self._cycles,
             "cycleTime": self._cycleTime,
@@ -67,7 +68,7 @@ class Experiment:
                 raise Exception("Experiment is already running")
             self._log.info("Starting experiment")
             self._set_status(ExperimentStatuses.STARTING)
-            self._startTime = datetime.now()
+            self._startTime = datetime.now(timezone.utc)
             self._thread = Thread(target=self._experiment_loop, args=({},), daemon=True)
             eventManager().fire(Events.EXPERIMENT_STARTED, payload={"time": self._startTime})
             self._thread.start()
@@ -81,7 +82,7 @@ class Experiment:
             self._cycles = cycle_num
             self._warmupEnabled = False
             self._thread = Thread(target=self._experiment_loop, args=({},), daemon=True)
-            eventManager().fire(Events.EXPERIMENT_RESTORED, payload={"time": datetime.now()})
+            eventManager().fire(Events.EXPERIMENT_RESTORED, payload={"time": datetime.now(timezone.utc)})
             self._thread.start()
 
     def stop(self):
@@ -93,11 +94,11 @@ class Experiment:
                 def wait_and_fire():
                     aborting_thread.join()
                     self._status = ExperimentStatuses.CANCELLED
-                    eventManager().fire(Events.EXPERIMENT_CANCELLED, payload={"time": datetime.now()})
+                    eventManager().fire(Events.EXPERIMENT_CANCELLED, payload={"time": datetime.now(timezone.utc)})
                     self._log.info("Experiment cancelled")
 
                 self._abort = True
-                eventManager().fire(Events.EXPERIMENT_CANCELLING, payload={"time": datetime.now()})
+                eventManager().fire(Events.EXPERIMENT_CANCELLING, payload={"time": datetime.now(timezone.utc)})
                 Thread(target=wait_and_fire, daemon=True).start()
 
                 self._machine.cancel_long_operation()
@@ -121,7 +122,7 @@ class Experiment:
             routine_result = routine_result if routine_result else {}
             error_happend, error_message = self.error_condition(**routine_result)
             if error_happend:
-                eventManager().fire(Events.EXPERIMENT_FAILED, payload={"time": datetime.now(), "message": error_message})
+                eventManager().fire(Events.EXPERIMENT_FAILED, payload={"time": datetime.now(timezone.utc), "message": error_message})
                 self._set_status(ExperimentStatuses.FAILED)
                 break
             if self.success_condition(**routine_result):
@@ -133,10 +134,10 @@ class Experiment:
                 eventManager().fire(Events.EXPERIMENT_CYCLE_TOO_LONG_WARNING, payload={"time": end_cycle_time, "cycle": self._cycles, "elapsed_time": elapsed_time})
             else:
                 time.sleep(sleep_time)
-            eventManager().fire(Events.EXPERIMENT_CYCLE_COMPLETE, payload={"time": datetime.now(), "cycle": self._cycles})
+            eventManager().fire(Events.EXPERIMENT_CYCLE_COMPLETE, payload={"time": datetime.now(timezone.utc), "cycle": self._cycles})
 
         self.cooldown()
-        eventManager().fire(Events.EXPERIMENT_DONE, payload={"time": datetime.now()})
+        eventManager().fire(Events.EXPERIMENT_DONE, payload={"time": datetime.now(timezone.utc)})
         if self._status != ExperimentStatuses.FAILED:
             self._set_status(ExperimentStatuses.DONE)
         self._thread = None

@@ -14,7 +14,7 @@ const routes = [
         path: "/home",
         alias: "/",
         name: "Home",
-        component: () => import("@/client/components/HomeSection.vue"),
+        component: () => import("@/client/pages/replifactory/HomeSection.vue"),
       },
       {
         path: "/machine",
@@ -24,12 +24,20 @@ const routes = [
       {
         path: "/experiments",
         name: "Experiments",
-        component: () => import("@/client/components/ExperimentTab/ExperimentTab.vue"),
+        component: () => import("@/client/pages/replifactory/ExperimentSection.vue"),
+        children: [
+          {
+            path: "/experiments/new",
+            alias: "/experiments/",
+            name: "NewExperiment",
+            component: () => import("@/client/pages/replifactory/experiments/NewExperimentForm.vue"),
+          }
+        ],
       },
       {
         path: "/maintance",
         name: "Maintance",
-        component: () => import("@/client/components/MaintanceSection.vue"),
+        component: () => import("@/client/pages/replifactory/MaintanceSection.vue"),
       },
       {
         path: "/archive",
@@ -59,8 +67,8 @@ const routes = [
     component: () => import("@/client/pages/LoginPage.vue"),
   },
   {
-    path: "/help",
-    name: "Help",
+    path: "/man",
+    name: "Manual",
     component: () => import("@/client/components/HelpTab/HelpTab.vue"),
   },
 ];

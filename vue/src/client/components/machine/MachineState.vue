@@ -9,7 +9,7 @@
         Commands: {{ commandQueue.size ? commandQueue.size : "0" }}
       </dd>
     </dl>
-    <CButton
+    <!-- <CButton
       type="button"
       color="danger"
       :disabled="!deviceControlEnabled"
@@ -17,7 +17,7 @@
     >
       <CIcon icon="cilXCircle" size="xl" />
       Abort
-    </CButton>
+    </CButton> -->
   </div>
 </template>
 

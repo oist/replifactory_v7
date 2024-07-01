@@ -3,7 +3,7 @@ import threading
 from typing import Optional
 
 from flask_app.replifactory.events import Events, eventManager
-from flask_app.replifactory.experiment import ExperimentCallback, experimentRegistry
+from flask_app.replifactory.experiment import Experiment, ExperimentCallback, experimentRegistry
 from flask_app.replifactory.machine import BaseMachine
 from flask_app.replifactory.machine_manager import machineManager
 
@@ -31,6 +31,17 @@ class ExperimentManager(ExperimentCallback):
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._experiments = {}
         self._lock = threading.RLock()
+
+    def get_states(self):
+        with self._lock:
+            return {experiment_id: experiment.status() for experiment_id, (experiment, _) in self._experiments.items()}
+
+    def get_state(self, experiment_id: str):
+        with self._lock:
+            experiment = self._get_experiment(experiment_id)
+            if experiment is None:
+                raise ValueError(f"Experiment {experiment_id} not found")
+            return experiment.status()
 
     def start_experiment(self, experiment_id: str, machine: Optional[BaseMachine] = None, *args, **kwargs):
         with self._lock:
@@ -81,6 +92,6 @@ class ExperimentManager(ExperimentCallback):
             self._log.info(f"Resumed experiment {experiment_id}")
             return experiment.status()
 
-    def _get_experiment(self, experiment_id: str):
+    def _get_experiment(self, experiment_id: str) -> Experiment:
         experiment, _ = self._experiments.get(experiment_id, None)
         return experiment

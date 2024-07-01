@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import datetime
 from flask_app.replifactory.experiment import Experiment
-from flask_app.replifactory.machine import BaseMachine, ReactorException, ReactorStates
+from flask_app.replifactory.machine import ReactorException, ReactorStates
 
 
 @dataclass(frozen=True)
@@ -18,10 +18,12 @@ class EndlessGrowthExperiment(Experiment):
     """
     name = "Endless Growth"
 
-    def __init__(self, machine: BaseMachine, *args, **kwargs):
-        super().__init__(machine,  *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._reactors = self._machine.get_reactors()
-        self._params = EndlessGrowthParams(**kwargs)
+        valid_keys = {field.name for field in fields(EndlessGrowthParams)}
+        filtered_kwargs = {key: value for key, value in kwargs.items() if key in valid_keys}
+        self._params = EndlessGrowthParams(**filtered_kwargs)
         self._start_growth_time = {}
 
     def _experiment_loop(self, *args, **kwargs):

@@ -1,5 +1,5 @@
 <template>
-  <CCard style="width: 14rem" class="m-2">
+  <CCard style="width: 12rem" class="m-2">
     <CCardBody>
       <CCardTitle>{{ reactor.title }}</CCardTitle>
       <CCardSubtitle class="mb-2 text-muted">

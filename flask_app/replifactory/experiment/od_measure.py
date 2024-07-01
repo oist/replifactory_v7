@@ -3,6 +3,8 @@ from flask_app.replifactory.machine import ReactorException, ReactorStates
 
 
 class ODMeasureExperiment(Experiment):
+    name = "Optical Density Measure"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._reactors = self._machine.get_reactors()

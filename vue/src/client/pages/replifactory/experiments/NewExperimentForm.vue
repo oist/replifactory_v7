@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container d-flex align-items-stretch">
     <div class="card">
       <!-- <div class="card-header">Setup</div> -->
       <div class="card-body">
@@ -58,10 +58,6 @@
           :is="selectedExperiment.parameters"
           v-if="selectedExperiment"
         ></component>
-        <component
-          :is="selectedExperiment.dashboard"
-          v-if="selectedExperiment"
-        ></component>
       </div>
     </div>
   </div>
@@ -70,7 +66,7 @@
 <script>
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { mapState } from "vuex";
-import EndlessGrowth from "./experiments/EndlessGrowth";
+import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
 
 export default {
   components: {
