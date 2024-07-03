@@ -1,5 +1,10 @@
 from flask_app.replifactory.experiment import Experiment
 from flask_app.replifactory.machine import ReactorException, ReactorStates
+from flask_app.replifactory.plugins.experiments import ExperimentPlugin
+
+
+def init_plugin(app):
+    return ExperimentPlugin(ODMeasureExperiment)
 
 
 class ODMeasureExperiment(Experiment):

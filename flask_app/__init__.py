@@ -20,7 +20,8 @@ from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
 from flask_app.replifactory.experiment.endless_growth import EndlessGrowthExperiment
-from flask_app.replifactory.experiment.od_measure import ODMeasureExperiment
+from flask_app.replifactory.plugins import discover_plugins
+from flask_app.replifactory.plugins.experiments.od_measure.experiment import ODMeasureExperiment
 from flask_app.replifactory.experiment_manager import experimentManager
 from flask_app.replifactory.machine import machineRegistry, replifactory_v5
 from flask_app.replifactory.machine_manager import machineManager
@@ -230,8 +231,11 @@ def create_app():
     flask_static_digest.init_app(app)
 
     register_experiment(EndlessGrowthExperiment)
-    register_experiment(ODMeasureExperiment)
+    # register_experiment(ODMeasureExperiment)
     machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
+    discover_plugins(app)
+    for experiment_plugin in app.extensions["replifactory_plugins"]["experiments"].values():
+        register_experiment(experiment_plugin.get_experiment_class())
 
     return app
 
