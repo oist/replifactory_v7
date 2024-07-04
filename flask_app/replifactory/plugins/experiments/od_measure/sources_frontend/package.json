@@ -1,0 +1,15 @@
+{
+  "name": "od-measure-replifactory-plugin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx vue-cli-service build --target lib --formats umd-min,umd --dest ../static --name 'od-measure-replyfactory-plugin.[chunkhash]' src/components/Parameters.vue"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.8"
+  }
+}

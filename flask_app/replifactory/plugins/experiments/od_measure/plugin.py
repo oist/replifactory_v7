@@ -4,7 +4,7 @@ from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 
 
 def init_plugin(app):
-    return ExperimentPlugin(ODMeasureExperiment)
+    return ODMeasureExperimentPlugin()
 
 
 class ODMeasureExperiment(Experiment):
@@ -33,3 +33,13 @@ class ODMeasureExperiment(Experiment):
     def cooldown(self):
         for reactor in self._reactors:
             reactor.home()
+
+
+class ODMeasureExperimentPlugin(ExperimentPlugin):
+    experiment_class = ODMeasureExperiment
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_frontend_modules(self):
+        return [{"name": "parameters", "path": f"/static/{self.name}/od-measure-replyfactory-plugin.5b25b8e62e64f558.umd.min.js"}]

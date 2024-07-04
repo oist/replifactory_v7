@@ -11,6 +11,11 @@ import router from "./client/router";
 import "@coreui/coreui/dist/css/coreui.css";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
+import { loadPlugins } from "./plugins.js";
+
+// Important for DynamicComponent.vue
+import * as Vue from 'vue';
+window.Vue = Vue;
 
 const app = createApp(App);
 
@@ -38,4 +43,7 @@ app.use(BootstrapVueNext);
 app.use(store);
 app.use(router);
 app.provide("icons", icons);
-app.mount("#replifactory");
+
+loadPlugins(app).then(() => {
+  app.mount("#replifactory");
+});

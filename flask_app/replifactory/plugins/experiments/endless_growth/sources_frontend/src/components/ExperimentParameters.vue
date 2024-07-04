@@ -104,12 +104,12 @@
   </section>
 </template>
 
-<script>
-export default {
-  components: {},
-  data() {
-    return {};
-  },
-  computed: {},
-};
+<script setup>
+// export default {
+//   components: {},
+//   data() {
+//     return {};
+//   },
+//   computed: {},
+// };
 </script>

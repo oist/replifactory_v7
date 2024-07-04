@@ -70,7 +70,7 @@
 <script>
 // import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { mapState } from "vuex";
-import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
+// import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
 
 export default {
   // components: {
@@ -88,16 +88,16 @@ export default {
     isExperimentRunning() {
       return false;
     },
-    selectedExperiment() {
-      switch (this.selectedExperimentClass) {
-        case "flask_app.replifactory.experiment.endless_growth.EndlessGrowthExperiment":
-          return EndlessGrowth;
-        // case "flask_app.replifactory.experiment.MorbidostatExperiment":
-        //   return Morbidostat;
-        default:
-          return null;
-      }
-    },
+    // selectedExperiment() {
+    //   switch (this.selectedExperimentClass) {
+    //     case "flask_app.replifactory.experiment.endless_growth.EndlessGrowthExperiment":
+    //       return EndlessGrowth;
+    //     // case "flask_app.replifactory.experiment.MorbidostatExperiment":
+    //     //   return Morbidostat;
+    //     default:
+    //       return null;
+    //   }
+    // },
     experimentTitle() {
       return this.selectedExperiment
         ? this.selectedExperiment.title

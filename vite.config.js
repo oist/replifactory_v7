@@ -34,6 +34,16 @@ export default defineConfig({
     port: 8080,
     open: true,
     proxy: {
+      "/plugins": {
+        changeOrigin: false,
+        target: "http://localhost:5000",
+        // secure: false,
+      },
+      "/static": {
+        changeOrigin: false,
+        target: "http://localhost:5000",
+        // secure: false,
+      },
       "/security": {
         changeOrigin: false,
         target: "http://localhost:5000",

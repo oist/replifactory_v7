@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build --emptyOutDir",
+    "build_plugins": "vite build --emptyOutDir --mode plugins",
     "start": "concurrently -n \"WEBPACK,FLASK\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run serve\" \"npm run flask-server\"",
     "flask-server": "poetry run flask --app flask_app.app run --host=0.0.0.0",
     "flask-static-digest": "poetry run flask --app flask_app digest compile",

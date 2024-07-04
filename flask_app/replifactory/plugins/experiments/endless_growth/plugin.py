@@ -2,6 +2,14 @@ from dataclasses import dataclass, fields
 from datetime import datetime
 from flask_app.replifactory.experiment import Experiment
 from flask_app.replifactory.machine import ReactorException, ReactorStates
+from flask_app.replifactory.plugins.experiments import ExperimentPlugin
+
+
+def init_plugin(app):
+    return EndlessGrowthExperimentPlugin()
+    # return ExperimentPlugin(EndlessGrowthExperiment, name="Endless Growth Plugin", frontend_modules=[
+    #     {"name": "endlessGrowth", "url": "/static/plugins/endless_growth.js"}
+    # ])
 
 
 @dataclass(frozen=True)
@@ -65,3 +73,15 @@ class EndlessGrowthExperiment(Experiment):
 
     def _reset_growth_timeout(self, reactor):
         self._start_growth_time[str(reactor)] = datetime.now()
+
+
+class EndlessGrowthExperimentPlugin(ExperimentPlugin):
+    experiment_class = EndlessGrowthExperiment
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_frontend_modules(self):
+        return super().get_frontend_modules() + [
+            {"name": "parameters", "url": f"/static/{self.name}/replifactory_endless_growth_plugin.umd.cjs"},
+        ]

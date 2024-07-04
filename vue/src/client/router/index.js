@@ -5,7 +5,7 @@ import store from "@/client/store/index.js";
 const routes = [
   {
     path: "/",
-    name: "Home",
+    name: "Index",
     // component: () => import("@/client/components/Replifactory.vue"),
     component: () => import("@/client/pages/ReplifactoryPage.vue"),
     beforeEnter: requireAuth,

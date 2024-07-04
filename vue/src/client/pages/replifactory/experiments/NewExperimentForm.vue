@@ -50,14 +50,18 @@
             </div>
           </div>
         </form>
-        <component
+        <!-- {{ selectedExperiment.description }} -->
+        <!-- <component
           :is="selectedExperiment.description"
           v-if="selectedExperiment"
-        ></component>
+        ></component> -->
+        <!-- {{ selectedExperiment.parameters }}
         <component
           :is="selectedExperiment.parameters"
           v-if="selectedExperiment"
-        ></component>
+        ></component> -->
+        <!-- <DynamicComponent :url="selectedExperiment.parameters" /> -->
+        <CustomDynamicComponent :url="selectedExperiment.parameters" />
       </div>
     </div>
   </div>
@@ -66,13 +70,17 @@
 <script>
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { mapState } from "vuex";
-import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
+// import DynamicComponent from "@/client/components/DynamicComponent.vue";
+import CustomDynamicComponent from "@/client/components/CustomDynamicComponent.vue";
+// import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
 
 export default {
   components: {
     CFormSelect,
     CInputGroup,
     CButton,
+    // DynamicComponent,
+    CustomDynamicComponent,
   },
   data() {
     return {
@@ -86,12 +94,33 @@ export default {
     },
     selectedExperiment() {
       switch (this.selectedExperimentClass) {
-        case "flask_app.replifactory.experiment.endless_growth.EndlessGrowthExperiment":
-          return EndlessGrowth;
+        case "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperiment___":
+          return {
+            "description": this.selectedExperimentClass,
+            "parameters": "/static/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/replifactory_endless_growth_plugin.umd.cjs",
+          };
+        //   return {
+        //     description: this.selectedExperimentClass,
+        //     parameters:
+        //       "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin",
+        //   };
+        case "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperiment":
+          return {
+            description: this.selectedExperimentClass,
+            parameters:
+              "/static/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-replyfactory-plugin.5b25b8e62e64f558.umd.min.js",
+          };
+        // return {
+        //     description: "ExperimentDescription",
+        //     parameters: "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin",
+        // };
         // case "flask_app.replifactory.experiment.MorbidostatExperiment":
         //   return Morbidostat;
         default:
-          return null;
+          return {
+            description: "ExperimentDescription",
+            parameters: "ExperimentParameters",
+          };
       }
     },
     experimentTitle() {

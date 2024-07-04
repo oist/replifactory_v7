@@ -1,10 +1,11 @@
 import atexit
 import functools
+import inspect
 import logging
 import os
 from http.client import HTTPException
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_security.core import Security
 from flask_security.datastore import SQLAlchemyUserDatastore
@@ -19,12 +20,11 @@ from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
-from flask_app.replifactory.experiment.endless_growth import EndlessGrowthExperiment
 from flask_app.replifactory.plugins import discover_plugins
-from flask_app.replifactory.plugins.experiments.od_measure.experiment import ODMeasureExperiment
 from flask_app.replifactory.experiment_manager import experimentManager
 from flask_app.replifactory.machine import machineRegistry, replifactory_v5
 from flask_app.replifactory.machine_manager import machineManager
+from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
 from flask_app.routes.device_routes import device_routes
@@ -151,7 +151,7 @@ def create_app():
 
     CORS(app)
 
-    def _setup_blueprints():
+    def _setup_blueprints(flask_app):
         from flask_app.replifactory.api import api
         from flask_app.replifactory.util.flask import make_api_error
 
@@ -210,10 +210,6 @@ def create_app():
 
     setattr(app, "run_before_server_started", _run_before_server_started)
 
-    @app.route("/static/<path:path>")
-    def send_report(path):
-        return send_from_directory("static", path)
-
     @app.route("/help", defaults={"path": ""})
     @app.route("/help/<path:path>")
     def send_help(path):
@@ -227,15 +223,46 @@ def create_app():
     def catch_all(path):
         return app.send_static_file("index.html")
 
-    _setup_blueprints()
+    _setup_blueprints(app)
     flask_static_digest.init_app(app)
 
-    register_experiment(EndlessGrowthExperiment)
-    # register_experiment(ODMeasureExperiment)
     machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
     discover_plugins(app)
-    for experiment_plugin in app.extensions["replifactory_plugins"]["experiments"].values():
-        register_experiment(experiment_plugin.get_experiment_class())
+    for plugin in app.extensions["replifactory_plugins"].values():
+        if isinstance(plugin, ExperimentPlugin):
+            register_experiment(plugin.get_experiment_class())
+
+            # @app.route(f"/static/{plugin.get_static_path()}/<path:path>")
+            # def serve_plugin_static(path):
+            #     return send_from_directory(f"{}", path)
+    @app.route('/api/plugins')
+    def get_plugins():
+        plugins = []
+        for plugin in app.extensions["replifactory_plugins"].values():
+            plugins.append(plugin.get_metadata())
+        return jsonify(plugins)
+
+    @app.route("/plugins/<plugin_name>/<path:path>")
+    def serve_plugin_static(plugin_name, path):
+        plugin = app.extensions["replifactory_plugins"].get(plugin_name)
+        if plugin:
+            # Get the file path of the plugin's module
+            plugin_module_file = inspect.getfile(plugin.__class__)
+            # Get the directory of the plugin's module
+            plugin_dir = os.path.dirname(plugin_module_file)
+            # Construct the path to the plugin's static directory
+            static_dir = os.path.join(plugin_dir, "static")
+            # Serve the file from the plugin's static directory
+            if path.endswith(".js") or path.endswith(".cjs"):
+                return send_from_directory(static_dir, path, mimetype='application/javascript')
+            else:
+                return send_from_directory(static_dir, path)
+        else:
+            return "Plugin not found", 404
+
+    @app.route("/static/<path:path>")
+    def send_report(path):
+        return send_from_directory("static", path)
 
     return app
 

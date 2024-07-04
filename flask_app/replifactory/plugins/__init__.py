@@ -2,8 +2,6 @@ import logging
 import os
 import importlib
 
-from flask_app.replifactory.experiment import register_experiment
-
 
 logger = logging.getLogger(__name__)
 
@@ -14,24 +12,44 @@ def discover_plugins(app, plugins_folder=None):
         logger.warning("No app provided")
         return
 
-    app.extensions.setdefault("replifactory_plugins", {
-        "experiments": {},
-    })
-    app_experiments_plugins = app.extensions["replifactory_plugins"]["experiments"]
+    app.extensions.setdefault("replifactory_plugins", {})
+    app_plugins = app.extensions["replifactory_plugins"]
 
-    experiments_plugins_folder = os.path.join(plugins_folder, 'experiments')
-    for plugins_folder_item in os.listdir(experiments_plugins_folder):
-        if plugins_folder_item.startswith("_"):
+    for plugin_category in os.listdir(plugins_folder):
+        if plugin_category.startswith("_"):
             continue
-        plugin_full_path = os.path.join(experiments_plugins_folder, plugins_folder_item)
-        if os.path.isdir(plugin_full_path):
-            plugin_name = plugins_folder_item
-            module_name = f"flask_app.replifactory.plugins.experiments.{plugin_name}.experiment"
+        plugins_category_path = os.path.join(plugins_folder, plugin_category)
+        if not os.path.isdir(plugins_category_path):
+            continue
+        for plugin_name in os.listdir(plugins_category_path):
+            if plugin_name.startswith("_"):
+                continue
+            plugin_path = os.path.join(plugins_category_path, plugin_name)
+            if not os.path.isdir(plugin_path):
+                continue
+            module_name = f"flask_app.replifactory.plugins.{plugin_category}.{plugin_name}.plugin"
             module = importlib.import_module(module_name)
             if hasattr(module, 'init_plugin'):
-                experiment_plugin = module.init_plugin(app)
-                app_experiments_plugins[plugin_name] = experiment_plugin
+                plugin = module.init_plugin(app)
+                if plugin.name in app_plugins:
+                    raise ValueError(f"Plugin with name {plugin.name} already exists")
+                app_plugins[plugin.name] = plugin
 
 
-class ReplifactoryPlugins:
-    pass
+class ReplifactoryPlugin:
+    def __init__(self, name=None, *args, **kwargs):
+        self.name = name or f"{self.__module__}.{self.__class__.__name__}"
+        self.description = self.__doc__ or ""
+
+    def get_frontend_modules(self):
+        """ Return a list of frontend modules to be loaded by the client
+        e.g. [{"name": "myPlugin", "url": "/static/plugins/myPlugin.js"}]
+        """
+        return []
+
+    def get_metadata(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "frontend_modules": self.get_frontend_modules()
+        }
