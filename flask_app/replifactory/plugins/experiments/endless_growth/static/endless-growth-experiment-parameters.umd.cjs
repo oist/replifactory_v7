@@ -1,5 +1,5 @@
 (function(global, factory) {
-  typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory(require("vue")) : typeof define === "function" && define.amd ? define(["vue"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, global.ReplifactoryPlugin = factory(global.Vue));
+  typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory(require("vue")) : typeof define === "function" && define.amd ? define(["vue"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, global["endless-growth-experiment-parameters"] = factory(global.Vue));
 })(this, function(vue) {
   "use strict";
   const _hoisted_1 = /* @__PURE__ */ vue.createStaticVNode('<h3>Global Parameters</h3><form><div class="row mb-3"><label for="inputCycleTime" class="col-sm-2 col-form-label">Cycle time</label><div class="col-auto"><div class="input-group mb-3"><input id="inputCycleTime" type="number" class="form-control" aria-label="Cycle time" aria-describedby="inputCycleTimeUnit" value="240"><span id="inputCycleTimeUnit" class="input-group-text">seconds</span></div></div></div></form><h3>Reactors parameters</h3>', 3);

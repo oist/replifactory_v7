@@ -83,10 +83,10 @@ export default {
     },
     selectedExperiment() {
       switch (this.selectedExperimentClass) {
-        case "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperiment___":
+        case "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperiment":
           return {
-            "description": this.selectedExperimentClass,
-            "parameters": "/static/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/replifactory_endless_growth_plugin.umd.cjs",
+            "description": "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js",
+            "parameters": "/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-parameters.umd.cjs",
           };
         case "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperiment":
           return {

@@ -15,6 +15,11 @@ const props = defineProps({
   },
 });
 async function loadComponent() {
+  if (!props.url) {
+    return {
+      template: `<p>URL is not provided</p>`,
+    };
+  }
   try {
     return await externalComponent(props.url);
   } catch (error) {

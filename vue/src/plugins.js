@@ -45,16 +45,27 @@ export async function loadPlugins(app) {
 export async function externalComponent(url) {
   let name;
   try {
+    // const match = url.match(/\/plugins\/([^/]+)\/([^/]+)\.umd\..*\.?js$/);
+    // if (!match) {
+    //   throw new Error("Failed to extract pluginId and fileName from URL");
+    // }
+
+    // const pluginId = match[1];
+    // const fileName = match[2];
+    // name = `${pluginId}-${fileName}`;
+
     name = url
       .split("/")
       .reverse()[0]
       .match(/^(.*?)\.umd/)[1];
-    if (!name) throw new Error("Failed to extract module name from URL");
+    if (!name) {
+      throw new Error("Failed to extract module name from URL");
+    }
   } catch (e) {
     return Promise.reject(new Error(`Error parsing URL: ${url} ${e.message}`));
   }
 
-  // Check if the module is already loaded or being loaded
+//   // Check if the module is already loaded or being loaded
   if (window[name]) {
     // If it's a promise, return it directly to avoid creating a new promise
     if (window[name] instanceof Promise) {
@@ -63,6 +74,7 @@ export async function externalComponent(url) {
     // If the module is already loaded, wrap it in a resolved promise
     return Promise.resolve(window[name]);
   }
+//   if (window[name]) return window[name];
 
   // Create a new promise for loading the module
   window[name] = new Promise((resolve, reject) => {

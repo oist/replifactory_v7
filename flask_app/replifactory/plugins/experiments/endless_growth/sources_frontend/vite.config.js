@@ -27,8 +27,8 @@ export default defineConfig({
     lib: {
       formats: ["umd"],
       entry: "src/components/ExperimentParameters.vue",
-      name: "ReplifactoryPlugin",
-      // fileName: "replifactory-plugin",
+      name: "endless-growth-experiment-parameters",
+      fileName: "endless-growth-experiment-parameters",
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
