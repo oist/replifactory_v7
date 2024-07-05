@@ -4,8 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-old": "npx vue-cli-service build --target lib --formats umd-min,umd --dest ../static --name 'od-measure-replyfactory-plugin.[chunkhash]' src/components/Parameters.vue",
-    "build": "npx vue-cli-service build --target lib --formats umd-min --dest ../static --name 'od-measure-replyfactory-plugin' src/components/Parameters.vue"
+    "serve": "npx vue-cli-service serve",
+    "build": "node build-components.js"
   },
   "author": "",
   "license": "ISC",

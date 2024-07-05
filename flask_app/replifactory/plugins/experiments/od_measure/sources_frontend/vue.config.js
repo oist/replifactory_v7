@@ -13,5 +13,7 @@ module.exports = {
     },
     css: {
       extract: false,
-    }
+    },
+    outputDir: path.resolve(__dirname, "../static"),
+    productionSourceMap: false,
   }

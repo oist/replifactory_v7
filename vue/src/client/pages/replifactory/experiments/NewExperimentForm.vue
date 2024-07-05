@@ -1,13 +1,12 @@
 <template>
   <div class="container d-flex align-items-stretch">
     <div class="card">
-      <!-- <div class="card-header">Setup</div> -->
       <div class="card-body">
         <h5 class="card-title">{{ experimentTitle }}</h5>
         <form>
           <div class="row mb-3">
             <label for="experimentClassSelect" class="col-sm-2 col-form-label"
-              >Choise experiment class</label
+              >Choose an experiment</label
             >
             <div class="col-sm-10">
               <CInputGroup>
@@ -50,17 +49,7 @@
             </div>
           </div>
         </form>
-        <!-- {{ selectedExperiment.description }} -->
-        <!-- <component
-          :is="selectedExperiment.description"
-          v-if="selectedExperiment"
-        ></component> -->
-        <!-- {{ selectedExperiment.parameters }}
-        <component
-          :is="selectedExperiment.parameters"
-          v-if="selectedExperiment"
-        ></component> -->
-        <!-- <DynamicComponent :url="selectedExperiment.parameters" /> -->
+        <CustomDynamicComponent :url="selectedExperiment.description" />
         <CustomDynamicComponent :url="selectedExperiment.parameters" />
       </div>
     </div>
@@ -99,27 +88,16 @@ export default {
             "description": this.selectedExperimentClass,
             "parameters": "/static/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/replifactory_endless_growth_plugin.umd.cjs",
           };
-        //   return {
-        //     description: this.selectedExperimentClass,
-        //     parameters:
-        //       "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin",
-        //   };
         case "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperiment":
           return {
-            description: this.selectedExperimentClass,
+            description: "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js",
             parameters:
-              "/static/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-replyfactory-plugin.5b25b8e62e64f558.umd.min.js",
+              "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-parameters.umd.min.js",
           };
-        // return {
-        //     description: "ExperimentDescription",
-        //     parameters: "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin",
-        // };
-        // case "flask_app.replifactory.experiment.MorbidostatExperiment":
-        //   return Morbidostat;
         default:
           return {
-            description: "ExperimentDescription",
-            parameters: "ExperimentParameters",
+            description: "",
+            parameters: "",
           };
       }
     },

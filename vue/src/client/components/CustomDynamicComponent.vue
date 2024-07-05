@@ -1,5 +1,7 @@
 <template>
-  <component :is="loadComponent" v-if="url" />
+  <div class="external-component-container">
+    <component :is="AsyncComp" v-if="url"/>
+  </div>
 </template>
 
 <script setup>
@@ -13,20 +15,21 @@ const props = defineProps({
   },
 });
 async function loadComponent() {
-  if (!props.url) {
-    return {
-      template: `<p>There is no component</p>`,
-    };
-  }
   try {
-    return defineAsyncComponent(async () => {
-      return await externalComponent(props.url);
-    });
-  } catch (e) {
-    console.error(`Error loading plugin ${props.url}: ${e}`);
+    return await externalComponent(props.url);
+  } catch (error) {
+    console.error(error);
     return {
-      template: `<p>Error loading plugin ${props.url}: ${e}</p>`,
+        template: `<p>${error.message}</p>`,
     };
   }
 }
+const AsyncComp = defineAsyncComponent({
+  loader: loadComponent,
+  loadingComponent: {
+    template: `<p>Loading...</p>`,
+  },
+  delay: 2000,
+  timeout: 3000,
+});
 </script>
