@@ -1,24 +1,33 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+// import alias from "@rollup/plugin-alias";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  resolve: {
-		alias: {
-			'vue': 'vue/dist/vue.esm-bundler.js',
-		},
-	},
-  plugins: [vue()],
+  // mode: 'production',
+  // resolve: {
+  //   alias: {
+  //     vue: "vue/dist/vue.esm-bundler.js",
+  //   },
+  // },
+  plugins: [
+    vue({isProduction: true,}),
+    // alias(),
+    // alias({
+    //   entries: [
+    //     // { find: "vue", replacement: "vue/dist/vue.esm-bundler.js" },
+    //     { find: 'vue', replacement: resolve(__dirname,'node_modules/vue/dist/vue.esm-bundler.js') }
+    //   ],
+    // }),
+  ],
   build: {
     outDir: resolve(__dirname, "../static"),
+    minify: false,
     lib: {
-      formats: ['es', 'umd'],
-      // Could also be a dictionary or array of multiple entry points
-      // entry: resolve(__dirname, "src/plugin.js"),
-      entry: resolve(__dirname, "src/components/ExperimentParameters.vue"),
+      formats: ["umd"],
+      entry: "src/components/ExperimentParameters.vue",
       name: "ReplifactoryPlugin",
-      // the proper extensions will be added
       // fileName: "replifactory-plugin",
     },
     rollupOptions: {

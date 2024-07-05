@@ -15,6 +15,7 @@ import { loadPlugins } from "./plugins.js";
 
 // Important for DynamicComponent.vue
 import * as Vue from 'vue';
+// import * as Vue from 'vue/dist/vue.esm-bundler.js';
 window.Vue = Vue;
 
 const app = createApp(App);

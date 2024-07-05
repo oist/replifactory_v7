@@ -45,13 +45,27 @@ export async function loadPlugins(app) {
 export async function externalComponent(url) {
     const name = url.split('/').reverse()[0].match(/^(.*?)\.umd/)[1];
 
-    if (window[name]) return window[name];
+    // Check if the module is already loaded or being loaded
+    if (window[name]) {
+      // If it's a promise, return it directly to avoid creating a new promise
+      if (window[name] instanceof Promise) {
+        return window[name];
+      }
+      // If the module is already loaded, wrap it in a resolved promise
+      return Promise.resolve(window[name]);
+    }
 
+    // Create a new promise for loading the module
     window[name] = new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.async = true;
       script.addEventListener('load', () => {
-        resolve(window[name]);
+        // Ensure the script is loaded by checking if the module is defined
+        if (window[name]) {
+          resolve(window[name]);
+        } else {
+          reject(new Error(`Module ${name} did not load correctly.`));
+        }
       });
       script.addEventListener('error', () => {
         reject(new Error(`Error loading ${url}`));

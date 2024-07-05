@@ -1,6 +1,8 @@
 <template>
-  <section>
-    <h3>Global Parameters</h3>
+  <section class="container">
+    <h3 class="custom-red">Global Parameters</h3>
+    <img src="@/assets/replifactory_v5.jpg" class="img-fluid" alt="Replifactory photo" />
+
     <form>
       <div class="row mb-3">
         <label for="inputCycleTime" class="col-sm-2 col-form-label"
@@ -107,3 +109,9 @@
 <script setup>
 
 </script>
+
+<style scoped>
+    .custom-red {
+        color: red;
+    }
+</style>

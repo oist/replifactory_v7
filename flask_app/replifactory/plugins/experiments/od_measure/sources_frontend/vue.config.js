@@ -1,9 +1,17 @@
+const path = require("path");
+
+const vueSrc = "./src";
+
 module.exports = {
     configureWebpack: {
       resolve: {
         alias: {
-          'vue$': 'vue/dist/vue.esm-bundler.js'
+          '@': path.join(__dirname, vueSrc),
+          'vue$': 'vue/dist/vue.esm-bundler.js',
         }
-      }
+      },
+    },
+    css: {
+      extract: false,
     }
   }
