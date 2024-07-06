@@ -65,7 +65,7 @@ export async function externalComponent(url) {
     return Promise.reject(new Error(`Error parsing URL: ${url} ${e.message}`));
   }
 
-//   // Check if the module is already loaded or being loaded
+  //   // Check if the module is already loaded or being loaded
   if (window[name]) {
     // If it's a promise, return it directly to avoid creating a new promise
     if (window[name] instanceof Promise) {
@@ -74,7 +74,7 @@ export async function externalComponent(url) {
     // If the module is already loaded, wrap it in a resolved promise
     return Promise.resolve(window[name]);
   }
-//   if (window[name]) return window[name];
+  //   if (window[name]) return window[name];
 
   // Create a new promise for loading the module
   window[name] = new Promise((resolve, reject) => {
@@ -96,4 +96,22 @@ export async function externalComponent(url) {
   });
 
   return window[name];
+}
+
+export function componentLoader(url) {
+  return async () => {
+    if (!url) {
+      return {
+        template: `<p>URL is not provided</p>`,
+      };
+    }
+    try {
+      return await externalComponent(url);
+    } catch (error) {
+      console.error(error);
+      return {
+        template: `<p>${error.message}</p>`,
+      };
+    }
+  };
 }

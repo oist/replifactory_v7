@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineAsyncComponent } from "vue";
+import { defineProps, watchEffect, ref, defineAsyncComponent } from "vue";
 import { externalComponent } from "@/plugins.js";
 
 const props = defineProps({
@@ -29,12 +29,24 @@ async function loadComponent() {
     };
   }
 }
-const AsyncComp = defineAsyncComponent({
-  loader: loadComponent,
-  loadingComponent: {
-    template: `<p>Loading...</p>`,
-  },
-  delay: 2000,
-  timeout: 3000,
+
+const AsyncComp = ref(null);
+watchEffect(async () => {
+  AsyncComp.value = defineAsyncComponent({
+    loader: loadComponent,
+    loadingComponent: {
+      template: `<p>Loading...</p>`,
+    },
+    delay: 2000,
+    timeout: 3000,
+  });
 });
+// const AsyncComp = computed(() => defineAsyncComponent({
+//   loader: loadComponent,
+//   loadingComponent: {
+//     template: `<p>Loading...</p>`,
+//   },
+//   delay: 2000,
+//   timeout: 3000,
+// }));
 </script>

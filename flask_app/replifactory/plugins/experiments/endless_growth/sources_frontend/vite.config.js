@@ -26,9 +26,13 @@ export default defineConfig({
     minify: false,
     lib: {
       formats: ["umd"],
-      entry: "src/components/ExperimentParameters.vue",
-      name: "endless-growth-experiment-parameters",
-      fileName: "endless-growth-experiment-parameters",
+      // entry: {
+      //   "endless-growth-experiment-description": "src/components/ExperimentDescription.vue",
+      //   "endless-growth-experiment-parameters": "src/components/ExperimentParameters.vue",
+      // },
+      // entry: ["src/components/ExperimentDescription.vue", "src/components/ExperimentParameters.vue"],
+      // name: ["endless-growth-experiment-description", "endless-growth-experiment-parameters"],
+      // fileName: ["endless-growth-experiment-description", "endless-growth-experiment-parameters"],
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled

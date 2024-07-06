@@ -1,6 +1,6 @@
 <template>
   <div class="container d-flex align-items-stretch">
-    <div class="card">
+    <div class="card w-100">
       <div class="card-body">
         <h5 class="card-title">{{ experimentTitle }}</h5>
         <form>
@@ -17,11 +17,11 @@
                   :disabled="isExperimentRunning"
                 >
                   <option
-                    v-for="(value, id) in experimentClassesOptions"
+                    v-for="(value, id) in modifiedExperimentClassesOptions"
                     :key="id"
                     :value="id"
                   >
-                    {{ value }} ({{ id }})
+                    {{ value }}
                   </option>
                 </CFormSelect>
                 <CButton
@@ -49,8 +49,10 @@
             </div>
           </div>
         </form>
-        <CustomDynamicComponent :url="selectedExperiment.description" />
-        <CustomDynamicComponent :url="selectedExperiment.parameters" />
+        <!-- <CustomDynamicComponent :url="descriptionComponent" /> -->
+        <component :is="descriptionComponent" />
+        <component :is="parametersComponent" />
+        <!-- <CustomDynamicComponent :url="parametersComponent" /> -->
       </div>
     </div>
   </div>
@@ -59,8 +61,10 @@
 <script>
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { mapState } from "vuex";
+import { defineAsyncComponent } from "vue";
+import { componentLoader } from "@/plugins.js";
 // import DynamicComponent from "@/client/components/DynamicComponent.vue";
-import CustomDynamicComponent from "@/client/components/CustomDynamicComponent.vue";
+// import CustomDynamicComponent from "@/client/components/CustomDynamicComponent.vue";
 // import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
 
 export default {
@@ -69,7 +73,7 @@ export default {
     CInputGroup,
     CButton,
     // DynamicComponent,
-    CustomDynamicComponent,
+    // CustomDynamicComponent,
   },
   data() {
     return {
@@ -78,6 +82,12 @@ export default {
   },
   computed: {
     ...mapState("experiment", ["experimentClassesOptions"]),
+    modifiedExperimentClassesOptions() {
+        return {
+            none: "Select an option...",
+            ...this.experimentClassesOptions,
+        };
+    },
     isExperimentRunning() {
       return false;
     },
@@ -85,21 +95,34 @@ export default {
       switch (this.selectedExperimentClass) {
         case "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperiment":
           return {
-            "description": "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js",
-            "parameters": "/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-parameters.umd.cjs",
+            description: defineAsyncComponent({
+                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-description.umd.cjs"),
+            }),
+            parameters: defineAsyncComponent({
+                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-parameters.umd.cjs"),
+            }),
           };
         case "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperiment":
           return {
-            description: "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js",
-            parameters:
-              "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-parameters.umd.min.js",
+            description: defineAsyncComponent({
+                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js"),
+            }),
+            parameters: defineAsyncComponent({
+                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-parameters.umd.min.js"),
+            }),
           };
         default:
           return {
-            description: "",
-            parameters: "",
+            description: {template: " "},
+            parameters: {template: " "},
           };
       }
+    },
+    descriptionComponent() {
+        return this.selectedExperiment.description;
+    },
+    parametersComponent() {
+        return this.selectedExperiment.parameters;
     },
     experimentTitle() {
       return this.selectedExperiment
@@ -108,14 +131,14 @@ export default {
     },
   },
   watch: {
-    experimentClassesOptions: {
-      immediate: true,
-      handler(newVal) {
-        if (newVal) {
-          this.selectedExperimentClass = Object.keys(newVal)[0];
-        }
-      },
-    },
+    // experimentClassesOptions: {
+    //   immediate: true,
+    //   handler(newVal) {
+    //     if (newVal) {
+    //       this.selectedExperimentClass = Object.keys(newVal)[0];
+    //     }
+    //   },
+    // },
   },
   created() {
     this.getExperimentClassesOptions();
