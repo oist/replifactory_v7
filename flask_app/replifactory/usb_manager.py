@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import os
 from threading import RLock
 from typing import Any
 
@@ -13,6 +14,58 @@ from flask_app.replifactory.events import Events, eventManager
 
 logger = logging.getLogger(__name__)
 _instance = None
+
+REPLIFACTORY_VIRTUAL_MACHINE_ENABLED = os.environ.get(
+    "REPLIFACTORY_VIRTUAL_MACHINE_ENABLED", "false"
+).lower() in ("true", "1")
+
+
+class VirtualUsbDevice(UsbDevice):
+    class Device:
+        pass
+
+    class DeviceDescriptor:
+        bLength = 0
+        bDescriptorType = 0
+        bcdUSB = 0
+        bDeviceClass = 0
+        bDeviceSubClass = 0
+        bDeviceProtocol = 0
+        bMaxPacketSize0 = 0
+        idVendor = 0
+        idProduct = 0
+        bcdDevice = 0
+        iManufacturer = 0
+        iProduct = 0
+        iSerialNumber = 0
+        bNumConfigurations = 0
+        address = 0
+        bus = 0
+        port_number = 0
+        port_numbers = 0
+        speed = 0
+
+    class Backend:
+        def get_device_descriptor(self, dev):
+            return VirtualUsbDevice.DeviceDescriptor()
+
+        def open_device(self, dev):
+            return self
+
+        def close_device(self, dev):
+            return self
+
+    def __init__(self):
+        super().__init__(self.Device(), self.Backend())
+        self._manufacturer = "OIST"
+        self._product = "Virtual Replifactory"
+        self._serial_number = "FT2X2X"
+        self.id = f"/dev/bus/usb/{self.bus:03}/{self.address:03}"
+        self._langids = (0x0409,)
+        self._has_parent = False
+
+
+VIRTUAL_USB_DEVICE = VirtualUsbDevice()
 
 
 def usbManager():
@@ -105,6 +158,8 @@ class UsbManager:
             if self._usb_devices is None:
                 usb_devices = OrderedDict()
                 devices = FtdiDriver.list_devices()
+                if REPLIFACTORY_VIRTUAL_MACHINE_ENABLED:
+                    devices.append(VIRTUAL_USB_DEVICE)
                 for device in devices:
                     device_id = f"/dev/bus/usb/{device.bus:03}/{device.address:03}"
                     usb_devices[device_id] = device

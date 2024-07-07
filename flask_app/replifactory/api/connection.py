@@ -1,9 +1,13 @@
+import logging
 from flask import jsonify, request
 from flask_security.decorators import auth_required
 
 from flask_app import machine_manager, settings
 from flask_app.replifactory.api import api
 from flask_app.replifactory.util.flask import NO_CONTENT, get_json_command_from_request
+
+
+logger = logging.getLogger(__name__)
 
 
 @api.route("/connection", methods=["GET"])
@@ -40,6 +44,7 @@ def connectionCommand():
         try:
             machine_manager.connect(device_address=device_id)
         except Exception as e:
+            logger.exception("Error while connecting to usb device")
             return str(e), 500
     elif command == "disconnect":
         machine_manager.disconnect()

@@ -189,10 +189,16 @@ class MachineManager(MachineCallback):
         eventManager().fire(Events.MACHINE_CONNECTING)
         usb_device = usbManager().get_device(device_id=device_address)
         self._set_current_connection(usb_device)
-        usb_device_dict = {attr: getattr(usb_device, attr) for attr in dir(usb_device) if not attr.startswith('_')}
+        usb_device_dict = {
+            attr: getattr(usb_device, attr)
+            for attr in dir(usb_device)
+            if not attr.startswith("_")
+        }
         machine_type = machineRegistry().find_compatible(**usb_device_dict)
         if machine_type is None:
-            raise ValueError(f"No machine implementation found for USB device {device_address}")
+            raise ValueError(
+                f"No machine implementation found for USB device {device_address}"
+            )
         self._machine = machine_type(machine_callback=self)
         self._machine.connect(usb_device=usb_device)
 

@@ -82,7 +82,8 @@
         "FLASK_DEBUG": "1",
         "LOGGING_LEVEL": "DEBUG",
         "ENVIRONMENT": "development",
-        "REDIRECT_HOST": "localhost:8080"
+        "REDIRECT_HOST": "localhost:8080",
+        "REPLIFACTORY_VIRTUAL_MACHINE_ENABLED": "True",
       },
       "args": ["run", "--no-debugger", "--no-reload"],
       "jinja": true,
