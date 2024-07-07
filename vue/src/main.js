@@ -11,11 +11,10 @@ import router from "./client/router";
 import "@coreui/coreui/dist/css/coreui.css";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
-// import { loadPlugins } from "./plugins.js";
 
-// Important for DynamicComponent.vue
+// Important for loading plugins
+// will be replaced by vite.config.js to use vue.esm-bundler.js
 import * as Vue from 'vue';
-// import * as Vue from 'vue/dist/vue.esm-bundler.js';
 window.Vue = Vue;
 
 const app = createApp(App);
@@ -45,7 +44,3 @@ app.use(store);
 app.use(router);
 app.provide("icons", icons);
 app.mount("#replifactory");
-
-// loadPlugins(app).then(() => {
-//   app.mount("#replifactory");
-// });

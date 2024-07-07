@@ -3,6 +3,7 @@ from datetime import datetime
 from flask_app.replifactory.experiment import Experiment
 from flask_app.replifactory.machine import ReactorException, ReactorStates
 from flask_app.replifactory.plugins.experiments import ExperimentPlugin
+from flask_app.replifactory.plugins import PluginUiModuleMetadata
 
 
 def init_plugin(app):
@@ -24,13 +25,16 @@ class EndlessGrowthExperiment(Experiment):
     """Measure optical density and dilute if value more that threshold until it reaches target value.
     Abort with arror if growth timeout is reached.
     """
+
     name = "Endless Growth"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._reactors = self._machine.get_reactors()
         valid_keys = {field.name for field in fields(EndlessGrowthParams)}
-        filtered_kwargs = {key: value for key, value in kwargs.items() if key in valid_keys}
+        filtered_kwargs = {
+            key: value for key, value in kwargs.items() if key in valid_keys
+        }
         self._params = EndlessGrowthParams(**filtered_kwargs)
         self._start_growth_time = {}
 
@@ -77,11 +81,26 @@ class EndlessGrowthExperiment(Experiment):
 
 class EndlessGrowthExperimentPlugin(ExperimentPlugin):
     experiment_class = EndlessGrowthExperiment
+    name = "Endless Growth Experiment"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_frontend_modules(self):
-        return super().get_frontend_modules() + [
-            {"name": "parameters", "url": f"/static/{self.name}/replifactory_endless_growth_plugin.umd.cjs"},
+    def get_ui_modules(self):
+        return [
+            PluginUiModuleMetadata(
+                moduleName="endless-growth-experiment-description",
+                path="endless-growth-experiment-description.umd.cjs",
+                kind="description",
+            ),
+            PluginUiModuleMetadata(
+                moduleName="endless-growth-experiment-parameters",
+                path="endless-growth-experiment-parameters.umd.cjs",
+                kind="parameters",
+            ),
+            PluginUiModuleMetadata(
+                moduleName="endless-growth-experiment-dashboard",
+                path="endless-growth-experiment-dashboard.umd.cjs",
+                kind="dashboard",
+            ),
         ]

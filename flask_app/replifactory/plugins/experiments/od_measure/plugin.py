@@ -1,5 +1,6 @@
 from flask_app.replifactory.experiment import Experiment
 from flask_app.replifactory.machine import ReactorException, ReactorStates
+from flask_app.replifactory.plugins import PluginUiModuleMetadata
 from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 
 
@@ -37,9 +38,26 @@ class ODMeasureExperiment(Experiment):
 
 class ODMeasureExperimentPlugin(ExperimentPlugin):
     experiment_class = ODMeasureExperiment
+    name = "Optical Density Measure"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_frontend_modules(self):
-        return [{"name": "parameters", "path": f"/static/{self.name}/od-measure-replyfactory-plugin.5b25b8e62e64f558.umd.min.js"}]
+    def get_ui_modules(self):
+        return [
+            PluginUiModuleMetadata(
+                moduleName="od-measure-experiment-description",
+                path="od-measure-experiment-description.umd.min.js",
+                kind="description",
+            ),
+            PluginUiModuleMetadata(
+                moduleName="od-measure-experiment-parameters",
+                path="od-measure-experiment-parameters.umd.min.js",
+                kind="parameters",
+            ),
+            PluginUiModuleMetadata(
+                moduleName="od-measure-experiment-dashboard",
+                path="od-measure-experiment-dashboard.umd.min.js",
+                kind="dashboard",
+            ),
+        ]

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 import os
 import importlib
@@ -31,25 +32,47 @@ def discover_plugins(app, plugins_folder=None):
             module = importlib.import_module(module_name)
             if hasattr(module, 'init_plugin'):
                 plugin = module.init_plugin(app)
-                if plugin.name in app_plugins:
-                    raise ValueError(f"Plugin with name {plugin.name} already exists")
-                app_plugins[plugin.name] = plugin
+                if plugin.id in app_plugins:
+                    raise ValueError(f"Plugin {plugin.name} with id {plugin.id} already exists")
+                app_plugins[plugin.id] = plugin
+
+
+@dataclass
+class PluginUiModuleMetadata:
+    moduleName: str
+    path: str
+    kind: str = "General"
+
+
+@dataclass
+class PluginMetadata:
+    id: str
+    name: str
+    description: str
+    kind: str
+    ui_modules: list[PluginUiModuleMetadata]
 
 
 class ReplifactoryPlugin:
-    def __init__(self, name=None, *args, **kwargs):
-        self.name = name or f"{self.__module__}.{self.__class__.__name__}"
+    kind = "General"
+    name = None
+
+    def __init__(self, *args, **kwargs):
+        self.id = f"{self.__module__}.{self.__class__.__name__}"
+        self.name = self.name or self.id
         self.description = self.__doc__ or ""
 
-    def get_frontend_modules(self):
+    def get_ui_modules(self) -> list[PluginUiModuleMetadata]:
         """ Return a list of frontend modules to be loaded by the client
         e.g. [{"name": "myPlugin", "url": "/static/plugins/myPlugin.js"}]
         """
         return []
 
     def get_metadata(self):
-        return {
-            "name": self.name,
-            "description": self.description,
-            "frontend_modules": self.get_frontend_modules()
-        }
+        return PluginMetadata(
+            id=self.id,
+            name=self.name or self.id,
+            description=self.description,
+            kind=self.kind,
+            ui_modules=self.get_ui_modules()
+        )

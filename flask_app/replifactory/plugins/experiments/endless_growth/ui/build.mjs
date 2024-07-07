@@ -1,8 +1,4 @@
 import { build } from "vite";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const libraries = [
   {
@@ -14,6 +10,11 @@ const libraries = [
     entry: "src/components/ExperimentParameters.vue",
     fileName: "endless-growth-experiment-parameters",
     name: "endless-growth-experiment-parameters",
+  },
+  {
+    entry: "src/components/ExperimentDashboard.vue",
+    fileName: "endless-growth-experiment-dashboard",
+    name: "endless-growth-experiment-dashboard",
   },
 ];
 

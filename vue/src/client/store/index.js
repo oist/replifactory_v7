@@ -3,6 +3,7 @@ import device from "./deviceStore.js";
 import experiment from "./experimentStore.js";
 import machine from "./machineStore.js";
 import security from "./securityStore.js";
+import plugins from "./pluginsStore.js";
 
 import api from "@/api.js";
 export default createStore({
@@ -22,6 +23,7 @@ export default createStore({
     experiment,
     machine,
     security,
+    plugins,
   },
   mutations: {
     initialiseStore() {

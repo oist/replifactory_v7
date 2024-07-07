@@ -12,7 +12,7 @@
               <CInputGroup>
                 <CFormSelect
                   id="experimentClassSelect"
-                  v-model="selectedExperimentClass"
+                  v-model="selectedExperimentPluginId"
                   aria-label="Select experiment class"
                   :disabled="isExperimentRunning"
                 >
@@ -60,69 +60,59 @@
 
 <script>
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
-import { mapState } from "vuex";
+import { mapGetters } from "vuex";
 import { defineAsyncComponent } from "vue";
 import { componentLoader } from "@/plugins.js";
-// import DynamicComponent from "@/client/components/DynamicComponent.vue";
-// import CustomDynamicComponent from "@/client/components/CustomDynamicComponent.vue";
-// import EndlessGrowth from "@/client/components/ExperimentTab/experiments/EndlessGrowth";
 
 export default {
   components: {
     CFormSelect,
     CInputGroup,
     CButton,
-    // DynamicComponent,
-    // CustomDynamicComponent,
   },
   data() {
     return {
-      selectedExperimentClass: undefined,
+      selectedExperimentPluginId: undefined,
     };
   },
   computed: {
-    ...mapState("experiment", ["experimentClassesOptions"]),
+    ...mapGetters("plugins", ["getExperimentsPlugins", "getPlugin"]),
     modifiedExperimentClassesOptions() {
-        return {
-            none: "Select an option...",
-            ...this.experimentClassesOptions,
-        };
+      let options = {
+        none: "Select an option...",
+      };
+      this.getExperimentsPlugins.forEach((plugin) => {
+        options[plugin.id] = plugin.name;
+      });
+      return options;
     },
     isExperimentRunning() {
       return false;
     },
     selectedExperiment() {
-      switch (this.selectedExperimentClass) {
-        case "flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperiment":
-          return {
-            description: defineAsyncComponent({
-                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-description.umd.cjs"),
-            }),
-            parameters: defineAsyncComponent({
-                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/endless-growth-experiment-parameters.umd.cjs"),
-            }),
-          };
-        case "flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperiment":
-          return {
-            description: defineAsyncComponent({
-                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-description.umd.min.js"),
-            }),
-            parameters: defineAsyncComponent({
-                loader: componentLoader("/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-experiment-parameters.umd.min.js"),
-            }),
-          };
-        default:
-          return {
-            description: {template: " "},
-            parameters: {template: " "},
-          };
+      const plugin = this.getPlugin(this.selectedExperimentPluginId);
+      if (!plugin) {
+        return {
+          title: "No experiment selected",
+          description: { template: " " },
+          parameters: { template: " " },
+        };
       }
+      let experimentUiComponents = {
+        title: plugin.name,
+      };
+      plugin.ui_modules.forEach((module) => {
+        experimentUiComponents[module.kind] = defineAsyncComponent({
+          loader: componentLoader(module.path),
+        });
+      });
+      return experimentUiComponents;
     },
     descriptionComponent() {
-        return this.selectedExperiment.description;
+      return this.selectedExperiment.description;
     },
     parametersComponent() {
-        return this.selectedExperiment.parameters;
+      return this.selectedExperiment.parameters;
     },
     experimentTitle() {
       return this.selectedExperiment
@@ -130,16 +120,16 @@ export default {
         : "Untitiled Experiment";
     },
   },
-  watch: {
-    // experimentClassesOptions: {
-    //   immediate: true,
-    //   handler(newVal) {
-    //     if (newVal) {
-    //       this.selectedExperimentClass = Object.keys(newVal)[0];
-    //     }
-    //   },
-    // },
-  },
+//   watch: {
+//     experimentClassesOptions: {
+//       immediate: true,
+//       handler(newVal) {
+//         if (newVal) {
+//           this.selectedExperimentPluginId = Object.keys(newVal)[0];
+//         }
+//       },
+//     },
+//   },
   created() {
     this.getExperimentClassesOptions();
   },
@@ -167,7 +157,7 @@ export default {
     },
     sendExperimentCommand(command, args) {
       const data = {
-        experimentId: this.selectedExperimentClass,
+        experimentId: this.selectedExperimentPluginId,
         command: command,
         ...args,
       };

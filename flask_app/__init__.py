@@ -232,19 +232,20 @@ def create_app():
         if isinstance(plugin, ExperimentPlugin):
             register_experiment(plugin.get_experiment_class())
 
-            # @app.route(f"/static/{plugin.get_static_path()}/<path:path>")
-            # def serve_plugin_static(path):
-            #     return send_from_directory(f"{}", path)
     @app.route('/api/plugins')
     def get_plugins():
         plugins = []
-        for plugin in app.extensions["replifactory_plugins"].values():
-            plugins.append(plugin.get_metadata())
+        for plugin_id, plugin in app.extensions["replifactory_plugins"].items():
+            metadata = plugin.get_metadata()
+            for ui_module in metadata.ui_modules:
+                # Prepend the /plugins/<plugin_id> prefix to the ui_module_path
+                ui_module.path = f'/plugins/{plugin_id}/{ui_module.path}'
+            plugins.append(metadata)
         return jsonify(plugins)
 
-    @app.route("/plugins/<plugin_name>/<path:path>")
-    def serve_plugin_static(plugin_name, path):
-        plugin = app.extensions["replifactory_plugins"].get(plugin_name)
+    @app.route("/plugins/<plugin_id>/<path:path>")
+    def serve_plugin_static(plugin_id, path):
+        plugin = app.extensions["replifactory_plugins"].get(plugin_id)
         if plugin:
             # Get the file path of the plugin's module
             plugin_module_file = inspect.getfile(plugin.__class__)
