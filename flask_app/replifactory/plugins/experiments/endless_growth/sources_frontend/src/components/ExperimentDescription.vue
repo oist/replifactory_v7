@@ -1,43 +1,65 @@
 <script setup>
-import { ref } from 'vue'
-
-defineProps({
-  msg: String,
-})
-
-const count = ref(0)
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
-
-  <div class="card">
-    <button type="button" @click="count++">count is {{ count }}</button>
+  <section>
     <p>
-      Edit
-      <code>components/HelloWorld.vue</code> to test HMR
+      Objective: To maintain a microbial culture at a constant OD by applying
+      infinite dilution techniques, ensuring the culture remains in the
+      exponential growth phase
     </p>
-  </div>
-
-  <p>
-    Check out
-    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank"
-      >create-vue</a
-    >, the official Vue + Vite starter
-  </p>
-  <p>
-    Learn more about IDE Support for Vue in the
-    <a
-      href="https://vuejs.org/guide/scaling-up/tooling.html#ide-support"
-      target="_blank"
-      >Vue Docs Scaling up Guide</a
-    >.
-  </p>
-  <p class="read-the-docs">Click on the Vite and Vue logos to learn more</p>
+    <p>
+      Background: Optical density at 600 nm (OD600) is a common measure of
+      bacterial culture density. It reflects the light scattering by the
+      bacteria in the culture. The OD600 value is used to estimate the cell
+      concentration and to maintain the culture in the desired growth phase1.
+    </p>
+    <p>Method:</p>
+    <ol>
+      <li>
+        <b>Preparation:</b> Begin with a microbial culture at a known OD, which
+        is within the linear range of the spectrophotometer used for OD
+        measurements.
+      </li>
+      <li>
+        <b>Cycling Process:</b>
+        <ul>
+          <li>
+            <b>Measure OD:</b> At regular intervals (e.g., every 30 minutes),
+            measure the OD of the culture.
+          </li>
+          <li>
+            <b>Dilution:</b> If the OD exceeds the target value, dilute the
+            culture with fresh medium to bring it back to the desired OD.
+          </li>
+          <li>
+            <b>Inoculation:</b> After dilution, inoculate the culture into a new
+            vessel to continue growth.
+          </li>
+        </ul>
+      </li>
+      <li>
+        <b>Monitoring:</b> Continuously monitor the OD to ensure it stays within
+        the target range, indicating the culture is in the log phase of growth.
+      </li>
+    </ol>
+    <p>Considerations:</p>
+    <ul>
+      <li>
+        <b>Dilution Factor:</b> The dilution factor depends on the initial and
+        target OD values. It should be calculated to ensure the culture is
+        brought back to the target OD after each cycle.
+      </li>
+      <li>
+        <b>Growth Phase:</b> Maintaining the culture at a specific OD helps keep
+        it in the exponential (log) phase, which is ideal for many types of
+        experiments, such as protein expression2.
+      </li>
+    </ul>
+    <p>
+      Conclusion: This experiment allows for the continuous cultivation of a
+      microbial culture at a controlled OD, facilitating studies that require
+      the culture to remain in a specific growth phase.
+    </p>
+  </section>
 </template>
-
-<style scoped>
-.read-the-docs {
-  color: #888;
-}
-</style>
