@@ -9,14 +9,12 @@ from typing import Any, Callable, Optional
 
 from usb.core import Device as UsbDevice
 
-from flask_app.experiment.experiment import Experiment
 from flask_app.replifactory.devices import Device, DeviceCallback
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.usb_manager import usbManager
 from flask_app.replifactory.util import StateMixin, slugify
 from flask_app.replifactory.util.module_loading import import_string
-
 
 # class ReactorCommand:
 #     def __init__(self, name, *args, **kwargs):
@@ -262,6 +260,9 @@ class ConnectionAdapter:
     def disconnect(self, *args, **kwargs):
         raise NotImplementedError()
 
+    def get_device_info(self, *args, **kwargs):
+        raise NotImplementedError()
+
     def _set_state(self, state: States):
         self._state = state
         self._callbacks._on_conn_state_change(state)
@@ -335,6 +336,11 @@ class FtdiConnectionAdapter(ConnectionAdapter):
                 self._terminate_connection(raise_exception=True)
             finally:
                 self._set_state(self.States.STATE_DISCONNECTED)
+
+    def get_device_info(self, *args, **kwargs):
+        if self._usb_device is None:
+            return {}
+        return usbManager().get_device_info(self._usb_device)
 
     def get_spi_hw_port(
         self,
@@ -479,6 +485,9 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
             self.add_operation((method, args, kwargs), no_wait=no_wait, timeout=timeout)
         except AttributeError:
             raise AttributeError(f"No command named {method_name} found")
+
+    def get_connected_device_info(self):
+        return self._conn_adapter.get_device_info()
 
     # def run_experiment(self, experiment: Experiment, *args, **kwargs):
     #     with self._lock:

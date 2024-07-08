@@ -1,16 +1,17 @@
 import logging
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 from threading import RLock
 from typing import Any
 
 import usb._interop as _interop
+from usb.core import Device as UsbDevice
 from usbmonitor import USBMonitor
 from usbmonitor.__platform_specific_detectors._constants import _SECONDS_BETWEEN_CHECKS
-from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.drivers.ft2232h import FtdiDriver
 from flask_app.replifactory.events import Events, eventManager
+from flask_app.replifactory.virtual_usb_device import VirtualUsbDevice
 
 logger = logging.getLogger(__name__)
 _instance = None
@@ -18,52 +19,6 @@ _instance = None
 REPLIFACTORY_VIRTUAL_MACHINE_ENABLED = os.environ.get(
     "REPLIFACTORY_VIRTUAL_MACHINE_ENABLED", "false"
 ).lower() in ("true", "1")
-
-
-class VirtualUsbDevice(UsbDevice):
-    class Device:
-        pass
-
-    class DeviceDescriptor:
-        bLength = 0
-        bDescriptorType = 0
-        bcdUSB = 0
-        bDeviceClass = 0
-        bDeviceSubClass = 0
-        bDeviceProtocol = 0
-        bMaxPacketSize0 = 0
-        idVendor = 0
-        idProduct = 0
-        bcdDevice = 0
-        iManufacturer = 0
-        iProduct = 0
-        iSerialNumber = 0
-        bNumConfigurations = 0
-        address = 0
-        bus = 0
-        port_number = 0
-        port_numbers = 0
-        speed = 0
-
-    class Backend:
-        def get_device_descriptor(self, dev):
-            return VirtualUsbDevice.DeviceDescriptor()
-
-        def open_device(self, dev):
-            return self
-
-        def close_device(self, dev):
-            return self
-
-    def __init__(self):
-        super().__init__(self.Device(), self.Backend())
-        self._manufacturer = "OIST"
-        self._product = "Virtual Replifactory"
-        self._serial_number = "FT2X2X"
-        self.id = f"/dev/bus/usb/{self.bus:03}/{self.address:03}"
-        self._langids = (0x0409,)
-        self._has_parent = False
-
 
 VIRTUAL_USB_DEVICE = VirtualUsbDevice()
 
@@ -148,7 +103,9 @@ class UsbManager:
             if usb_devices is None:
                 usb_devices = self.get_available_devices()
             for _, device in usb_devices.items():
-                tests = (val == getattr(device, key, None) for key, val in kwargs.items())
+                tests = (
+                    val == getattr(device, key, None) for key, val in kwargs.items()
+                )
                 if _interop._all(tests):
                     return device
             return None
@@ -174,9 +131,7 @@ class UsbManager:
         return (bus, address)
 
     def _on_connect(self, device_id, device_info):
-        logger.info(
-            f"Connected: {str(device_info)} [{device_id}]"
-        )
+        logger.info(f"Connected: {str(device_info)} [{device_id}]")
         bus, address = self._parse_devname(device_info["DEVNAME"])
         usb_device = FtdiDriver.find_device(bus=bus, address=address)
         if usb_device:
@@ -186,13 +141,15 @@ class UsbManager:
         eventManager().fire(Events.USB_CONNECTED, usb_device)
 
     def _on_disconnect(self, device_id, device_info):
-        logger.info(
-            f"Disconnected: {str(device_info)} [{device_id}]"
-        )
+        logger.info(f"Disconnected: {str(device_info)} [{device_id}]")
         with self._lock:
             try:
                 usb_device = self._usb_devices.pop(device_id)
                 eventManager().fire(Events.USB_DISCONNECTED, usb_device)
                 eventManager().fire(Events.USB_LIST_UPDATED, self._usb_devices)
             except KeyError:
-                logger.warning("Can't disconnect device %s it's not in list: %s", device_id, self._usb_devices.keys())
+                logger.warning(
+                    "Can't disconnect device %s it's not in list: %s",
+                    device_id,
+                    self._usb_devices.keys(),
+                )

@@ -13,6 +13,7 @@ from usb.core import Device as UsbDevice
 
 from flask_app.replifactory.drivers import Driver, I2cController, SpiController, I2cPort, LazyPort, SpiPort
 from flask_app.replifactory.drivers.ftdi import FtdiEeprom
+from flask_app.replifactory.virtual_usb_device import VirtualUsbDevice
 
 
 @dataclass
@@ -91,12 +92,13 @@ class FtdiDriver(Driver):
             with self._lock:
                 if self._i2c_controller is None:
                     self._i2c_controller = I2cController()
-                    self._i2c_controller.set_retry_count(self._i2c_retry_count)
-                    self._i2c_controller.configure(
-                        self._usb_device,
-                        frequency=self._i2c_default_freq,
-                        interface=self._i2c_interface,
-                    )
+                    if not isinstance(self._usb_device, VirtualUsbDevice):
+                        self._i2c_controller.set_retry_count(self._i2c_retry_count)
+                        self._i2c_controller.configure(
+                            self._usb_device,
+                            frequency=self._i2c_default_freq,
+                            interface=self._i2c_interface,
+                        )
         return self._i2c_controller
 
     def get_spi_controller(self) -> SpiController:
@@ -106,11 +108,12 @@ class FtdiDriver(Driver):
                     self._spi_controller = SpiController(
                         cs_count=self._spi_cs_count, turbo=self._spi_turbo
                     )
-                    self._spi_controller.configure(
-                        self._usb_device,
-                        frequency=self._spi_default_freq,
-                        interface=self._spi_interface,
-                    )
+                    if not isinstance(self._usb_device, VirtualUsbDevice):
+                        self._spi_controller.configure(
+                            self._usb_device,
+                            frequency=self._spi_default_freq,
+                            interface=self._spi_interface,
+                        )
         return self._spi_controller
 
     def get_i2c_hw_port(self, address: int | list[int], name: str, registers: dict[int, str] = {}):

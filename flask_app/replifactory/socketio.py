@@ -9,7 +9,6 @@ import flask
 from flask_socketio import emit as socketio_emit
 from flask_socketio.namespace import Namespace
 from flask_app.replifactory.machine_manager import machineManager
-from flask_app.replifactory.usb_manager import UsbManager
 
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.machine import MachineCallback
@@ -80,9 +79,10 @@ class SocketIOSessionMachineCallback(MachineCallback):
             broadcast=True,
         )
 
-    def _on_connected(self, event, comm):
-        usb_device = comm._conn_adapter._usb_device
-        payload = UsbManager.get_device_info(usb_device)
+    def _on_connected(self, event, machine):
+        payload = machine.get_connected_device_info()
+        # usb_device = machine._conn_adapter._usb_device
+        # payload = UsbManager.get_device_info(usb_device)
         self._emit(event, payload, namespace="/machine", broadcast=True)
 
     def _on_command_queue(self, event, payload):
