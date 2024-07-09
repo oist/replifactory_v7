@@ -16,6 +16,7 @@ class ExperimentStatuses(str, Enum):
     STARTING = "starting"
     RESTORING = "restoring"
     RUNING = "runing"
+    PAUSED = "paused"
     CANCELLING = "cancelling"
     CANCELLED = "cancelled"
     DONE = "done"
@@ -55,7 +56,7 @@ class Experiment:
             "cycles": self._cycles,
             "cycleTime": self._cycleTime,
             "warmupEnabled": self._warmupEnabled,
-            "running": self._thread is not None,
+            "alive": self._thread is not None,
             "abort": self._abort,
             "status": self._status,
         }
