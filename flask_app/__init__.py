@@ -20,7 +20,7 @@ from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
-from flask_app.replifactory.plugins import discover_plugins
+from flask_app.replifactory.plugins import pluginsManager
 from flask_app.replifactory.experiment_manager import experimentManager
 from flask_app.replifactory.machine import machineRegistry, replifactory_v5, replifactory_virtual
 from flask_app.replifactory.machine_manager import machineManager
@@ -228,25 +228,26 @@ def create_app():
 
     machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
     machineRegistry().register(replifactory_virtual.VirtualReplifactoryMachine, replifactory_virtual.check_compatible)
-    discover_plugins(app)
-    for plugin in app.extensions["replifactory_plugins"].values():
-        if isinstance(plugin, ExperimentPlugin):
-            register_experiment(plugin.get_experiment_class())
+    pluginsManager().discover_plugins()
+
+    for plugin in pluginsManager().get_plugins_instanceof(ExperimentPlugin):
+        register_experiment(plugin.get_experiment_class())
 
     @app.route('/api/plugins')
     def get_plugins():
         plugins = []
-        for plugin_id, plugin in app.extensions["replifactory_plugins"].items():
+        for plugin in pluginsManager().get_plugins():
             metadata = plugin.get_metadata()
             for ui_module in metadata.ui_modules:
                 # Prepend the /plugins/<plugin_id> prefix to the ui_module_path
+                plugin_id = plugin.get_metadata().id
                 ui_module.path = f'/plugins/{plugin_id}/{ui_module.path}'
             plugins.append(metadata)
         return jsonify(plugins)
 
     @app.route("/plugins/<plugin_id>/<path:path>")
     def serve_plugin_static(plugin_id, path):
-        plugin = app.extensions["replifactory_plugins"].get(plugin_id)
+        plugin = pluginsManager().get_plugin(plugin_id)
         if plugin:
             # Get the file path of the plugin's module
             plugin_module_file = inspect.getfile(plugin.__class__)

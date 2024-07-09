@@ -28,6 +28,7 @@
                   type="button"
                   color="success"
                   variant="outline"
+                  :disabled="isMachineDisconnected"
                   @click="startExperiment"
                   >Start</CButton
                 >
@@ -35,6 +36,7 @@
                   type="button"
                   color="warning"
                   variant="outline"
+                  :disabled="isMachineDisconnected"
                   @click="pauseExperiment"
                   >Pause</CButton
                 >
@@ -42,6 +44,7 @@
                   type="button"
                   color="danger"
                   variant="outline"
+                  :disabled="isMachineDisconnected"
                   @click="stopExperiment"
                   >Stop</CButton
                 >
@@ -59,13 +62,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeMount, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useStore } from "vuex";
+import { useRouter } from 'vue-router';
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { defineAsyncComponent } from "vue";
 import { componentLoader } from "@/plugins.js";
 
 const store = useStore();
+const router = useRouter();
 
 const selectedExperimentPluginId = ref(undefined);
 const experimentParameters = ref({});
@@ -75,6 +80,7 @@ const getExperimentsPlugins = computed(
   () => store.getters["plugins/getExperimentsPlugins"],
 );
 const getPlugin = (id) => store.getters["plugins/getPlugin"](id);
+const isMachineDisconnected = computed(() => store.getters["machine/isDisconnected"]);
 
 const modifiedExperimentClassesOptions = computed(() => {
   let options = {
@@ -122,23 +128,22 @@ watch(selectedExperimentPluginId, (newVal, oldVal) => {
   experimentParameters.value = {};
 });
 
-onBeforeMount(() => {
-  getExperimentClassesOptions();
-});
-
 function handleUpdateParameters(params) {
   experimentParameters.value = params;
 }
 
-function getExperimentClassesOptions() {
-  store.dispatch("experiment/getExperimentsClassesOptions").catch((err) => {
-    store.dispatch("notifyWarning", {
-      content: err.response.data,
-    });
-  });
-}
 function startExperiment() {
-  sendExperimentCommand("start", experimentParameters.value);
+    store.dispatch("experiment/startExperiment", {
+        pluginId: selectedExperimentPluginId.value,
+        parameters: experimentParameters.value,
+    }).then(() => {
+        router.push({ name: 'Home' });
+    }).catch((err) => {
+        const message = err.response.data.error || err.response.data;
+        store.dispatch("notifyWarning", {
+            content: message,
+        });
+    });
 }
 function stopExperiment() {
   sendExperimentCommand("stop");

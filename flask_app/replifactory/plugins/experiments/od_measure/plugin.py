@@ -4,7 +4,7 @@ from flask_app.replifactory.plugins import PluginUiModuleMetadata
 from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 
 
-def init_plugin(app):
+def init_plugin(*args, **kwargs):
     return ODMeasureExperimentPlugin()
 
 

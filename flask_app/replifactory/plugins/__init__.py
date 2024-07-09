@@ -6,35 +6,57 @@ import importlib
 
 logger = logging.getLogger(__name__)
 
+_instance = None
 
-def discover_plugins(app, plugins_folder=None):
-    plugins_folder = plugins_folder or os.path.dirname(__file__)
-    if app is None:
-        logger.warning("No app provided")
-        return
 
-    app.extensions.setdefault("replifactory_plugins", {})
-    app_plugins = app.extensions["replifactory_plugins"]
+def pluginsManager():
+    global _instance
+    if _instance is None:
+        _instance = PluginsManager()
+    return _instance
 
-    for plugin_category in os.listdir(plugins_folder):
-        if plugin_category.startswith("_"):
-            continue
-        plugins_category_path = os.path.join(plugins_folder, plugin_category)
-        if not os.path.isdir(plugins_category_path):
-            continue
-        for plugin_name in os.listdir(plugins_category_path):
-            if plugin_name.startswith("_"):
+
+class PluginsManager:
+
+    def __init__(self):
+        self._plugins = {}
+
+    def discover_plugins(self, plugins_folder=None):
+        plugins_folder = plugins_folder or os.path.dirname(__file__)
+        for plugin_category in os.listdir(plugins_folder):
+            if plugin_category.startswith("_"):
                 continue
-            plugin_path = os.path.join(plugins_category_path, plugin_name)
-            if not os.path.isdir(plugin_path):
+            plugins_category_path = os.path.join(plugins_folder, plugin_category)
+            if not os.path.isdir(plugins_category_path):
                 continue
-            module_name = f"flask_app.replifactory.plugins.{plugin_category}.{plugin_name}.plugin"
-            module = importlib.import_module(module_name)
-            if hasattr(module, 'init_plugin'):
-                plugin = module.init_plugin(app)
-                if plugin.id in app_plugins:
-                    raise ValueError(f"Plugin {plugin.name} with id {plugin.id} already exists")
-                app_plugins[plugin.id] = plugin
+            for plugin_name in os.listdir(plugins_category_path):
+                if plugin_name.startswith("_"):
+                    continue
+                plugin_path = os.path.join(plugins_category_path, plugin_name)
+                if not os.path.isdir(plugin_path):
+                    continue
+                module_name = f"flask_app.replifactory.plugins.{plugin_category}.{plugin_name}.plugin"
+                module = importlib.import_module(module_name)
+                if hasattr(module, 'init_plugin'):
+                    plugin = module.init_plugin()
+                    self.add_plugin(plugin)
+
+    def add_plugin(self, plugin):
+        if plugin.id in self._plugins:
+            raise ValueError(f"Plugin {plugin.name} with id {plugin.id} already exists")
+        self._plugins[plugin.id] = plugin
+
+    def get_plugin(self, plugin_id):
+        return self._plugins.get(plugin_id)
+
+    def get_plugins(self):
+        return self._plugins.values()
+
+    def get_plugins_with_kind(self, kind):
+        return [plugin for plugin in self._plugins.values() if plugin.kind == kind]
+
+    def get_plugins_instanceof(self, plugin_class):
+        return [plugin for plugin in self._plugins.values() if isinstance(plugin, plugin_class)]
 
 
 @dataclass

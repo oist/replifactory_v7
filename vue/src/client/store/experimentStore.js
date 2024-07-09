@@ -3,7 +3,7 @@ import api from "@/api";
 export default {
   namespaced: true,
   state: {
-    experimentClassesOptions: {},
+    // experimentClassesOptions: {},
     experiments: {},
 
     // hostname: "replifactory_GUI",
@@ -26,9 +26,9 @@ export default {
     // },
   },
   mutations: {
-    updateExperimentsClassesOptions(state, data) {
-      state.experimentClassesOptions = data;
-    },
+    // updateExperimentsClassesOptions(state, data) {
+    //   state.experimentClassesOptions = data;
+    // },
     updateExperimentStatus(state, data) {
       state.experiments[data.experiment_id] = data;
     },
@@ -51,19 +51,33 @@ export default {
           });
       });
     },
-    getExperimentsClassesOptions({ commit }) {
+    // getExperimentsClassesOptions({ commit }) {
+    //   return new Promise((resolve, reject) => {
+    //     api
+    //       .get("/api/experiments/classes")
+    //       .then((response) => {
+    //         commit("updateExperimentsClassesOptions", response.data);
+    //         resolve(response.data);
+    //       })
+    //       .catch((error) => {
+    //         console.error(error);
+    //         reject(error);
+    //       });
+    //   });
+    // },
+    startExperiment(context, payload) {
       return new Promise((resolve, reject) => {
         api
-          .get("/api/experiments/classes")
+          .post("/api/experiments", { ...payload })
           .then((response) => {
-            commit("updateExperimentsClassesOptions", response.data);
             resolve(response.data);
           })
           .catch((error) => {
             console.error(error);
             reject(error);
           });
-      });
+
+      })
     },
     experimentCommand(context, payload) {
       const { experimentId, command, ...args } = payload;

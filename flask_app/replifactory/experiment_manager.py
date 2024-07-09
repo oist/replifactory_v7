@@ -3,9 +3,10 @@ import threading
 from typing import Optional
 
 from flask_app.replifactory.events import Events, eventManager
-from flask_app.replifactory.experiment import Experiment, ExperimentCallback, experimentRegistry
+from flask_app.replifactory.experiment import Experiment, ExperimentCallback
 from flask_app.replifactory.machine import BaseMachine
 from flask_app.replifactory.machine_manager import machineManager
+from flask_app.replifactory.util import get_short_uuid
 
 _instance = None
 
@@ -43,25 +44,23 @@ class ExperimentManager(ExperimentCallback):
                 raise ValueError(f"Experiment {experiment_id} not found")
             return experiment.status()
 
-    def start_experiment(self, experiment_id: str, machine: Optional[BaseMachine] = None, *args, **kwargs):
+    def start_experiment(self, experiment_class: type, machine: Optional[BaseMachine] = None, *args, **kwargs):
         with self._lock:
-            experiment_class = experimentRegistry.get(experiment_id)
-            if experiment_class is None:
-                raise ValueError(f"Experiment class {experiment_id} not found")
-            if experiment_id in self._experiments:
-                raise ValueError(f"Experiment {experiment_id} already running")
             machine = machine or machineManager().get_machine()
             if machine is None:
                 raise ValueError("No machine available")
             if not machine.isIdle():
                 raise ValueError("Machine is not ready to start experiment")
 
+            while (experiment_id := get_short_uuid()) in self._experiments:
+                self._log.debug(f"Generated experiment id {experiment_id} is already in use, generating another one")
+
             callback = self.NamedExperimentCallback(experiment_id)
             experiment = experiment_class(machine=machine, experiment_callback=callback, *args, **kwargs)
 
             self._experiments[experiment_id] = (experiment, callback)
             experiment.start()
-            self._log.info(f"Started experiment {experiment_id}")
+            self._log.info(f"Started experiment {experiment.get_name()} ({experiment_id})")
             return experiment.status()
 
     def stop_experiment(self, experiment_id: str):

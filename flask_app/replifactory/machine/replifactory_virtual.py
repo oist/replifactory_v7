@@ -79,7 +79,7 @@ class VirtualReplifactoryMachine(BaseMachine):
 
     @machine_command
     def measure_od(self, num: int):
-        pass
+        return 0.0
 
     @machine_command
     def stop_pumps(self):

@@ -6,7 +6,7 @@ from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 from flask_app.replifactory.plugins import PluginUiModuleMetadata
 
 
-def init_plugin(app):
+def init_plugin(*args, **kwargs):
     return EndlessGrowthExperimentPlugin()
     # return ExperimentPlugin(EndlessGrowthExperiment, name="Endless Growth Plugin", frontend_modules=[
     #     {"name": "endlessGrowth", "url": "/static/plugins/endless_growth.js"}

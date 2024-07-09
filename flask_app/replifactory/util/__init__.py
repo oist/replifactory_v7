@@ -753,3 +753,9 @@ class StateMixin:
         elif state == self.States.STATE_RECONNECTING:
             return "Reconnecting"
         return f"Unknown State ({self._state})"
+
+
+def get_short_uuid():
+    import uuid
+
+    return str(uuid.uuid4())[:8]
