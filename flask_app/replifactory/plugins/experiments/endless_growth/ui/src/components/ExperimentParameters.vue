@@ -10,11 +10,12 @@
           <div class="input-group mb-3">
             <input
               id="inputCycleTime"
+              v-model.number="cycleTime"
               type="number"
               class="form-control"
               aria-label="Cycle time"
               aria-describedby="inputCycleTimeUnit"
-              :value="60 * 4"
+              @change="emitUpdate"
             />
             <span id="inputCycleTimeUnit" class="input-group-text"
               >seconds</span
@@ -29,16 +30,23 @@
         <div class="col-sm-4 col-form-label">
           <strong>Enabled</strong>
         </div>
-        <div v-for="n in 8" :key="n" class="col-12 col-sm-1">
+        <div
+          v-for="reactor in reactors"
+          :key="reactor.index"
+          class="col-12 col-sm-1"
+        >
           <div>
             <input
-              :id="`inputEnabled-${n}`"
+              :id="`inputEnabled-${reactor.index}`"
+              v-model="reactor.enabled"
               class="form-check-input"
               type="checkbox"
-              checked
+              @change="emitUpdate"
             />
-            <label class="form-check-label mx-1" :for="`inputEnabled-${n}`"
-              >Reactor {{ n }}</label
+            <label
+              class="form-check-label mx-1"
+              :for="`inputEnabled-${reactor.index}`"
+              >Reactor {{ reactor.index }}</label
             >
           </div>
         </div>
@@ -51,17 +59,23 @@
             reactor.
           </div>
         </div>
-        <div v-for="n in 8" :key="n" class="col-12 col-sm-1">
+        <div
+          v-for="reactor in reactors"
+          :key="reactor.index"
+          class="col-12 col-sm-1"
+        >
           <div class="form-floating">
             <input
-              :id="`inputOdDilutionThreshold-${n}`"
+              :id="`inputOdDilutionThreshold-${reactor.index}`"
+              v-model.number="reactor.threshold"
               type="number"
               class="form-control"
-              :aria-label="`OD Dilution Threshold for Reactor ${n}`"
-              :value="0.8"
+              :aria-label="`OD Dilution Threshold for Reactor ${reactor.index}`"
+              :disabled="!reactor.enabled"
+              @change="emitUpdate"
             />
-            <label :for="`inputOdDilutionThreshold-${n}`"
-              >Reactor {{ n }}</label
+            <label :for="`inputOdDilutionThreshold-${reactor.index}`"
+              >Reactor {{ reactor.index }}</label
             >
           </div>
         </div>
@@ -70,16 +84,24 @@
         <div class="col-sm-4 col-form-label">
           <strong>Dilution Target OD</strong>
         </div>
-        <div v-for="n in 8" :key="n" class="col-12 col-sm-1">
+        <div
+          v-for="reactor in reactors"
+          :key="reactor.index"
+          class="col-12 col-sm-1"
+        >
           <div class="form-floating">
             <input
-              :id="`inputDilutionTargetOD-${n}`"
+              :id="`inputDilutionTargetOD-${reactor.index}`"
+              v-model.number="reactor.targetOD"
               type="number"
               class="form-control"
-              :aria-label="`Dilution Target OD for Reactor ${n}`"
-              :value="0.3"
+              :aria-label="`Dilution Target OD for Reactor ${reactor.index}`"
+              :disabled="!reactor.enabled"
+              @change="emitUpdate"
             />
-            <label :for="`inputDilutionTargetOD-${n}`">Reactor {{ n }}</label>
+            <label :for="`inputDilutionTargetOD-${reactor.index}`"
+              >Reactor {{ reactor.index }}</label
+            >
           </div>
         </div>
       </div>
@@ -87,16 +109,24 @@
         <div class="col-sm-4 col-form-label">
           <strong>Dilution Volume (mL)</strong>
         </div>
-        <div v-for="n in 8" :key="n" class="col-12 col-sm-1">
+        <div
+          v-for="reactor in reactors"
+          :key="reactor.index"
+          class="col-12 col-sm-1"
+        >
           <div class="form-floating">
             <input
-              :id="`inputDilutionVolume-${n}`"
+              :id="`inputDilutionVolume-${reactor.index}`"
+              v-model.number="reactor.volume"
               type="number"
               class="form-control"
-              :aria-label="`Dilution Volume for Reactor ${n}`"
-              :value="1.0"
+              :aria-label="`Dilution Volume for Reactor ${reactor.index}`"
+              :disabled="!reactor.enabled"
+              @change="emitUpdate"
             />
-            <label :for="`inputDilutionVolume-${n}`">Reactor {{ n }}</label>
+            <label :for="`inputDilutionVolume-${reactor.index}`"
+              >Reactor {{ reactor.index }}</label
+            >
           </div>
         </div>
       </div>
@@ -105,11 +135,33 @@
 </template>
 
 <script setup>
-// export default {
-//   components: {},
-//   data() {
-//     return {};
-//   },
-//   computed: {},
-// };
+import { ref, defineEmits, onBeforeMount } from "vue";
+const emit = defineEmits(["updateParameters"]);
+
+const cycleTime = ref(60 * 4);
+const reactors = ref(
+  Array(8)
+    .fill(null)
+    .map((_, index) => ({
+      index: index + 1,
+      enabled: false,
+      volume: 1.0,
+      threshold: 0.8,
+      targetOD: 0.3,
+    })),
+);
+
+const emitUpdate = () => {
+  const enabledReactors = reactors.value
+    .filter((reactor) => reactor.enabled)
+    .map(({ enabled, ...rest }) => rest); // Exclude the 'enabled' property;
+  emit("updateParameters", {
+    cycleTime: cycleTime.value,
+    reactors: enabledReactors,
+  });
+};
+
+onBeforeMount(() => {
+  emitUpdate();
+});
 </script>

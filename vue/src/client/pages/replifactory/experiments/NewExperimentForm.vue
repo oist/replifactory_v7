@@ -51,125 +51,116 @@
         </form>
         <!-- <CustomDynamicComponent :url="descriptionComponent" /> -->
         <component :is="descriptionComponent" />
-        <component :is="parametersComponent" />
+        <component :is="parametersComponent" @update-parameters="handleUpdateParameters" />
         <!-- <CustomDynamicComponent :url="parametersComponent" /> -->
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onBeforeMount, watch } from "vue";
+import { useStore } from "vuex";
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
-import { mapGetters } from "vuex";
 import { defineAsyncComponent } from "vue";
 import { componentLoader } from "@/plugins.js";
 
-export default {
-  components: {
-    CFormSelect,
-    CInputGroup,
-    CButton,
-  },
-  data() {
+const store = useStore();
+
+const selectedExperimentPluginId = ref(undefined);
+const experimentParameters = ref({});
+const isExperimentRunning = ref(false);
+
+const getExperimentsPlugins = computed(
+  () => store.getters["plugins/getExperimentsPlugins"],
+);
+const getPlugin = (id) => store.getters["plugins/getPlugin"](id);
+
+const modifiedExperimentClassesOptions = computed(() => {
+  let options = {
+    none: "Select an option...",
+  };
+  getExperimentsPlugins.value.forEach((plugin) => {
+    options[plugin.id] = plugin.name;
+  });
+  return options;
+});
+
+const selectedExperiment = computed(() => {
+  const plugin = getPlugin(selectedExperimentPluginId.value);
+  if (!plugin) {
     return {
-      selectedExperimentPluginId: undefined,
+      title: "No experiment selected",
+      description: { template: " " },
+      parameters: { template: " " },
     };
-  },
-  computed: {
-    ...mapGetters("plugins", ["getExperimentsPlugins", "getPlugin"]),
-    modifiedExperimentClassesOptions() {
-      let options = {
-        none: "Select an option...",
-      };
-      this.getExperimentsPlugins.forEach((plugin) => {
-        options[plugin.id] = plugin.name;
-      });
-      return options;
-    },
-    isExperimentRunning() {
-      return false;
-    },
-    selectedExperiment() {
-      const plugin = this.getPlugin(this.selectedExperimentPluginId);
-      if (!plugin) {
-        return {
-          title: "No experiment selected",
-          description: { template: " " },
-          parameters: { template: " " },
-        };
-      }
-      let experimentUiComponents = {
-        title: plugin.name,
-      };
-      plugin.ui_modules.forEach((module) => {
-        experimentUiComponents[module.kind] = defineAsyncComponent({
-          loader: componentLoader(module.path),
-        });
-      });
-      return experimentUiComponents;
-    },
-    descriptionComponent() {
-      return this.selectedExperiment.description;
-    },
-    parametersComponent() {
-      return this.selectedExperiment.parameters;
-    },
-    experimentTitle() {
-      return this.selectedExperiment
-        ? this.selectedExperiment.title
-        : "Untitiled Experiment";
-    },
-  },
-//   watch: {
-//     experimentClassesOptions: {
-//       immediate: true,
-//       handler(newVal) {
-//         if (newVal) {
-//           this.selectedExperimentPluginId = Object.keys(newVal)[0];
-//         }
-//       },
-//     },
-//   },
-  created() {
-    this.getExperimentClassesOptions();
-  },
-  methods: {
-    getExperimentClassesOptions() {
-      this.$store
-        .dispatch("experiment/getExperimentsClassesOptions")
-        .catch((err) => {
-          this.$store.dispatch("notifyWarning", {
-            content: err.response.data,
-          });
-        });
-    },
-    startExperiment() {
-      this.sendExperimentCommand("start");
-    },
-    stopExperiment() {
-      this.sendExperimentCommand("stop");
-    },
-    pauseExperiment() {
-      this.sendExperimentCommand("pause");
-    },
-    resumeExperiment() {
-      this.sendExperimentCommand("resume");
-    },
-    sendExperimentCommand(command, args) {
-      const data = {
-        experimentId: this.selectedExperimentPluginId,
-        command: command,
-        ...args,
-      };
-      this.$store
-        .dispatch("experiment/experimentCommand", data)
-        .catch((err) => {
-          const message = err.response.data.error || err.response.data;
-          this.$store.dispatch("notifyWarning", {
-            content: message,
-          });
-        });
-    },
-  },
-};
+  }
+  let experimentUiComponents = {
+    title: plugin.name,
+  };
+  plugin.ui_modules.forEach((module) => {
+    experimentUiComponents[module.kind] = defineAsyncComponent({
+      loader: componentLoader(module.path),
+    });
+  });
+  return experimentUiComponents;
+});
+const descriptionComponent = computed(() => {
+  return selectedExperiment.value.description;
+});
+const parametersComponent = computed(() => {
+  return selectedExperiment.value.parameters;
+});
+const experimentTitle = computed(() => {
+  return selectedExperiment.value
+    ? selectedExperiment.value.title
+    : "Untitiled Experiment";
+});
+
+watch(selectedExperimentPluginId, (newVal, oldVal) => {
+  // Clean experimentParameters when selectedExperimentPluginId changes
+  experimentParameters.value = {};
+});
+
+onBeforeMount(() => {
+  getExperimentClassesOptions();
+});
+
+function handleUpdateParameters(params) {
+  experimentParameters.value = params;
+}
+
+function getExperimentClassesOptions() {
+  store.dispatch("experiment/getExperimentsClassesOptions").catch((err) => {
+    store.dispatch("notifyWarning", {
+      content: err.response.data,
+    });
+  });
+}
+function startExperiment() {
+  sendExperimentCommand("start", experimentParameters.value);
+}
+function stopExperiment() {
+  sendExperimentCommand("stop");
+}
+function pauseExperiment() {
+  sendExperimentCommand("pause");
+}
+// function  resumeExperiment() {
+//   sendExperimentCommand("resume");
+// };
+function sendExperimentCommand(command, args) {
+  const data = {
+    experimentId: selectedExperimentPluginId,
+    command: command,
+    ...args,
+  };
+  store.dispatch("experiment/experimentCommand", data).catch((err) => {
+    const message = err.response.data.error || err.response.data;
+    store.dispatch("notifyWarning", {
+      content: message,
+    });
+  });
+}
+
 </script>
