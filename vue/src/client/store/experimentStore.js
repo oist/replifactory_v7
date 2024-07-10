@@ -30,8 +30,8 @@ export default {
     },
   },
   mutations: {
-    updateExperimentStatus(state, data) {
-      state.experiments[data.experiment_id] = data;
+    updateExperimentStatus(state, { id, data }) {
+      state.experiments[id] = data;
     },
     updateExperimentsStatuses(state, data) {
       state.experiments = data;
@@ -40,15 +40,19 @@ export default {
   actions: {
     getExperiment({ commit }, experimentId) {
       return new Promise((resolve, reject) => {
-        api.get("/api/experiments/" + experimentId)
-        .then((response) => {
-          commit("updateExperimentStatus", response.data)
-          resolve(response.data);
-        })
-        .catch((error) => {
-          console.error(error);
-          reject(error);
-        });
+        api
+          .get("/api/experiments/" + experimentId)
+          .then((response) => {
+            commit("updateExperimentStatus", {
+              id: experimentId,
+              data: response.data,
+            });
+            resolve(response.data);
+          })
+          .catch((error) => {
+            console.error(error);
+            reject(error);
+          });
       });
     },
     getExperiments({ commit }) {
