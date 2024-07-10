@@ -1,8 +1,8 @@
 <template>
   <div class="container d-flex align-items-stretch">
-    <div class="card w-100">
-      <div class="card-body">
-        <h5 class="card-title">{{ experimentTitle }}</h5>
+    <div class="row align-items-stretch flex-fill">
+      <div class="bg-body p-3">
+        <h4>{{ experimentTitle }}</h4>
         <form>
           <div class="row mb-3">
             <label for="experimentClassSelect" class="col-sm-2 col-form-label"
@@ -54,7 +54,10 @@
         </form>
         <!-- <CustomDynamicComponent :url="descriptionComponent" /> -->
         <component :is="descriptionComponent" />
-        <component :is="parametersComponent" @update-parameters="handleUpdateParameters" />
+        <component
+          :is="parametersComponent"
+          @update-parameters="handleUpdateParameters"
+        />
         <!-- <CustomDynamicComponent :url="parametersComponent" /> -->
       </div>
     </div>
@@ -64,7 +67,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
 import { CFormSelect, CInputGroup, CButton } from "@coreui/vue";
 import { defineAsyncComponent } from "vue";
 import { componentLoader } from "@/plugins.js";
@@ -80,7 +83,9 @@ const getExperimentsPlugins = computed(
   () => store.getters["plugins/getExperimentsPlugins"],
 );
 const getPlugin = (id) => store.getters["plugins/getPlugin"](id);
-const isMachineDisconnected = computed(() => store.getters["machine/isDisconnected"]);
+const isMachineDisconnected = computed(
+  () => store.getters["machine/isDisconnected"],
+);
 
 const modifiedExperimentClassesOptions = computed(() => {
   let options = {
@@ -133,16 +138,19 @@ function handleUpdateParameters(params) {
 }
 
 function startExperiment() {
-    store.dispatch("experiment/startExperiment", {
-        pluginId: selectedExperimentPluginId.value,
-        parameters: experimentParameters.value,
-    }).then(() => {
-        router.push({ name: 'Home' });
-    }).catch((err) => {
-        const message = err.response.data.error || err.response.data;
-        store.dispatch("notifyWarning", {
-            content: message,
-        });
+  store
+    .dispatch("experiment/startExperiment", {
+      pluginId: selectedExperimentPluginId.value,
+      parameters: experimentParameters.value,
+    })
+    .then(() => {
+      router.push({ name: "Home" });
+    })
+    .catch((err) => {
+      const message = err.response.data.error || err.response.data;
+      store.dispatch("notifyWarning", {
+        content: message,
+      });
     });
 }
 function stopExperiment() {
@@ -167,5 +175,4 @@ function sendExperimentCommand(command, args) {
     });
   });
 }
-
 </script>

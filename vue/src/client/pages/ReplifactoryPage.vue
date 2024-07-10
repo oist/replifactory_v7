@@ -8,11 +8,7 @@
       aria-label="Main navigation"
     >
       <!-- logo -->
-      <a
-        href="/"
-        class="navbar-brand p-0 me-0 me-lg-2"
-        aria-label="SMTB"
-      >
+      <a href="/" class="navbar-brand p-0 me-0 me-lg-2" aria-label="Replifactory">
         <svg
           class="d-block m-1"
           width="50"
@@ -35,32 +31,62 @@
       >
         <ul class="navbar-nav w-100 d-flex flex-row justify-content-between">
           <li class="nav-item">
-            <BootstrapRouterLink to="/" class="nav-link d-flex flex-column align-items-center">
-              <CIcon icon="cilHouse" custom-class-name="d-block d-md-none icon icon-3xl" />
+            <BootstrapRouterLink
+              to="/"
+              class="nav-link d-flex flex-column align-items-center"
+            >
+              <CIcon
+                icon="cilHouse"
+                custom-class-name="d-block d-md-none icon icon-3xl"
+              />
               Home
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/machine" class="nav-link d-flex flex-column align-items-center">
-              <CIcon icon="cilFactory" custom-class-name="d-block d-md-none icon icon-3xl" />
+            <BootstrapRouterLink
+              to="/machine"
+              class="nav-link d-flex flex-column align-items-center"
+            >
+              <CIcon
+                icon="cilFactory"
+                custom-class-name="d-block d-md-none icon icon-3xl"
+              />
               Machine
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/experiments" class="nav-link d-flex flex-column align-items-center">
-              <CIcon icon="cilChartLine" custom-class-name="d-block d-md-none icon icon-3xl" />
+            <BootstrapRouterLink
+              to="/experiments"
+              class="nav-link d-flex flex-column align-items-center"
+            >
+              <CIcon
+                icon="cilChartLine"
+                custom-class-name="d-block d-md-none icon icon-3xl"
+              />
               Experiments
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/maintance" class="nav-link d-flex flex-column align-items-center">
-              <CIcon icon="cilEqualizer" custom-class-name="d-block d-md-none icon icon-3xl" />
+            <BootstrapRouterLink
+              to="/maintance"
+              class="nav-link d-flex flex-column align-items-center"
+            >
+              <CIcon
+                icon="cilEqualizer"
+                custom-class-name="d-block d-md-none icon icon-3xl"
+              />
               Maintance
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/help" class="nav-link d-flex flex-column align-items-center">
-              <CIcon icon="cilLifeRing" custom-class-name="d-block d-md-none icon icon-3xl" />
+            <BootstrapRouterLink
+              to="/help"
+              class="nav-link d-flex flex-column align-items-center"
+            >
+              <CIcon
+                icon="cilLifeRing"
+                custom-class-name="d-block d-md-none icon icon-3xl"
+              />
               Help
             </BootstrapRouterLink>
           </li>
@@ -81,7 +107,7 @@
     </nav>
   </header>
   <main class="flex-grow-1 d-flex justify-content-center">
-    <router-view />
+      <router-view />
   </main>
   <footer class="border-top bg-body d-none d-md-block">
     <div class="container">
@@ -142,10 +168,40 @@ export default {
 </script>
 
 <style scoped>
+header {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 50px;
+  right: 0px;
+  overflow: hidden;
+}
+main {
+  position: absolute;
+  top: 50px;
+  bottom: 25px;
+  left: 0px;
+  right: 0px;
+  overflow: auto;
+}
+footer {
+  position: absolute;
+  bottom: 0px;
+  height: 25px;
+  left: 0px;
+  right: 0px;
+  overflow: hidden;
+}
 header nav {
   min-height: 50px;
 }
 @media screen and (max-width: 767.5px) {
+  main {
+    bottom: 100px;
+  }
+  footer {
+    height: 100px;
+  }
   #navbarNav {
     position: fixed;
     bottom: 0;
@@ -159,9 +215,6 @@ header nav {
   }
   #navbarNav nav-item {
     margin: 4em 2em;
-  }
-  main {
-    padding-bottom: 100px;
   }
 }
 </style>
