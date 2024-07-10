@@ -16,7 +16,7 @@ export default {
     ...RouterLink.props,
     activeClass: {
       type: String,
-      default: "active",
+      default: "active border-bottom border-4",
     },
     inactiveClass: {
       type: String,
@@ -25,3 +25,9 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.active {
+  border-color: #6f42c1 !important;
+}
+</style>

@@ -9,6 +9,7 @@ import router from "./client/router";
 
 // Import Bootstrap and CoreUI styles
 import "@coreui/coreui/dist/css/coreui.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 

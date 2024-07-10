@@ -1,6 +1,6 @@
 <template>
   <div
-    class="DeviceControl"
+    class="DeviceControl container-fluid"
     :class="{ 'device-disconnected': deviceConnected === false }"
   >
     <!-- <div class="disconnected-overlay" v-if="deviceConnected === false"></div> -->

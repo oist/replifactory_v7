@@ -1,31 +1,20 @@
 <template>
   <MachineNotification />
   <header
-    class="navbar navbar-expand-lg bd-navbar sticky-top p-0 bg-body d-print-none shadow-sm"
+    class="navbar navbar-expand bd-navbar sticky-top p-0 bg-body d-print-none shadow-sm"
   >
     <nav
       class="container-xxl bd-gutter flex-wrap flex-lg-nowrap"
       aria-label="Main navigation"
     >
-      <!-- side panel toggler -->
-      <div class="bd-navbar-toggle">
-        <button
-          class="navbar-toggler p-2"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-label="Toggle navigation"
-        >
-          <CIcon icon="cilHamburgerMenu" /><span class="d-none fs-6 pe-1"
-            >Browse</span
-          >
-        </button>
-      </div>
       <!-- logo -->
-      <a href="/" class="navbar-brand p-0 me-0 me-lg-2" aria-label="SMTB">
+      <a
+        href="/"
+        class="navbar-brand p-0 me-0 me-lg-2"
+        aria-label="SMTB"
+      >
         <svg
-          class="d-block m-2"
+          class="d-block m-1"
           width="50"
           height="40"
           role="img"
@@ -42,31 +31,36 @@
       <!-- navbar -->
       <div
         id="navbarNav"
-        class="collapse navbar-collapse d-felx justify-content-center"
+        class="d-flex justify-content-center align-self-stretch align-items-end bg-body"
       >
-        <ul class="navbar-nav">
+        <ul class="navbar-nav w-100 d-flex flex-row justify-content-between">
           <li class="nav-item">
-            <BootstrapRouterLink to="/" class="nav-link">
+            <BootstrapRouterLink to="/" class="nav-link d-flex flex-column align-items-center">
+              <CIcon icon="cilHouse" custom-class-name="d-block d-md-none icon icon-3xl" />
               Home
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/machine" class="nav-link">
+            <BootstrapRouterLink to="/machine" class="nav-link d-flex flex-column align-items-center">
+              <CIcon icon="cilFactory" custom-class-name="d-block d-md-none icon icon-3xl" />
               Machine
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/experiments" class="nav-link">
+            <BootstrapRouterLink to="/experiments" class="nav-link d-flex flex-column align-items-center">
+              <CIcon icon="cilChartLine" custom-class-name="d-block d-md-none icon icon-3xl" />
               Experiments
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/maintance" class="nav-link">
+            <BootstrapRouterLink to="/maintance" class="nav-link d-flex flex-column align-items-center">
+              <CIcon icon="cilEqualizer" custom-class-name="d-block d-md-none icon icon-3xl" />
               Maintance
             </BootstrapRouterLink>
           </li>
           <li class="nav-item">
-            <BootstrapRouterLink to="/help" class="nav-link">
+            <BootstrapRouterLink to="/help" class="nav-link d-flex flex-column align-items-center">
+              <CIcon icon="cilLifeRing" custom-class-name="d-block d-md-none icon icon-3xl" />
               Help
             </BootstrapRouterLink>
           </li>
@@ -89,7 +83,7 @@
   <main class="flex-grow-1 d-flex justify-content-center">
     <router-view />
   </main>
-  <footer class="border-top bg-body">
+  <footer class="border-top bg-body d-none d-md-block">
     <div class="container">
       <div class="text-center">
         <span class="text-muted"
@@ -108,9 +102,7 @@ import { mapState, mapMutations } from "vuex";
 import { CIcon } from "@coreui/icons-vue";
 import BootstrapRouterLink from "@/client/router/BootstrapRouterLink.vue";
 import MachineNotification from "@/client/components/machine/MachineNotification.vue";
-import {
-  CFormSwitch,
-} from "@coreui/vue";
+import { CFormSwitch } from "@coreui/vue";
 
 export default {
   name: "HomePage",
@@ -149,4 +141,27 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+header nav {
+  min-height: 50px;
+}
+@media screen and (max-width: 767.5px) {
+  #navbarNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+    min-height: 100px;
+    max-height: 100px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0 1em;
+  }
+  #navbarNav nav-item {
+    margin: 4em 2em;
+  }
+  main {
+    padding-bottom: 100px;
+  }
+}
+</style>
