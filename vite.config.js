@@ -55,11 +55,11 @@ export default defineConfig({
         target: "http://localhost:5000",
         secure: false,
       },
-      "/help": {
-        changeOrigin: true,
-        target: "http://localhost:5000",
-        // secure: false,
-      },
+      // "/help": {
+      //   changeOrigin: true,
+      //   target: "http://localhost:5000",
+      //   // secure: false,
+      // },
       "/socket.io": {
         ws: true,
         // changeOrigin: true,

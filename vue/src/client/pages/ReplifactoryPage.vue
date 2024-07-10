@@ -184,6 +184,14 @@ main {
   right: 0px;
   overflow: auto;
 }
+#helpIframe {
+  position: absolute;
+  top: 0px;
+  bottom: 25px;
+  left: 0px;
+  right: 0px;
+  overflow: auto;
+}
 footer {
   position: absolute;
   bottom: 0px;
@@ -196,7 +204,7 @@ header nav {
   min-height: 50px;
 }
 @media screen and (max-width: 767.5px) {
-  main {
+  main, #helpIframe {
     bottom: 100px;
   }
   footer {
