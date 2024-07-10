@@ -31,6 +31,11 @@ const routes = [
             alias: "/experiments/",
             name: "NewExperiment",
             component: () => import("@/client/pages/replifactory/experiments/NewExperimentForm.vue"),
+          },
+          {
+            path: "/experiments/:id",
+            name: "ExperimentDetail",
+            component: () => import("@/client/pages/replifactory/experiments/ExperimentDetail.vue"),
           }
         ],
       },

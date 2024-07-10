@@ -7,7 +7,14 @@
     >
       <div class="d-flex w-100 justify-content-between">
         <div>
-          <h5 class="mb-1">{{ status.name }}</h5>
+          <h5 class="mb-1">
+            <router-link
+              :to="{ name: 'ExperimentDetail', params: { id: id } }"
+              class="text-decoration-none"
+            >
+              {{ status.name }}
+            </router-link>
+          </h5>
           <p class="mb-1">{{ status.status }}</p>
           <small
             >Cycles: {{ status.cycles }} next every
@@ -42,11 +49,7 @@
       <CIcon icon="cilPlus" /> Run new experiment
     </button>
   </div>
-  <BModal
-    id="stopModal"
-    v-model="stopModal"
-    title="Stop Experiment"
-  >
+  <BModal id="stopModal" v-model="stopModal" title="Stop Experiment">
     <template #modal-header="{ close }">
       <h5 class="modal-title">Stop Experiment</h5>
       <button type="button" class="btn-close" @click="close"></button>

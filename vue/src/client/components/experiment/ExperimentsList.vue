@@ -1,15 +1,20 @@
 <template>
-    <div class="ExperimentsList">
-        <div class="list-group">
-            <a href="#" class="list-group-item list-group-item-action" v-for="experiment in experiments"
-                :key="experiment.id" :value="experiment">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ experiment.name }}</h5>
-                    <!-- <small>{{ experiment.created_at }}</small> -->
-                </div>
-            </a>
+  <div class="ExperimentsList">
+    <div class="list-group">
+      <a
+        v-for="experiment in experiments"
+        :key="experiment.id"
+        href="#"
+        class="list-group-item list-group-item-action"
+        :value="experiment"
+      >
+        <div class="d-flex w-100 justify-content-between">
+          <h5 class="mb-1">{{ experiment.name }}</h5>
+          <!-- <small>{{ experiment.created_at }}</small> -->
         </div>
+      </a>
     </div>
+  </div>
 </template>
 
 <script>
@@ -17,9 +22,7 @@ import { mapState, mapGetters } from "vuex";
 import api from "@/api.js";
 
 export default {
-  components: {
-
-  },
+  components: {},
   data() {
     return {
       selectedMachine: undefined,
@@ -120,7 +123,7 @@ export default {
     },
   },
   sockets: {
-    changeMachineListEvent() { },
+    changeMachineListEvent() {},
   },
 };
 </script>

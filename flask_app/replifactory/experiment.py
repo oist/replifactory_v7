@@ -58,6 +58,10 @@ class Experiment:
     def get_name(cls):
         return cls.name
 
+    @classmethod
+    def get_class_fullname(cls):
+        return f"{__name__}.{cls.__name__}"
+
     def status(self):
         return {
             "name": self.get_name(),
@@ -67,6 +71,7 @@ class Experiment:
             "alive": self._thread is not None,
             "interrupted": self.is_interrupted(),
             "status": self._status,
+            "class": self.get_class_fullname(),
         }
 
     def interrupteble_sleep(self, timeout: float):

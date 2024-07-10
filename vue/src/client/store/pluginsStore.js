@@ -17,6 +17,16 @@ export default {
     getExperimentsPlugins(state) {
       return state.pluginsMeta.filter((plugin) => plugin.kind === "experiment");
     },
+    getExperimentPluginForClass: (state) => (experimentClass) => {
+        return state.pluginsMeta.find((plugin) => plugin.experiment_class === experimentClass);
+    },
+    getUiModuleForClass: (state, getters) => (experimentClass, componentKind) => {
+        const plugin = getters.getExperimentPluginForClass(experimentClass);
+        if (plugin) {
+            return plugin.ui_modules.find((component) => component.kind === componentKind);
+        }
+        return null;
+    },
   },
   actions: {
     fetchPluginsMeta({ commit }) {

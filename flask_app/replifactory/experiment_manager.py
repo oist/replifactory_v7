@@ -44,7 +44,7 @@ class ExperimentManager(ExperimentCallback):
                 raise ValueError(f"Experiment {experiment_id} not found")
             return experiment.status()
 
-    def start_experiment(self, experiment_class: type, machine: Optional[BaseMachine] = None, *args, **kwargs):
+    def start_experiment(self, experiment_class: type[Experiment], machine: Optional[BaseMachine] = None, *args, **kwargs):
         with self._lock:
             machine = machine or machineManager().get_machine()
             if machine is None:

@@ -78,6 +78,7 @@ class PluginMetadata:
 class ReplifactoryPlugin:
     kind = "General"
     name = None
+    metadata_class = PluginMetadata
 
     def __init__(self, *args, **kwargs):
         self.id = f"{self.__module__}.{self.__class__.__name__}"
@@ -91,10 +92,13 @@ class ReplifactoryPlugin:
         return []
 
     def get_metadata(self):
-        return PluginMetadata(
-            id=self.id,
-            name=self.name or self.id,
-            description=self.description,
-            kind=self.kind,
-            ui_modules=self.get_ui_modules()
-        )
+        return self.metadata_class(**self._collect_metadata())
+
+    def _collect_metadata(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "kind": self.kind,
+            "ui_modules": self.get_ui_modules()
+        }
