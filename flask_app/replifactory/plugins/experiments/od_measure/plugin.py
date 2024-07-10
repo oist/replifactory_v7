@@ -13,6 +13,7 @@ class ODMeasureExperiment(Experiment):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._cycleTime = 5.0
         self._reactors = self._machine.get_reactors()
 
     def warmup(self):
@@ -21,7 +22,7 @@ class ODMeasureExperiment(Experiment):
 
     def routine(self):
         for reactor in self._reactors:
-            if self._abort:
+            if self.is_interrupted():
                 return
             if reactor.state != ReactorStates.READY:
                 self._log.warning(f"Reactor {reactor} is not ready")

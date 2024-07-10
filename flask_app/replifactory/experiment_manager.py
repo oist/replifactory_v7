@@ -69,7 +69,7 @@ class ExperimentManager(ExperimentCallback):
             if experiment is None:
                 raise ValueError(f"Experiment {experiment_id} not found")
             experiment.stop()
-            del self._experiments[experiment_id]
+            # del self._experiments[experiment_id]
             self._log.info(f"Stopped experiment {experiment_id}")
             return experiment.status()
 

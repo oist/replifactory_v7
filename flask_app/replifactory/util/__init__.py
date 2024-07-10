@@ -759,3 +759,18 @@ def get_short_uuid():
     import uuid
 
     return str(uuid.uuid4())[:8]
+
+
+def interrupteble_sleep(timeout: float, interrupt_event: threading.Event):
+    """
+    Sleep for a given time, but allow the sleep to be interrupted by an event.
+
+    Arguments:
+        timeout (float): The time to sleep
+        interrupt_event (threading.Event): The event to interrupt the sleep
+    """
+    start_time = time.monotonic()
+    while time.monotonic() - start_time < timeout:
+        interrupt_event.wait(timeout - (time.monotonic() - start_time))
+        if interrupt_event.is_set():
+            break

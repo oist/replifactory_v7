@@ -49,7 +49,7 @@ class EndlessGrowthExperiment(Experiment):
 
     def routine(self):
         for reactor in self._reactors:
-            if self._abort:
+            if self.is_interrupted():
                 return
             if reactor.state != ReactorStates.READY:
                 self._log.warning(f"Reactor {reactor} is not ready")
