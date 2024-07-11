@@ -45,6 +45,7 @@ class Experiment:
         self._thread = None
         self._abort = threading.Event()
         self._startTime = None
+        self._endTime = None
         self._cycles = 0
         self._cycles_max = 100
         self._cycleTime = 60.0
@@ -68,6 +69,7 @@ class Experiment:
             "id": self._id,
             "name": self.get_name(),
             "startTime": self._startTime,
+            "endTime": self._endTime,
             "cycles": self._cycles,
             "cycleTime": self._cycleTime,
             "alive": self._thread is not None,
@@ -174,6 +176,12 @@ class Experiment:
                 break
             if self.success_condition(**routine_result):
                 break
+
+            eventManager().fire(
+                Events.EXPERIMENT_CYCLE_COMPLETE,
+                payload={"time": datetime.now(timezone.utc), "cycle": self._cycles},
+            )
+
             end_cycle_time = datetime.now()
             elapsed_time = end_cycle_time - start_cycle_time
             sleep_time = self._cycleTime - elapsed_time.total_seconds()
@@ -188,14 +196,11 @@ class Experiment:
                 )
             else:
                 self.interrupteble_sleep(sleep_time)
-            eventManager().fire(
-                Events.EXPERIMENT_CYCLE_COMPLETE,
-                payload={"time": datetime.now(timezone.utc), "cycle": self._cycles},
-            )
 
         self.cooldown()
+        self._endTime = datetime.now(timezone.utc)
         eventManager().fire(
-            Events.EXPERIMENT_DONE, payload={"time": datetime.now(timezone.utc)}
+            Events.EXPERIMENT_DONE, payload={"time": self._endTime}
         )
         if self._status != ExperimentStatuses.FAILED:
             self._set_status(ExperimentStatuses.DONE)

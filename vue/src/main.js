@@ -18,7 +18,7 @@ window.Vue = Vue;
   await import("@coreui/coreui/dist/css/coreui.css");
   await import("bootstrap/dist/css/bootstrap.css");
   await import("bootstrap-vue-next/dist/bootstrap-vue-next.css");
-
+  await import("bootstrap-icons/font/bootstrap-icons.min.css");
   await import("bootstrap/dist/js/bootstrap.bundle.min.js");
 
   const app = createApp(App);
