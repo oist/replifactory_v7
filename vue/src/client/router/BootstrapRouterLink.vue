@@ -20,6 +20,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  alias: {
+    type: String,
+    default: "",
+  },
 });
 
 const route = useRoute();
@@ -28,20 +32,21 @@ const isActive = computed(() => {
   const target = props.to;
   const targetPath = typeof target === 'string' ? target : target.path;
   const targetName = typeof target === 'object' ? target.name : null;
+  const targetAlias = props.alias; // Access the alias from props
 
   // Special handling for root path '/'
-  if (targetPath === '/') {
-    return route.path === '/';
+  if (targetPath === '/' || targetAlias !== "") {
+    return route.path === '/' || route.path === targetAlias;
   }
 
-  // Check if the current route matches the target by name or path
-  const isExactMatch = route.name === targetName || route.path === targetPath;
+  // Check if the current route matches the target by name, path, or alias
+  const isExactMatch = route.name === targetName || route.path === targetPath || route.path === targetAlias;
 
-  // Check if any parent routes match the target, excluding the root alias scenario
+  // Check if any parent routes match the target or alias, excluding the root alias scenario
   const isParentMatch = route.matched.some(r => {
     const matchPath = r.path === '' ? '/' : r.path; // Normalize root path
-    // Ensure not to match root alias by checking against the target path and name
-    return (targetPath !== '/' && ((targetName && r.name === targetName) || (targetPath && matchPath === targetPath)));
+    // Ensure not to match root alias by checking against the target path, name, and alias
+    return (targetPath !== '/' && targetAlias !== '/' && ((targetName && r.name === targetName) || (targetPath && matchPath === targetPath) || (targetAlias && matchPath === targetAlias)));
   });
 
   return isExactMatch || isParentMatch;

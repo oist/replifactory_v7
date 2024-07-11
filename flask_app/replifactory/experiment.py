@@ -40,6 +40,7 @@ class Experiment:
         *args,
         **kwargs,
     ):
+        self._id = kwargs.get("id", None)
         self._machine = machine
         self._thread = None
         self._abort = threading.Event()
@@ -64,6 +65,7 @@ class Experiment:
 
     def status(self):
         return {
+            "id": self._id,
             "name": self.get_name(),
             "startTime": self._startTime,
             "cycles": self._cycles,

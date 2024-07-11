@@ -27,9 +27,6 @@ from flask_app.replifactory.machine_manager import machineManager
 from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
-from flask_app.routes.device_routes import device_routes
-from flask_app.routes.experiment_routes import experiment_routes
-from flask_app.routes.service_routes import service_routes
 
 machine_manager = None
 
@@ -49,7 +46,8 @@ log = logging.getLogger(__name__)
 def create_app():
     # global settings
 
-    app = Flask(__name__, static_folder="static/build", static_url_path="/")
+    # app = Flask(__name__, static_folder="static/build", static_url_path="/")
+    app = Flask(__name__, static_folder="static")
 
     # Generate a nice key using secrets.token_urlsafe()
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "not-secret-key")
@@ -158,9 +156,6 @@ def create_app():
         api_endpoints = ["/api"]
         registrators = [
             functools.partial(app.register_blueprint, api, url_prefix="/api"),
-            functools.partial(app.register_blueprint, device_routes),
-            functools.partial(app.register_blueprint, experiment_routes),
-            functools.partial(app.register_blueprint, service_routes),
         ]
 
         # register everything with the system
@@ -210,18 +205,40 @@ def create_app():
 
     setattr(app, "run_before_server_started", _run_before_server_started)
 
-    @app.route("/help", defaults={"path": ""})
-    @app.route("/help/<path:path>")
-    def send_help(path):
-        if path:
-            return send_from_directory("static/help", path)
-        return app.send_static_file("index.html")
+    # @app.route("/help", defaults={"path": ""})
+    # @app.route("/help/<path:path>")
+    # def send_help(path):
+    #     if path:
+    #         return send_from_directory("static/help/", path)
+    #     return app.send_static_file("index.html")
+    # @app.route("/help")
+    # def send_help():
+    #     return app.send_static_file("index.html")
 
-    @app.route("/", defaults={"path": ""})
-    @app.route("/login", defaults={"path": "/login"})
+    ui_endpoints = [
+        "login",
+        "home",
+        "machine",
+        "experiments",
+        "maintance",
+    ]
+
+    @app.route("/")
+    def ui_index_endpoint():
+        return send_from_directory("static/build", "index.html")
+
+    # only /help/ should return ui endpoint
+    # /help/* should return ui static
+    @app.route("/help/")
+    def ui_help_endpoint():
+        return send_from_directory("static/build", "index.html")
+
     @app.route("/<path:path>")
-    def catch_all(path):
-        return app.send_static_file("index.html")
+    def ui_static(path):
+        for route in ui_endpoints:
+            if path.startswith(route):
+                return send_from_directory("static/build", "index.html")
+        return send_from_directory("static/build", path)
 
     _setup_blueprints(app)
     flask_static_digest.init_app(app)

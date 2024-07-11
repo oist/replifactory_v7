@@ -45,5 +45,5 @@ socket.on("CommandQueueUpdated", (payload) => {
 });
 
 socket.on("ExperimentStatusChange", (payload) => {
-  store.commit("experiment/updateExperimentStatus", payload);
+  store.commit("experiment/updateExperimentStatus", {id: payload.id, data: payload});
 });

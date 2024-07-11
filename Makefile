@@ -1,10 +1,23 @@
 #git clone http://github.com/catalin-rusnac/replifactory_v7; cd replifactory_v7; make install
 
-default: dependencies build run
+default: build-all serve-flask
 
 UI_SERVICE_NAME = ReplifactoryUI
 POETRY_VERSION = 1.6.1
 PYTHON = poetry run python
+
+.PHONY: build-all build-docs build-vue build
+
+build-all: build-docs build-vue
+
+build-docs:
+	cd sphinx && make html
+
+build-vue:
+	npm run build
+
+serve-flask:
+	$(PYTHON) -m gunicorn -k gevent -w 1 flask_app.app
 
 node_modules: package-lock.json
 	npm ci

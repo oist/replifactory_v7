@@ -69,11 +69,12 @@ export default {
           });
       });
     },
-    startExperiment(context, payload) {
+    startExperiment({ commit }, payload) {
       return new Promise((resolve, reject) => {
         api
           .post("/api/experiments", { ...payload })
           .then((response) => {
+            commit("updateExperimentStatus", { id: response.data.id, data: response.data });
             resolve(response.data);
           })
           .catch((error) => {

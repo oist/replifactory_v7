@@ -33,6 +33,7 @@
           <li class="nav-item">
             <BootstrapRouterLink
               to="/"
+              alias="/home"
               class="nav-link d-flex flex-column align-items-center"
             >
               <CIcon

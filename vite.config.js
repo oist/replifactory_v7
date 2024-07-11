@@ -38,33 +38,23 @@ export default defineConfig({
       "/plugins": {
         changeOrigin: false,
         target: "http://localhost:5000",
-        // secure: false,
       },
       "/static": {
         changeOrigin: false,
         target: "http://localhost:5000",
-        // secure: false,
       },
       "/security": {
         changeOrigin: false,
         target: "http://localhost:5000",
-        // secure: false,
       },
       "/api/": {
         changeOrigin: true,
         target: "http://localhost:5000",
         secure: false,
       },
-      // "/help": {
-      //   changeOrigin: true,
-      //   target: "http://localhost:5000",
-      //   // secure: false,
-      // },
       "/socket.io": {
         ws: true,
-        // changeOrigin: true,
         target: "http://localhost:5000",
-        // secure: false,
       },
     },
   },

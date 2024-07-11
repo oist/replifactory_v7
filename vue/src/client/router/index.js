@@ -6,7 +6,6 @@ const routes = [
   {
     path: "/",
     name: "Index",
-    // component: () => import("@/client/components/Replifactory.vue"),
     component: () => import("@/client/pages/ReplifactoryPage.vue"),
     beforeEnter: requireAuth,
     children: [

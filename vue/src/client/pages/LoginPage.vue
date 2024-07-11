@@ -59,6 +59,11 @@ export default {
   computed: {
     ...mapGetters("security", ["authorized"]),
   },
+  created() {
+    if (this.authorized) {
+      this.$router.push("/");
+    }
+  },
   methods: {
     login() {
       this.$store
