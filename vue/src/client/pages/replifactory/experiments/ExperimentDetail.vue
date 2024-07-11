@@ -148,6 +148,8 @@ function calculateTimeSpent() {
       </div>
     </div>
     <h2>Dashboard</h2>
-    <component :is="dashboardComponent" />
+    <div class="row">
+      <component :is="dashboardComponent" />
+    </div>
   </div>
 </template>
