@@ -101,53 +101,62 @@ function calculateTimeSpent() {
       <div class="mb-1 text-body-secondary">
         Started on {{ localStartTime }}
       </div>
-      <h2>Status</h2>
-      <div class="d-flex gap-2 justify-content-start py-1 fs-3">
-        <span
-          v-if="experiment.alive"
-          class="badge d-flex align-items-center p-1 pe-2 text-success-emphasis bg-success-subtle border border-success-subtle rounded-pill"
-        >
-          <CIcon icon="cilWalk" size="xl" /> Alive
-        </span>
-        <span
-          v-if="experiment.interrupted"
-          class="badge d-flex align-items-center p-1 pe-2 text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-pill"
-        >
-          <i class="bi bi-x-octagon me-1"></i> Interrupted
-        </span>
-        <span
-          class="badge d-flex align-items-center p-1 pe-2 text-light-emphasis bg-light-subtle border border-light-subtle rounded-pill"
-        >
-          <i class="bi bi-arrow-repeat me-1"></i> {{ experiment.cycles }}
-        </span>
-      </div>
-      <h2>Details</h2>
       <div class="row">
-        <div class="col-md-2 text-primary">Start time</div>
-        <div class="col-md-3 text-end">
-          {{ localStartTime }}
+        <div class="col-12 col-md-6">
+          <h2>Status</h2>
+          <hr/>
+          <div class="d-flex gap-2 justify-content-start py-1 fs-3">
+            <span
+              v-if="experiment.alive"
+              class="badge d-flex align-items-center p-1 pe-2 text-success-emphasis bg-success-subtle border border-success-subtle rounded-pill"
+            >
+              <CIcon icon="cilWalk" size="xl" /> Alive
+            </span>
+            <span
+              v-if="experiment.interrupted"
+              class="badge d-flex align-items-center p-1 pe-2 text-warning-emphasis bg-warning-subtle border border-warning-subtle rounded-pill"
+            >
+              <i class="bi bi-x-octagon me-1"></i> Interrupted
+            </span>
+            <span
+              class="badge d-flex align-items-center p-1 pe-2 text-light-emphasis bg-light-subtle border border-light-subtle rounded-pill"
+            >
+              <i class="bi bi-arrow-repeat me-1"></i> {{ experiment.cycles }}
+            </span>
+          </div>
         </div>
-      </div>
-      <div class="row">
-        <div class="col-md-2 text-primary">End time</div>
-        <div class="col-md-3 text-end">
-          {{ localEndTime }}
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-2 text-primary">Time spent</div>
-        <div class="col-md-3 text-end">
-          {{ timeSpent }}
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-2 text-primary">Status</div>
-        <div class="col-md-3 text-end">
-          {{ experiment.status }}
+        <div class="col-12 col-md-6">
+          <h2>Details</h2>
+          <hr/>
+          <div class="row">
+            <div class="col-4 text-primary">Start time</div>
+            <div class="col-8 text-end">
+              {{ localStartTime }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4 text-primary">End time</div>
+            <div class="col-8 text-end">
+              {{ localEndTime }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4 text-primary">Time spent</div>
+            <div class="col-8 text-end">
+              {{ timeSpent }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4 text-primary">Status</div>
+            <div class="col-8 text-end">
+              {{ experiment.status }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
     <h2>Dashboard</h2>
+    <hr/>
     <div class="row">
       <component :is="dashboardComponent" />
     </div>

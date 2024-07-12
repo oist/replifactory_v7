@@ -5,16 +5,22 @@ import ExperimentDashboard from "./components/ExperimentDashboard.vue";
 </script>
 
 <template>
-  <section>
-    <h1>Experiment Description</h1>
-    <hr />
-    <ExperimentDescription />
-    <h1>Experiment Parameters</h1>
-    <hr />
-    <ExperimentParameters />
-    <h1>Experiment Dashboard</h1>
-    <hr />
-    <ExperimentDashboard />
+  <section class="container-fluid">
+    <div class="row">
+      <h1>Experiment Description</h1>
+      <hr />
+      <ExperimentDescription />
+    </div>
+    <div class="row">
+      <h1>Experiment Parameters</h1>
+      <hr />
+      <ExperimentParameters />
+    </div>
+    <div class="row">
+      <h1>Experiment Dashboard</h1>
+      <hr />
+      <ExperimentDashboard />
+    </div>
   </section>
 </template>
 

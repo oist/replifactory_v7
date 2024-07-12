@@ -31289,6 +31289,7 @@
       ]);
       vue.provide(D, "light");
       const option = vue.ref({
+        width: "auto",
         title: {
           text: "Traffic Sources",
           left: "center"
@@ -31335,17 +31336,18 @@
         return vue.openBlock(), vue.createElementBlock("section", {
           ref_key: "chartContainer",
           ref: chartContainer,
-          class: "w-100 bg-body",
+          class: "w-100 bg-body overflow-hidden",
           style: { "height": "400px" }
         }, [
           vue.createVNode(vue.unref(H), {
-            class: "chart",
-            option: option.value
+            class: "chart w-100",
+            option: option.value,
+            autoresize: ""
           }, null, 8, ["option"])
         ], 512);
       };
     }
   };
-  const ExperimentDashboard = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-a71f7f31"]]);
+  const ExperimentDashboard = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-eeabd541"]]);
   return ExperimentDashboard;
 });

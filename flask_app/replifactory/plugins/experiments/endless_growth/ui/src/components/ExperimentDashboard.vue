@@ -21,6 +21,7 @@ use([
 provide(THEME_KEY, "light");
 
 const option = ref({
+  width: "auto",
   title: {
     text: "Traffic Sources",
     left: "center"
@@ -73,8 +74,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="chartContainer" class="w-100 bg-body" style="height: 400px;">
-    <v-chart class="chart" :option="option" />
+  <section ref="chartContainer" class="w-100 bg-body overflow-hidden" style="height: 400px;">
+    <v-chart class="chart w-100" :option="option" autoresize />
   </section>
 </template>
 
