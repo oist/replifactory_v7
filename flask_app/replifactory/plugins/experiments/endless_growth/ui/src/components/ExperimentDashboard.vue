@@ -490,6 +490,49 @@ const option = ref({
         ],
       },
     },
+    {
+      type: "line",
+      showSymbol: false,
+      name: "Events",
+      data: [],
+      markLine: {
+            data: [
+                {
+                    xAxis: "2024-07-12 07:43:58",
+                    label: {
+                        show: true,
+                        formatter: 'Start',
+                        color: 'red'
+                    },
+                    lineStyle: {
+                        color: 'red'
+                    }
+                },
+                {
+                    xAxis: "2024-12-14 07:43:58",
+                    label: {
+                        show: true,
+                        formatter: 'System Reboot',
+                        color: 'blue'
+                    },
+                    lineStyle: {
+                        color: 'blue'
+                    }
+                },
+                {
+                    xAxis: "2025-02-14 07:43:58",
+                    label: {
+                        show: true,
+                        formatter: 'End',
+                        color: 'green'
+                    },
+                    lineStyle: {
+                        color: 'green'
+                    }
+                }
+            ]
+        },
+    },
   ],
 });
 
