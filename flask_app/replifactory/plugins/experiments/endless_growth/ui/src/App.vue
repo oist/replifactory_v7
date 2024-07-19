@@ -2,6 +2,19 @@
 import ExperimentDescription from "./components/ExperimentDescription.vue";
 import ExperimentParameters from "./components/ExperimentParameters.vue";
 import ExperimentDashboard from "./components/ExperimentDashboard.vue";
+
+import { onMounted, computed } from "vue";
+import { useStore } from "vuex";
+
+const store = useStore();
+
+const experimentId = "d82a117c";
+const experiment = computed(() => store.getters["experiment/getExperiment"](experimentId));
+
+onMounted(() => {
+  store.dispatch("experiment/fetchExperiment", experimentId)
+})
+
 </script>
 
 <template>
@@ -19,7 +32,7 @@ import ExperimentDashboard from "./components/ExperimentDashboard.vue";
     <div class="row">
       <h1>Experiment Dashboard</h1>
       <hr />
-      <ExperimentDashboard />
+      <ExperimentDashboard :experiment-data=experiment />
     </div>
   </section>
 </template>
