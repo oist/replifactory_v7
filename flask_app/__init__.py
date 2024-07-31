@@ -5,7 +5,7 @@ import logging
 import os
 from http.client import HTTPException
 
-from flask import Flask, request, send_from_directory, jsonify
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_security.core import Security
 from flask_security.datastore import SQLAlchemyUserDatastore
@@ -20,10 +20,14 @@ from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
 from flask_app.replifactory.events import Events, eventManager
 from flask_app.replifactory.experiment import register_experiment
-from flask_app.replifactory.plugins import pluginsManager
 from flask_app.replifactory.experiment_manager import experimentManager
-from flask_app.replifactory.machine import machineRegistry, replifactory_v5, replifactory_virtual
+from flask_app.replifactory.machine import (
+    machineRegistry,
+    replifactory_v5,
+    replifactory_virtual,
+)
 from flask_app.replifactory.machine_manager import machineManager
+from flask_app.replifactory.plugins import pluginsManager
 from flask_app.replifactory.plugins.experiments import ExperimentPlugin
 from flask_app.replifactory.socketio import MachineNamespace
 from flask_app.replifactory.usb_manager import usbManager
