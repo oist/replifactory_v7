@@ -15,6 +15,7 @@ from flask_socketio import SocketIO
 from flask_static_digest import FlaskStaticDigest
 from flask_wtf.csrf import CSRFProtect
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
+from whitenoise import WhiteNoise
 
 from flask_app.replifactory.config import Config, settings
 from flask_app.replifactory.database import db
@@ -218,6 +219,9 @@ def create_app():
     # @app.route("/help")
     # def send_help():
     #     return app.send_static_file("index.html")
+
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(script_dir, "static/"))
+    app.wsgi_app.add_files(os.path.join(script_dir, "static/build/"))
 
     ui_endpoints = [
         "login",
