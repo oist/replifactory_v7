@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-wsgi_app = "flask_app.app"
+wsgi_app = "replifactory.app"
 
 # Server Socket
 PORT = os.environ.get("PORT", 5000)

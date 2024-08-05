@@ -123,11 +123,9 @@ RUN useradd -mU $USER_NAME && \
 
 USER $USER
 
-COPY --chown=$USER:$USER --from=vue-app /usr/src/app/flask_app/static ./flask_app/static
-COPY --chown=$USER:$USER ./flask_app/ ./flask_app/
+COPY --chown=$USER:$USER --from=vue-app /usr/src/app/backend/server/static ./backend/server/static
+COPY --chown=$USER:$USER ./backend/ ./backend/
 COPY --chown=$USER:$USER ./entrypoint.sh ./
-
-# RUN flask --app flask_app digest compile
 
 RUN chmod +x entrypoint.sh
 

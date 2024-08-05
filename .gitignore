@@ -4,21 +4,15 @@ node_modules/
 /data/
 /.idea/
 .vscode/
-flask_app/static/build/
+backend/server/static/build/
 cache_manifest.json
 
 __pycache__/
-/flask_app/minimal_device/__pycache__/
-/flask_app/data/
-/flask_app/static/help/
 .venv/
-/flask_app/build/
-/flask_app/dist/
 /secrets/
 /secrets2/
 /logs/
 /venv/
-/flask_app/develop/
 /db/
 *.db
 .coverage

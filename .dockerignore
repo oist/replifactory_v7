@@ -2,9 +2,10 @@
 Dockerfile
 
 __pycache__/
-flask_app/data/
-flask_app/develop/
-flask_app/static/build/
+backend/data/
+backend/develop/
+backend/server/static/build/
+backend_tests/
 secrets*
 logs/
 venv/

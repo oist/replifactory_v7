@@ -5,4 +5,4 @@ python -m gunicorn \
   --access-logfile - \
   -k gevent \
   --workers=1 \
-  flask_app.app
+  app

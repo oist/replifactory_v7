@@ -21,7 +21,7 @@ export default defineConfig({
   base: "/",
   publicDir: "./public",
   build: {
-    outDir: resolve(__dirname, "flask_app/static/build"),
+    outDir: resolve(__dirname, "backend/server/static/build"),
     assetsDir: "./",
     rollupOptions: {
       input: resolve(__dirname, "vue/index.html"),

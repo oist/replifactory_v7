@@ -22,7 +22,7 @@
     //   "request": "launch",
     //   "module": "gunicorn",
     //   "justMyCode": true,
-    //   "args": ["-k", "gevent", "-w", "1", "flask_app.app"],
+    //   "args": ["-k", "gevent", "-w", "1", "app"],
     //   "env": {
     //     "GEVENT_SUPPORT": "True"
     //   }
@@ -31,7 +31,7 @@
     //   "name": "waitress",
     //   "type": "python",
     //   "request": "launch",
-    //   "module": "flask_app.server",
+    //   "module": "server",
     //   "justMyCode": true
     // },
     // {
@@ -78,7 +78,8 @@
       "request": "launch",
       "module": "flask",
       "env": {
-        "FLASK_APP": "flask_app.app",
+        "PYTHONPATH": "${workspaceFolder}/backend",
+        "FLASK_APP": "replifactory.app",
         "FLASK_DEBUG": "1",
         "LOGGING_LEVEL": "DEBUG",
         "ENVIRONMENT": "development",

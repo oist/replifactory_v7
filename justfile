@@ -7,7 +7,7 @@ install-dependencies:
     npm ci
 
 build:
-    poetry run make --directory sphinx html
+    poetry run make --directory documentation html
     npm run build
 
 run:
@@ -15,3 +15,6 @@ run:
 
 run-flask:
     poetry run flask -e .env run
+
+test:
+    poetry run pytest

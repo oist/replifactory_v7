@@ -3261,10 +3261,7 @@ docs = ["Sphinx", "repoze.sphinx.autointerface", "sphinx-rtd-theme"]
 test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
-[extras]
-replifactory = []
-
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0, <3.13"
-content-hash = "c24fa1c8c1a4ed5f89660182a71836cd191f5d3a6cc278f58441b83752228119"
+content-hash = "0933f626013b4eb95f2558620bd07c4650b8985da3845e0329b4fc25e76eeb28"

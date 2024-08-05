@@ -53,7 +53,7 @@ ifeq ($(OS),Windows_NT)
 	powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs -ArgumentList "--startup=auto", "install"
 	powershell.exe Start-Process -FilePath "flask_app/dist/win32_service/win32_service.exe" -Verb RunAs start
 else
-	$(PYTHON) -m gunicorn -k gevent -w 1 flask_app.app
+	$(PYTHON) -m gunicorn -k gevent -w 1 app
 endif
 
 run-vue:

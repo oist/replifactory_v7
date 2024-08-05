@@ -12,8 +12,8 @@
 // async function loadComponent() {
 //   try {
 //     const component = await externalComponent(
-//       "/plugins/flask_app.replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-replifactory-plugin.umd.min.js"
-//     //   "/plugins/flask_app.replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/replifactory_endless_growth_plugin.umd.cjs",
+//       "/plugins/replifactory.plugins.experiments.od_measure.plugin.ODMeasureExperimentPlugin/od-measure-replifactory-plugin.umd.min.js"
+//     //   "/plugins/replifactory.plugins.experiments.endless_growth.plugin.EndlessGrowthExperimentPlugin/replifactory_endless_growth_plugin.umd.cjs",
 //     );
 //     return component;
 //   } catch (error) {
