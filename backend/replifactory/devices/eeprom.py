@@ -104,15 +104,15 @@ class Eeprom:
         crc = self._compute_crc(eeprom, True)[0]
         if crc:
             if self.is_empty:
-                self.log.info('No EEPROM or EEPROM erased')
+                self.log.info("No EEPROM or EEPROM erased")
             else:
-                self.log.error('Invalid CRC or EEPROM content')
+                self.log.error("Invalid CRC or EEPROM content")
         return eeprom
 
     def _compute_crc(self, eeprom: Union[bytes, bytearray], check=False):
         mtp = self._ftdi.device_version == 0x1000
         crc_pos = 0x100 if mtp else len(eeprom)
-        crc_size = scalc('<H')
+        crc_size = scalc("<H")
         if not check:
             # check mode: add CRC itself, so that result should be zero
             crc_pos -= crc_size
@@ -129,7 +129,7 @@ class Eeprom:
         if check:
             self._valid = not bool(crc)
             if not self._valid:
-                self.log.debug('CRC is now 0x%04x', crc)
+                self.log.debug("CRC is now 0x%04x", crc)
             else:
-                self.log.debug('CRC OK')
+                self.log.debug("CRC OK")
         return crc, crc_pos, crc_size

@@ -141,9 +141,7 @@ class Motor(Device):
         self.driver.set_param(l6470h.parameters.KVAL_RUN, profile.kval_run)
         self.driver.set_param(l6470h.parameters.KVAL_ACC, profile.kval_acc)
         self.driver.set_param(l6470h.parameters.KVAL_DEC, profile.kval_dec)
-        self.driver.set_param(
-            l6470h.parameters.INT_SPEED, profile.intersect_speed
-        )
+        self.driver.set_param(l6470h.parameters.INT_SPEED, profile.intersect_speed)
         self.driver.set_param(l6470h.parameters.ST_SLP, profile.start_slope)
         self.driver.set_param(
             l6470h.parameters.FN_SLP_ACC, profile.acceleration_final_slope
@@ -154,20 +152,25 @@ class Motor(Device):
         self.driver.set_param(
             l6470h.parameters.K_THERM, profile.thermal_compensation_factor
         )
-        self.driver.set_param(
-            l6470h.parameters.OCD_TH, profile.overcurrent_threshold
-        )
+        self.driver.set_param(l6470h.parameters.OCD_TH, profile.overcurrent_threshold)
         self.driver.set_param(l6470h.parameters.STALL_TH, profile.stall_threshold)
         self.driver.set_param(l6470h.parameters.STEP_MODE, profile.step_mode)
         self.driver.set_param(l6470h.parameters.ALARM_EN, profile.alarm_enable)
         self._set_state(self._state, force=True)
 
-    def run(self, clockwise: Optional[bool] = None, revolutions_per_second: Optional[float] = None):
+    def run(
+        self,
+        clockwise: Optional[bool] = None,
+        revolutions_per_second: Optional[float] = None,
+    ):
         steps_per_second = self.convert_revolutions_per_second_to_steps_per_second(
             revolutions_per_second or self._profile.max_speed_rps
         )
         self.driver.set_step_mode(l6470h.STEP_MODE_128)
-        self.driver.run(forward=clockwise or self._profile.clockwise, steps_per_second=steps_per_second)
+        self.driver.run(
+            forward=clockwise or self._profile.clockwise,
+            steps_per_second=steps_per_second,
+        )
 
     def stop(self):
         self._set_state(self.States.STATE_FINISHING)

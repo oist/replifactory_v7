@@ -1,4 +1,3 @@
-
 # singleton
 import collections
 import logging

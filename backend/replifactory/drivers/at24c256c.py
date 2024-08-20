@@ -58,7 +58,9 @@ class AT24C256C_Driver(EepromDriver):
                 result = self.port.read(1)  # Current Address Read
             else:
                 address = address or 0
-                readlen = readlen or AT24C256C_Driver.EEPROM_SIZE - address  # bytes til end
+                readlen = (
+                    readlen or AT24C256C_Driver.EEPROM_SIZE - address
+                )  # bytes til end
                 address_words = self._split_address_words(address)
                 result = self.port.exchange(address_words, readlen)
             # self.port.write(address_words, relax=False)

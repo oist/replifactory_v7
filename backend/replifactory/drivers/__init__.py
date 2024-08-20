@@ -247,14 +247,14 @@ class SpiPort(FtdiSpiPort, HardwarePort):
     ) -> bytes:
         with self.session:
             self.log.debug(
-                    __(
-                        "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
-                        port_name=self._name,
-                        cs=self._cs,
-                        int_data=ArrayOfBytesAsInt(out),
-                        data=bytearray(out).hex(" ").upper(),
-                    )
+                __(
+                    "W spi: {port_name} (CS{cs}) data: {int_data} [{data}]",
+                    port_name=self._name,
+                    cs=self._cs,
+                    int_data=ArrayOfBytesAsInt(out),
+                    data=bytearray(out).hex(" ").upper(),
                 )
+            )
             if isinstance(out, Iterable):
                 for b in out:
                     self.write([b], log=False, *args, **kwargs)
@@ -285,9 +285,13 @@ class SpiController(FtdiSpiController):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_named_port(self, name: str, cs: int, freq: float | None = None, mode: int = 0) -> SpiPort:
+    def get_named_port(
+        self, name: str, cs: int, freq: float | None = None, mode: int = 0
+    ) -> SpiPort:
         origin_port = super().get_port(cs, freq, mode)
-        self._spi_ports[cs] = SpiPort(self, cs, name, cs_hold=origin_port._cs_hold, spi_mode=mode)
+        self._spi_ports[cs] = SpiPort(
+            self, cs, name, cs_hold=origin_port._cs_hold, spi_mode=mode
+        )
         self._spi_ports[cs].set_frequency(freq)
         self._flush()
         return self._spi_ports[cs]

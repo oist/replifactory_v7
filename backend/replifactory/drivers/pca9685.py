@@ -84,7 +84,9 @@ class PWMDriver(Driver):
 
     def reset(self, frequency: float = 50):
         with self.port.session:
-            self._log.debug(__("enter reset(frequency={frequency})", frequency=frequency))
+            self._log.debug(
+                __("enter reset(frequency={frequency})", frequency=frequency)
+            )
             self.set_frequency(frequency)
             self._write_to_register(REGISTER_ALL_LED_ON_L, [0])
             self._write_to_register(REGISTER_ALL_LED_ON_H, [0])

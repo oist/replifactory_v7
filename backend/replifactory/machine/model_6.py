@@ -264,7 +264,7 @@ class MachineManager(BaseMachine, comm.MachineCallback):
                 tags=kwargs.get("tags", set()) | {"trigger:pump.stop"},
             )
 
-    def pump_set_profile(self, device_id, profile,  *args, **kwargs):
+    def pump_set_profile(self, device_id, profile, *args, **kwargs):
         if self._comm:
             self._comm.pump_set_profile(
                 device_id,

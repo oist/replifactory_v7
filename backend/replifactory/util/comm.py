@@ -114,9 +114,7 @@ class CommandQueue(TypedQueue):
         return cleared
 
     def _queue_changed(self):
-        eventManager().fire(
-            Events.COMMAND_QUEUE_UPDATED, {"size": self.qsize()}
-        )
+        eventManager().fire(Events.COMMAND_QUEUE_UPDATED, {"size": self.qsize()})
 
 
 class SendQueue(PrependableQueue):
@@ -187,9 +185,7 @@ class SendQueue(PrependableQueue):
         return cleared
 
     def _queue_changed(self):
-        eventManager().fire(
-            Events.SEND_QUEUE_UPDATED, {"size": self._qsize()}
-        )
+        eventManager().fire(Events.SEND_QUEUE_UPDATED, {"size": self._qsize()})
 
     def _put(self, item):
         _, item_type, target = item

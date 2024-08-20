@@ -106,7 +106,10 @@ class Pump(Device, DeviceCallback):
         lower_point = points[0]
         upper_point = points[-1]
         for i in range(len(points) - 1):
-            if volume >= points[i][0] * points[i][1] and volume <= points[i + 1][0] * points[i + 1][1]:
+            if (
+                volume >= points[i][0] * points[i][1]
+                and volume <= points[i + 1][0] * points[i + 1][1]
+            ):
                 lower_point = points[i]
                 upper_point = points[i + 1]
                 break
@@ -117,7 +120,9 @@ class Pump(Device, DeviceCallback):
         factor = (volume - lower_volume) / (upper_volume - lower_volume)
 
         # Interpolate the coefficient
-        interpolated_coefficient = lower_point[1] + (upper_point[1] - lower_point[1]) * factor
+        interpolated_coefficient = (
+            lower_point[1] + (upper_point[1] - lower_point[1]) * factor
+        )
 
         # Calculate the rotations
         rotations = volume / interpolated_coefficient
@@ -131,12 +136,19 @@ class Pump(Device, DeviceCallback):
             correction_coefficient = coefficients[min(coefficients.keys())]
         else:
             for i in range(len(coefficients) - 1):
-                if list(coefficients.keys())[i] <= rotations < list(coefficients.keys())[i + 1]:
-                    correction_coefficient = coefficients[list(coefficients.keys())[i]] + \
-                                             (rotations - list(coefficients.keys())[i]) * \
-                                             (coefficients[list(coefficients.keys())[i + 1]] - coefficients[
-                                                 list(coefficients.keys())[i]]) / \
-                                             (list(coefficients.keys())[i + 1] - list(coefficients.keys())[i])
+                if (
+                    list(coefficients.keys())[i]
+                    <= rotations
+                    < list(coefficients.keys())[i + 1]
+                ):
+                    correction_coefficient = coefficients[
+                        list(coefficients.keys())[i]
+                    ] + (rotations - list(coefficients.keys())[i]) * (
+                        coefficients[list(coefficients.keys())[i + 1]]
+                        - coefficients[list(coefficients.keys())[i]]
+                    ) / (
+                        list(coefficients.keys())[i + 1] - list(coefficients.keys())[i]
+                    )
                     break
             else:
                 correction_coefficient = coefficients[max(coefficients.keys())]

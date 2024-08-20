@@ -35,7 +35,12 @@ class VirtualConnectionAdapter(ConnectionAdapter):
 class VirtualReplifactoryMachine(BaseMachine):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(reactors_count=7, connection_adapter=VirtualConnectionAdapter(callbacks=self), *args, **kwargs)
+        super().__init__(
+            reactors_count=7,
+            connection_adapter=VirtualConnectionAdapter(callbacks=self),
+            *args,
+            **kwargs,
+        )
 
     def cmd_home(self, num, *args, **kwargs):
         pass
@@ -151,7 +156,9 @@ class VirtualReplifactoryReactor(Reactor):
         reactor_num = kwargs.pop("reactor_num", None)
         super().__init__(reactor_num=reactor_num, *args, **kwargs)
         self._machine: VirtualReplifactoryMachine = kwargs.pop("machine", None)
-        if self._machine is None or not isinstance(self._machine, VirtualReplifactoryMachine):
+        if self._machine is None or not isinstance(
+            self._machine, VirtualReplifactoryMachine
+        ):
             raise ValueError("Invalid machine")
         self._params = ReplifactoryReactorParams(**kwargs)
 
@@ -240,7 +247,9 @@ class VirtualReplifactoryReactor(Reactor):
         self, speed_ratio: float, wait_time: Optional[float] = None, *args, **kwargs
     ):
         return self._machine.add_operation(
-            (self._machine.stirrer, (self._num, speed_ratio, wait_time), {}), *args, **kwargs
+            (self._machine.stirrer, (self._num, speed_ratio, wait_time), {}),
+            *args,
+            **kwargs,
         )
 
     @reactor_command

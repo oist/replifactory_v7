@@ -40,7 +40,9 @@ class ADCDriver(Driver):
             samples_per_second = bitrate_to_samples_per_second[bitrate]
             seconds_per_sample = 1 / samples_per_second
             for _ in range(100):  # try reading until conversion ready
-                self._log.debug(f"wait {seconds_per_sample:2f} seconds to complete sample")
+                self._log.debug(
+                    f"wait {seconds_per_sample:2f} seconds to complete sample"
+                )
                 time.sleep(seconds_per_sample)
 
                 data, config = self.read()

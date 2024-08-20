@@ -338,7 +338,9 @@ class StepMotorDriver(StepperDriver):
         pulse_per_second = steps_per_second * 4  # 4 - for one-phase drive
         pulse_width = TICKS_PER_SECOND // pulse_per_second
         with self._port.session:
-            self._port.write_to(pwl_register | AUTOINCREMENT_BIT, pulse_width.to_bytes(2, "little"))
+            self._port.write_to(
+                pwl_register | AUTOINCREMENT_BIT, pulse_width.to_bytes(2, "little")
+            )
 
     @property
     def mode(self) -> StepperMode:

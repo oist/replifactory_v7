@@ -254,7 +254,11 @@ class Machine(Device, DeviceCallback):
         adc_driver = ADCDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_ADC, "ADC"))
         self._drivers += [adc_driver]
 
-        io_driver_reactor = IOPortDriver(port=ftdi_driver.get_i2c_hw_port(I2C_PORT_IO_REACTOR, "IO_REACTOR", IOPortDriver.registers))
+        io_driver_reactor = IOPortDriver(
+            port=ftdi_driver.get_i2c_hw_port(
+                I2C_PORT_IO_REACTOR, "IO_REACTOR", IOPortDriver.registers
+            )
+        )
         self._drivers += [io_driver_reactor]
         reactor_selector = ReactorSelector(io_driver_reactor, callback=self)
         self._devices[reactor_selector.id] = reactor_selector
@@ -269,7 +273,12 @@ class Machine(Device, DeviceCallback):
         )
         self._drivers += [io_driver_laser]
         lasers = [
-            Laser(laser_cs=cs, io_driver=io_driver_laser, name=f"Laser {cs // 2 + 1}", callback=self)
+            Laser(
+                laser_cs=cs,
+                io_driver=io_driver_laser,
+                name=f"Laser {cs // 2 + 1}",
+                callback=self,
+            )
             for cs in range(1, VIALS_COUNT * 2, 2)
         ]
         for laser in lasers:
@@ -1002,7 +1011,7 @@ class Machine(Device, DeviceCallback):
     def laser_on(self, device_id: str, *args, **kwargs):
         def command():
             laser = self._get_laser(device_id)
-            reactor_num = int(re.findall(r'\d+', laser.name)[-1])
+            reactor_num = int(re.findall(r"\d+", laser.name)[-1])
             try:
                 self._get_reactor_selector().select(reactor_num)
             except ValueError:
@@ -1014,7 +1023,7 @@ class Machine(Device, DeviceCallback):
     def laser_off(self, device_id: str, *args, **kwargs):
         def command():
             laser = self._get_laser(device_id)
-            reactor_num = int(re.findall(r'\d+', laser.name)[-1])
+            reactor_num = int(re.findall(r"\d+", laser.name)[-1])
             try:
                 self._get_reactor_selector().select(reactor_num)
             except ValueError:

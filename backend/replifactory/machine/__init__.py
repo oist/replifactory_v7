@@ -71,7 +71,9 @@ class Reactor:
         try:
             method = getattr(self, method_name)
             if self._log.isEnabledFor(logging.DEBUG):
-                self._log.debug(f"Executing {method_name} with args: {args} and kwargs: {kwargs}")
+                self._log.debug(
+                    f"Executing {method_name} with args: {args} and kwargs: {kwargs}"
+                )
             else:
                 self._log.info(f"Reactor {self._num} {method_name}")
             return method(*args, **kwargs)
@@ -83,7 +85,7 @@ class Reactor:
         command_info = {}
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
-            if callable(attr) and getattr(attr, 'is_reactor_command', False):
+            if callable(attr) and getattr(attr, "is_reactor_command", False):
                 args = inspect.getfullargspec(attr).args[1:]
                 command_info[attr_name] = args
                 # command_info[attr_name] = list(signature(attr).parameters.keys())
@@ -105,7 +107,9 @@ class CommandExecutor:
         self._execute_callback = execute_callback or self._execute
         self._command_queue = queue.Queue()
         self._stop_event = threading.Event()
-        self._thread = threading.Thread(name=f"{self._name}Thread", target=self._command_executor_loop)
+        self._thread = threading.Thread(
+            name=f"{self._name}Thread", target=self._command_executor_loop
+        )
         self._thread.start()
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
@@ -438,7 +442,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         command_info = {}
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
-            if callable(attr) and getattr(attr, 'is_machine_command', False):
+            if callable(attr) and getattr(attr, "is_machine_command", False):
                 command_info[attr_name] = list(signature(attr).parameters.keys())
         return command_info
 

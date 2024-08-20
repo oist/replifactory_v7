@@ -11,7 +11,14 @@ from pyftdi.i2c import I2cNackError
 from pyftdi.usbtools import UsbTools
 from usb.core import Device as UsbDevice
 
-from replifactory.drivers import Driver, I2cController, SpiController, I2cPort, LazyPort, SpiPort
+from replifactory.drivers import (
+    Driver,
+    I2cController,
+    SpiController,
+    I2cPort,
+    LazyPort,
+    SpiPort,
+)
 from replifactory.drivers.ftdi import FtdiEeprom
 from replifactory.virtual_usb_device import VirtualUsbDevice
 
@@ -116,14 +123,16 @@ class FtdiDriver(Driver):
                         )
         return self._spi_controller
 
-    def get_i2c_hw_port(self, address: int | list[int], name: str, registers: dict[int, str] = {}):
+    def get_i2c_hw_port(
+        self, address: int | list[int], name: str, registers: dict[int, str] = {}
+    ):
         if isinstance(address, list):
             return LazyPort(
-                get_port=self.get_first_active_i2c_port_callback(address, name, registers)
+                get_port=self.get_first_active_i2c_port_callback(
+                    address, name, registers
+                )
             )
-        return LazyPort(
-            get_port=self.get_i2c_port_callback(address, name, registers)
-        )
+        return LazyPort(get_port=self.get_i2c_port_callback(address, name, registers))
 
     def get_i2c_port_callback(
         self, address: int, name: str, registers: dict[int, str] = {}
@@ -144,11 +153,21 @@ class FtdiDriver(Driver):
         self._opened_ports[port_id] = port
         return port
 
-    def get_spi_hw_port(self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None):
+    def get_spi_hw_port(
+        self,
+        name: str,
+        cs: int,
+        freq: Optional[float] = None,
+        mode: Optional[int] = None,
+    ):
         return LazyPort(get_port=self.get_spi_port_callback(name, cs, freq, mode))
 
     def get_spi_port_callback(
-        self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
+        self,
+        name: str,
+        cs: int,
+        freq: Optional[float] = None,
+        mode: Optional[int] = None,
     ):
         def callback():
             return self.get_spi_port(name, cs, freq, mode)
@@ -156,7 +175,11 @@ class FtdiDriver(Driver):
         return callback
 
     def get_spi_port(
-        self, name: str, cs: int, freq: Optional[float] = None, mode: Optional[int] = None
+        self,
+        name: str,
+        cs: int,
+        freq: Optional[float] = None,
+        mode: Optional[int] = None,
     ) -> SpiPort:
         port_id = f"spi_{cs}_{name}"
         if port_id in self._opened_ports:

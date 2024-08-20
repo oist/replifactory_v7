@@ -1,5 +1,3 @@
-
-
 from dataclasses import dataclass
 from replifactory.experiment import Experiment
 from replifactory.plugins import PluginMetadata, ReplifactoryPlugin
@@ -23,7 +21,9 @@ class ExperimentPlugin(ReplifactoryPlugin):
 
     def _collect_metadata(self):
         metadata = super()._collect_metadata()
-        metadata.update({
-            "experiment_class": self.get_experiment_class().get_class_fullname(),
-        })
+        metadata.update(
+            {
+                "experiment_class": self.get_experiment_class().get_class_fullname(),
+            }
+        )
         return metadata

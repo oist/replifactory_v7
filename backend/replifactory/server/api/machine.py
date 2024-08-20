@@ -13,6 +13,7 @@ from replifactory.util.flask import NO_CONTENT, get_json_command_from_request
 def get_reactors():
     return NO_CONTENT
 
+
 @api.route("/reactors/<int:reactor_id>/command", methods=["POST"])
 @auth_required()
 def reactor_command(reactor_id):
@@ -230,7 +231,11 @@ def machinePumpCommand():
             stall_threshold=int(cmd_data["stall_threshold"]),
             step_mode=int(cmd_data["step_mode"]),
             alarm_enable=int(cmd_data["alarm_enable"]),
-            clockwise=cmd_data["clockwise"] if isinstance(cmd_data["clockwise"], bool) else cmd_data["clockwise"].lower() == "true",
+            clockwise=(
+                cmd_data["clockwise"]
+                if isinstance(cmd_data["clockwise"], bool)
+                else cmd_data["clockwise"].lower() == "true"
+            ),
         )
         machine_manager.pump_set_profile(device_id, profile, tags=tags)
 

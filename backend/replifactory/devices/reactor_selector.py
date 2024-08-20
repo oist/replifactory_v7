@@ -7,6 +7,7 @@ from replifactory.drivers.pca9555 import IOPortDriver
 
 global_lock = threading.RLock()
 
+
 class ReactorSelector(Device, DeviceCallback):
     def __init__(
         self,

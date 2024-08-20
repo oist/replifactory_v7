@@ -199,9 +199,7 @@ class Experiment:
 
         self.cooldown()
         self._endTime = datetime.now(timezone.utc)
-        eventManager().fire(
-            Events.EXPERIMENT_DONE, payload={"time": self._endTime}
-        )
+        eventManager().fire(Events.EXPERIMENT_DONE, payload={"time": self._endTime})
         if self._status != ExperimentStatuses.FAILED:
             self._set_status(ExperimentStatuses.DONE)
         self._thread = None

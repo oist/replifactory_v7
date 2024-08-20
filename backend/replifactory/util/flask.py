@@ -21,7 +21,9 @@ def get_json_command_from_request(request, valid_commands):
     data_copy = copy.deepcopy(data)
     command = data_copy.pop("command")
 
-    extra_params = [param for param in data_copy if param not in valid_commands[command]]
+    extra_params = [
+        param for param in data_copy if param not in valid_commands[command]
+    ]
     if extra_params:
         log.warning(f"Extra parameters found: {extra_params}")
         flask.abort(400, description=f"Extra parameters found: {extra_params}")

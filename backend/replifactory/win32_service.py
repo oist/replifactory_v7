@@ -13,8 +13,7 @@ from waitress import serve
 
 bundle_dir = os.path.abspath(os.path.dirname(__file__))
 logging.basicConfig(
-    level=logging.INFO,
-    format="[flaskapp] %(levelname)-7.7s %(message)s"
+    level=logging.INFO, format="[flaskapp] %(levelname)-7.7s %(message)s"
 )
 path_to_database = os.path.join(bundle_dir, "data/replifactory.db")
 os.environ["DATABASE_URI"] = f"sqlite:///{path_to_database}"
@@ -42,7 +41,7 @@ class FlaskSvc(win32serviceutil.ServiceFramework):
         servicemanager.LogMsg(
             servicemanager.EVENTLOG_INFORMATION_TYPE,
             servicemanager.PYS_SERVICE_STARTED,
-            (self._svc_name_, '')
+            (self._svc_name_, ""),
         )
         self.main()
 

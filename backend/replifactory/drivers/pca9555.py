@@ -13,9 +13,9 @@ def binary_with_bracket(value: int, pin: int):
     if pin <= 8:
         pin += 1
     selected_pin_index = 16 - pin
-    binary.insert(selected_pin_index, '[')
-    binary.insert(selected_pin_index + 2, ']')
-    return ''.join(binary)
+    binary.insert(selected_pin_index, "[")
+    binary.insert(selected_pin_index + 2, "]")
+    return "".join(binary)
 
 
 def bitwise_or(items):
@@ -194,13 +194,21 @@ class IOPortDriver(Driver):
         with self.port.session:
             value = value & 0xFF
             self.write_to(REGISTER_OUTPUT_PORT_0, value.to_bytes(1, "little"))
-            self._output_value = value if self._output_value is None else (self._output_value & 0xFF) + value
+            self._output_value = (
+                value
+                if self._output_value is None
+                else (self._output_value & 0xFF) + value
+            )
 
     def write_h(self, value: int):
         with self.port.session:
             value = value & 0xFF
             self.write_to(REGISTER_OUTPUT_PORT_1, value.to_bytes(1, "little"))
-            self._output_value = (value << 8) if self._output_value is None else (self._output_value & 0xFF00) + (value << 8)
+            self._output_value = (
+                (value << 8)
+                if self._output_value is None
+                else (self._output_value & 0xFF00) + (value << 8)
+            )
 
     def _changebit(self, bitmap, bit: int, value: int):
         if value == 0:

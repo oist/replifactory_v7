@@ -56,12 +56,14 @@ class Device(StateMixin):
         command_info = {}
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
-            if callable(attr) and getattr(attr, 'is_device_command', False):
+            if callable(attr) and getattr(attr, "is_device_command", False):
                 command_info[attr_name] = list(signature(attr).parameters.keys())
         return command_info
 
     def get_drivers(self) -> list[Driver]:
-        raise NotImplementedError(f"{self.name} has no drivers, it should explicitly return []")
+        raise NotImplementedError(
+            f"{self.name} has no drivers, it should explicitly return []"
+        )
 
     def get_data(self):
         return {

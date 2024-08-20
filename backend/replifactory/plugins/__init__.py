@@ -35,9 +35,11 @@ class PluginsManager:
                 plugin_path = os.path.join(plugins_category_path, plugin_name)
                 if not os.path.isdir(plugin_path):
                     continue
-                module_name = f"replifactory.plugins.{plugin_category}.{plugin_name}.plugin"
+                module_name = (
+                    f"replifactory.plugins.{plugin_category}.{plugin_name}.plugin"
+                )
                 module = importlib.import_module(module_name)
-                if hasattr(module, 'init_plugin'):
+                if hasattr(module, "init_plugin"):
                     plugin = module.init_plugin()
                     self.add_plugin(plugin)
 
@@ -56,7 +58,11 @@ class PluginsManager:
         return [plugin for plugin in self._plugins.values() if plugin.kind == kind]
 
     def get_plugins_instanceof(self, plugin_class):
-        return [plugin for plugin in self._plugins.values() if isinstance(plugin, plugin_class)]
+        return [
+            plugin
+            for plugin in self._plugins.values()
+            if isinstance(plugin, plugin_class)
+        ]
 
 
 @dataclass
@@ -86,7 +92,7 @@ class ReplifactoryPlugin:
         self.description = self.__doc__ or ""
 
     def get_ui_modules(self) -> list[PluginUiModuleMetadata]:
-        """ Return a list of frontend modules to be loaded by the client
+        """Return a list of frontend modules to be loaded by the client
         e.g. [{"name": "myPlugin", "url": "/static/plugins/myPlugin.js"}]
         """
         return []
@@ -100,5 +106,5 @@ class ReplifactoryPlugin:
             "name": self.name,
             "description": self.description,
             "kind": self.kind,
-            "ui_modules": self.get_ui_modules()
+            "ui_modules": self.get_ui_modules(),
         }

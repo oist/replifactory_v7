@@ -78,14 +78,18 @@ class ReplifactoryMachine(BaseMachine):
             callbacks=self,
             reconnect=True,
         )
-        super().__init__(reactors_count=7, connection_adapter=self._ftdi_adapter, *args, **kwargs)
+        super().__init__(
+            reactors_count=7, connection_adapter=self._ftdi_adapter, *args, **kwargs
+        )
 
         # Replifactory v5 layout
 
         # it's important to init pump drivers before valves, to stop motors before valves closing
         for pump_num in USED_PUMPS:
             step_motor_driver = StepMotorDriver(
-                port=self._ftdi_adapter.get_spi_hw_port(f"Stepper {pump_num}", cs=pump_num - 1)
+                port=self._ftdi_adapter.get_spi_hw_port(
+                    f"Stepper {pump_num}", cs=pump_num - 1
+                )
             )
             profile = (
                 MotorProfile_17HS15_1504S_X1()
@@ -256,11 +260,13 @@ class ReplifactoryMachine(BaseMachine):
                 # reactor._set_state(ReactorStates.READY)
                 self._cancel_long_operation_event.clear()
                 self._log.info(f"Cancelled dilution of reactor {num}")
-                break;
+                break
             changed_volume += dilution_volume
             if changed_volume > reactor_volume:
                 reactor._set_state(ReactorStates.ERROR)
-                self._log.warning(f"Reactor {num} dilution volume exceeded reactor volume")
+                self._log.warning(
+                    f"Reactor {num} dilution volume exceeded reactor volume"
+                )
                 raise ReactorException("Dilution volume exceeded reactor volume")
             self.discharge(num, dilution_volume, disconnect_reactors=False)
             self.feed(num, feed_volume, disconnect_reactors=False)
@@ -317,7 +323,10 @@ class ReplifactoryMachine(BaseMachine):
     def stop_pump(self, device_id: str):
         self._log.debug(f"Stopping pump {device_id}")
         self.execute_device_command(device_id, "stop")
-        while self.execute_device_command(device_id, "read_state") == Pump.States.STATE_WORKING:
+        while (
+            self.execute_device_command(device_id, "read_state")
+            == Pump.States.STATE_WORKING
+        ):
             time.sleep(0.1)
 
     @machine_command
@@ -521,7 +530,9 @@ class ReplifactoryReactor(Reactor):
         self, speed_ratio: float, wait_time: Optional[float] = None, *args, **kwargs
     ):
         return self._machine.add_operation(
-            (self._machine.stirrer, (self._num, speed_ratio, wait_time), {}), *args, **kwargs
+            (self._machine.stirrer, (self._num, speed_ratio, wait_time), {}),
+            *args,
+            **kwargs,
         )
 
     @reactor_command

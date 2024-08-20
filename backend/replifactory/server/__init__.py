@@ -193,9 +193,7 @@ def create_app():
             async_mode=socket_io_async_mode,
             path="socket.io",
         )
-        socketio.on_namespace(
-            MachineNamespace(app=app, namespace="/machine")
-        )
+        socketio.on_namespace(MachineNamespace(app=app, namespace="/machine"))
         # socketio.run(app)
         usb_manager.start_monitoring()
 
@@ -251,14 +249,19 @@ def create_app():
     _setup_blueprints(app)
     flask_static_digest.init_app(app)
 
-    machineRegistry().register(replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible)
-    machineRegistry().register(replifactory_virtual.VirtualReplifactoryMachine, replifactory_virtual.check_compatible)
+    machineRegistry().register(
+        replifactory_v5.ReplifactoryMachine, replifactory_v5.check_compatible
+    )
+    machineRegistry().register(
+        replifactory_virtual.VirtualReplifactoryMachine,
+        replifactory_virtual.check_compatible,
+    )
     pluginsManager().discover_plugins()
 
     for plugin in pluginsManager().get_plugins_instanceof(ExperimentPlugin):
         register_experiment(plugin.get_experiment_class())
 
-    @app.route('/api/plugins')
+    @app.route("/api/plugins")
     def get_plugins():
         plugins = []
         for plugin in pluginsManager().get_plugins():
@@ -266,7 +269,7 @@ def create_app():
             for ui_module in metadata.ui_modules:
                 # Prepend the /plugins/<plugin_id> prefix to the ui_module_path
                 plugin_id = plugin.get_metadata().id
-                ui_module.path = f'/plugins/{plugin_id}/{ui_module.path}'
+                ui_module.path = f"/plugins/{plugin_id}/{ui_module.path}"
             plugins.append(metadata)
         return jsonify(plugins)
 
@@ -282,7 +285,9 @@ def create_app():
             static_dir = os.path.join(plugin_dir, "static")
             # Serve the file from the plugin's static directory
             if path.endswith(".js") or path.endswith(".cjs"):
-                return send_from_directory(static_dir, path, mimetype='application/javascript')
+                return send_from_directory(
+                    static_dir, path, mimetype="application/javascript"
+                )
             else:
                 return send_from_directory(static_dir, path)
         else:

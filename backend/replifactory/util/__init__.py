@@ -711,7 +711,9 @@ class StateMixin:
         if state is None:
             state = self._state
 
-        possible_states = list(filter(lambda x: x.startswith("STATE_"), dir(self.States)))
+        possible_states = list(
+            filter(lambda x: x.startswith("STATE_"), dir(self.States))
+        )
         for possible_state in possible_states:
             if getattr(self.States, possible_state) == state:
                 return possible_state[len("STATE_") :]
