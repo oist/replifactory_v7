@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+import importlib
 import logging
 import os
-import importlib
-
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 

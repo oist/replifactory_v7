@@ -33,10 +33,7 @@ class ValvesGroup(Device):
         return [valve for valve in self.valves if valve.is_close]
 
     def all_closed(self):
-        for valve in self.valves:
-            if valve.is_open:
-                return False
-        return True
+        return all(valve.is_close for valve in self.valves)
 
     def not_all_closed(self):
         return not self.all_closed()

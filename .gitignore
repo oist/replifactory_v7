@@ -4,8 +4,9 @@ node_modules/
 /data/
 /.idea/
 .vscode/
-backend/server/static/build/
+backend/replifactory/server/static/build/
 cache_manifest.json
+dist/
 
 __pycache__/
 .venv/

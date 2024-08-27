@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "replifactory"
-version = "8.0.0"
+version = "0.1.0"
 description = "replifactory morbidostat python package"
 authors = ["Fedor Gagarin <fddgagarin@gmail.com>"]
 maintainers = []
@@ -12,7 +12,7 @@ packages = [
 
 [tool.poetry.scripts]
 ftconf = 'replifactory.ftconf:main'
-replifactory = 'replifactory.server:main'
+replifactory = 'replifactory.app:main'
 
 [tool.poetry.dependencies]
 python = ">=3.10.0, <3.13"
@@ -60,22 +60,27 @@ whitenoise = "^6.7.0"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.0.1"
-black = "^23.3.0"
-flake8 = "^6.0.0"
-isort = "^5.12.0"
+black = "^24.8.0"
+flake8 = {extras = ["bugbear"], version = "^7.1.1"}
+isort = "^5.13.2"
 pytest = "^7.2.1"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
 sphinx = "^7.3.7"
+git-changelog = "^2.5.2"
+pre-commit = "^3.8.0"
+flake8-bugbear = "^24.8.19"
+flake8-comprehensions = "^3.15.0"
+flake8-simplify = "^0.21.0"
 
 
 [tool.poetry.group.server.dependencies]
-gunicorn = "^21.2.0"
-gevent = "^23.9.1"
+gunicorn = "^22.0.0"
+gevent = "^24.2.1"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.pytest.ini_options]
 pythonpath = "backend"
@@ -94,6 +99,59 @@ filterwarnings = [
     'ignore::DeprecationWarning:pydantic.*',
 ]
 
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+# extend-exclude = ''
+
 [tool.isort]
+atomic = true
 profile = "black"
 src_paths = ["backend", "backend_tests"]
+line_length = 88
+skip_gitignore = true
+# skip_glob = ["tests/data", "profiling"]
+known_first_party = ["black", "blib2to3", "blackd", "_black_version"]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}
+    {%- endif -%}
+"""
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["**/replifactory/__init__.py", "**/versions*.js"]
+folders = [
+  { path = "backend" }
+]
+patterns = [
+    # default
+    "(^__version__\\s*(?::.*?)?=\\s*['\"])[^'\"]*(['\"])",
+    { value = "(^__version_tuple__\\s*(?::.*?)?=\\s*\\()[^)]*(\\))", mode = "tuple" },
+    # replace for version.js
+    "(^const _=\")[^'\"]*(\".*)",
+]
+
+[tool.poetry-dynamic-versioning.files."**/versions-*.js"]
+persistent-substitution = "True"
+
+[tool.git-changelog]
+bump = "auto"
+convention = "angular"
+in-place = false
+filter-commits = "e4cf583.."
+output = "CHANGELOG.md"
+parse-refs = true
+provider = "github"
+repository = "."
+sections = "feat,fix,refactor,ci,deps,docs,perf,style,tests"
+template = "keepachangelog"
+versioning = "semver"
+zerover = false

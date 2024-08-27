@@ -1,4 +1,5 @@
 from flask import Flask
+
 from replifactory.util.flask import get_json_command_from_request
 
 
@@ -25,7 +26,7 @@ def test_get_json_command_from_request_invalid_command():
         except Exception as exc:
             assert str(exc) == "400 Bad Request: command is invalid"
         else:
-            assert False, "Expected an exception to be raised"
+            raise AssertionError("Expected an exception to be raised")
 
 
 def test_get_json_command_from_request_extra_field():
@@ -38,4 +39,4 @@ def test_get_json_command_from_request_extra_field():
         except Exception as exc:
             assert str(exc) == "400 Bad Request: Extra parameters found: ['extra']"
         else:
-            assert False, "Expected an exception to be raised"
+            raise AssertionError("Expected an exception to be raised")

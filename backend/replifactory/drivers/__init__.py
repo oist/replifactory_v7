@@ -97,8 +97,9 @@ class I2cPort(FtdiI2cPort, HardwarePort):
         controller: "I2cController",
         address: int,
         name: str,
-        registers: dict[int, str] = {},
+        registers: Optional[dict[int, str]] = None,
     ):
+        registers = registers or {}
         super().__init__(controller=controller, address=address)
         self._name = name
         self._registers = registers
@@ -182,8 +183,9 @@ class I2cController(FtdiI2cController):
         super().__init__()
 
     def get_verbose_port(
-        self, address: int, name: str, registers: dict[int, str] = {}
+        self, address: int, name: str, registers: Optional[dict[int, str]] = None
     ) -> I2cPort:
+        registers = registers or {}
         if not self._ftdi.is_connected:
             raise I2cIOError("FTDI controller not initialized")
         self.validate_address(address)
@@ -257,19 +259,19 @@ class SpiPort(FtdiSpiPort, HardwarePort):
             )
             if isinstance(out, Iterable):
                 for b in out:
-                    self.write([b], log=False, *args, **kwargs)
+                    self.write(*args, [b], log=False, **kwargs)
             else:
                 for b in range(len(out)):
                     # start = b == 0
                     # stop = readlen <= 0 and b == len(payload) - 1
                     # self.spi_port.write(out=[payload[b]], start=start, stop=stop)
-                    self.write(out=[out[b]], log=False, *args, **kwargs)
+                    self.write(*args, out=[out[b]], log=False, **kwargs)
             res = bytearray()
             if readlen > 0:
-                for b in range(readlen):
+                for _b in range(readlen):
                     # stop = b == readlen - 1
                     # res += self.spi_port.read(readlen=1, start=False, stop=stop)
-                    res += self.read(1, log=False, *args, **kwargs)
+                    res += self.read(*args, 1, log=False, **kwargs)
                 self.log.debug(
                     __(
                         "Read from SPI (cs={cs}) {int_data} {data}",

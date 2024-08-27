@@ -5,9 +5,9 @@ import time
 from collections import deque
 
 import replifactory.devices._machine as comm
-from replifactory.server import settings
 from replifactory.events import Events, eventManager
-from replifactory.machine import MachineCallback, BaseMachine
+from replifactory.machine import BaseMachine, MachineCallback
+from replifactory.server import settings
 from replifactory.usb_manager import UsbManager, usbManager
 from replifactory.util import InvariantContainer
 from replifactory.util import get_fully_qualified_classname as fqcn
@@ -385,13 +385,12 @@ class MachineManager(BaseMachine, comm.MachineCallback):
             # error_string = self._comm.get_error_string()
             error_string = "Unknown error"
 
-        if oldState in (comm.Machine.States.STATE_WORKING,):
-            if state in (
-                comm.Machine.States.STATE_CLOSED,
-                comm.Machine.States.STATE_ERROR,
-                comm.Machine.States.STATE_CLOSED_WITH_ERROR,
-            ):
-                self._logger.error("Work failed: %s", error_string)
+        if oldState in (comm.Machine.States.STATE_WORKING,) and state in (
+            comm.Machine.States.STATE_CLOSED,
+            comm.Machine.States.STATE_ERROR,
+            comm.Machine.States.STATE_CLOSED_WITH_ERROR,
+        ):
+            self._logger.error("Work failed: %s", error_string)
 
         if (
             state == comm.Machine.States.STATE_CLOSED

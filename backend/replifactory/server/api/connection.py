@@ -33,7 +33,7 @@ def connectionCommand():
     if command == "connect":
         connection_options = _get_options()
 
-        device_id = data.get("device_id", None)
+        device_id = data.get("device_id")
         if device_id is None or device_id not in connection_options["devices"]:
             return "device_id is invalid", 400
         if "save" in data and data["save"]:

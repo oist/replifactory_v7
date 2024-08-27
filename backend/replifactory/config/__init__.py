@@ -1,5 +1,7 @@
 from typing import Optional
+
 from pydantic import BaseModel as PydanticBaseModel
+
 from replifactory.config.connection import ConnectionConfig
 from replifactory.config.temperature import TemperatureConfig
 

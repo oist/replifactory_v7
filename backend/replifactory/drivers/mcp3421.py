@@ -1,10 +1,8 @@
-import logging
 import time
 
 from replifactory.drivers import Driver, HardwarePort
 from replifactory.util import ArrayOfBytesAsInt
 from replifactory.util import BraceMessage as __
-
 
 # CONFIGURATION REGISTER
 # Bits:                         RDY | C1 | C0 | O/C | S1 | S0 | G1 | G0

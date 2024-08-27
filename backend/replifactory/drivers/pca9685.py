@@ -1,10 +1,8 @@
-import logging
 import time
 from typing import Union
 
 from replifactory.drivers import Driver, HardwarePort
 from replifactory.util import BraceMessage as __
-
 
 REGISTER_MODE_1 = 0x00
 REGISTER_MODE_2 = 0x01

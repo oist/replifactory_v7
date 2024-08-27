@@ -40,7 +40,7 @@ class Experiment:
         *args,
         **kwargs,
     ):
-        self._id = kwargs.get("id", None)
+        self._id = kwargs.get("id")
         self._machine = machine
         self._thread = None
         self._abort = threading.Event()

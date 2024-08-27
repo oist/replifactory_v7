@@ -1,4 +1,3 @@
-import logging
 import threading
 import time
 from enum import Enum
@@ -57,12 +56,13 @@ class Stirrer(Device):
         }
 
     def speed_to_duty_cycle(self, speed: int):
-        if speed == 0:
-            return 0.0
-        elif speed == 1:
-            return self.slow_speed
-        elif speed == 2:
-            return self.fast_speed
+        result = {
+            0: 0.0,
+            1: self.slow_speed,
+            2: self.fast_speed,
+        }.get(speed)
+        if result:
+            return result
         raise ValueError("Speed should be in [0, 1, 2]")
 
     def set_speed(self, speed: Union[float, int], accelerate=True):

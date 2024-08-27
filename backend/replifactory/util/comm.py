@@ -2,8 +2,8 @@ import contextlib
 import logging
 import queue
 import threading
-from replifactory.events import Events, eventManager
 
+from replifactory.events import Events, eventManager
 from replifactory.util import PrependableQueue, TypeAlreadyInQueue, TypedQueue
 
 _logger = logging.getLogger(__name__)
@@ -229,9 +229,8 @@ class SendQueue(PrependableQueue):
                 item = self._send_queue.get(block=False)
 
         _, item_type, _ = item
-        if item_type is not None:
-            if item_type in self._lookup:
-                self._lookup.remove(item_type)
+        if item_type is not None and item_type in self._lookup:
+            self._lookup.remove(item_type)
 
         return item
 

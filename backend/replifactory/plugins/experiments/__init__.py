@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from replifactory.experiment import Experiment
 from replifactory.plugins import PluginMetadata, ReplifactoryPlugin
 

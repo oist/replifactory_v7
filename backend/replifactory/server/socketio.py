@@ -3,15 +3,15 @@ import datetime
 import logging
 import threading
 import time
-from typing import Optional, Dict
-import flask
+from typing import Dict, Optional
 
+import flask
 from flask_socketio import emit as socketio_emit
 from flask_socketio.namespace import Namespace
-from replifactory.machine_manager import machineManager
 
 from replifactory.events import Events, eventManager
 from replifactory.machine import MachineCallback
+from replifactory.machine_manager import machineManager
 
 log = logging.getLogger(__name__)
 

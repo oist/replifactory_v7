@@ -2,10 +2,10 @@ import logging
 
 from flask import jsonify, request
 
-from replifactory.server.api import api
 from replifactory.experiment_manager import experimentManager
 from replifactory.machine_manager import machineManager
 from replifactory.plugins import pluginsManager
+from replifactory.server.api import api
 
 logger = logging.getLogger(__name__)
 

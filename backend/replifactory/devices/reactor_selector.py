@@ -4,7 +4,6 @@ from typing import Optional
 from replifactory.devices import Device, DeviceCallback
 from replifactory.drivers.pca9555 import IOPortDriver
 
-
 global_lock = threading.RLock()
 
 

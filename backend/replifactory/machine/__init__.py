@@ -356,8 +356,12 @@ class FtdiConnectionAdapter(ConnectionAdapter):
         return self._ftdi_driver.get_spi_hw_port(name, cs, freq, mode)
 
     def get_i2c_hw_port(
-        self, address: int | list[int], name: str, registers: dict[int, str] = {}
+        self,
+        address: int | list[int],
+        name: str,
+        registers: Optional[dict[int, str]] = None,
     ):
+        registers = registers or {}
         return self._ftdi_driver.get_i2c_hw_port(address, name, registers)
 
     def _on_usb_disconnected(self, event, usb_device):
@@ -421,7 +425,7 @@ class BaseMachine(ConnectionAdapterCallbacks, DeviceCallback, StateMixin):
         self.changestate_callback = self._machine_callback._on_machine_state_change
         self._state = self.States.STATE_OFFLINE
         self._reactors = [
-            self.reactor_class(reactor_num=index + 1, machine=self, *args, **kwargs)
+            self.reactor_class(*args, reactor_num=index + 1, machine=self, **kwargs)
             for index in range(reactors_count)
         ]
         self._log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")

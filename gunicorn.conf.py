@@ -4,6 +4,7 @@ from gevent import monkey
 
 monkey.patch_all()
 
+# flake8: noqa: E402
 from dotenv import load_dotenv
 
 # https://docs.gunicorn.org/en/latest/settings.html#settings

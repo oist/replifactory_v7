@@ -1,4 +1,3 @@
-import logging
 import time
 from enum import Enum
 from typing import Optional
@@ -51,7 +50,7 @@ class Laser(Device):
     def blink(self, times: int = 3, freq: float = 3):
         self._log.debug(f"{self.name} blink {times} times with freq: {freq} Hz")
         delay = 1 / (freq * 2)
-        for i in range(times):
+        for _ in range(times):
             self.switch_on()
             time.sleep(delay)
             self.switch_off()

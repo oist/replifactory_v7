@@ -1,7 +1,7 @@
-from enum import Enum
 import threading
 import time
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 import numpy as np
@@ -166,11 +166,10 @@ class OpticalDensitySensor(Device):
         returns the intensity of the transmitted light
         :return:
         """
-        with self.lock:
-            with self.laser:
-                time.sleep(self.delay_before_measure)
-                mv, err = self.photodiode.measure(gain=8, bitrate=16)
-                return mv, err
+        with self.lock, self.laser:
+            time.sleep(self.delay_before_measure)
+            mv, err = self.photodiode.measure(gain=8, bitrate=16)
+            return mv, err
 
     def _measure_background_intensity(self):
         """

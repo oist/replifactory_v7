@@ -1,9 +1,10 @@
 from dataclasses import dataclass, fields
 from datetime import datetime
+
 from replifactory.experiment import Experiment
 from replifactory.machine import ReactorException, ReactorStates
-from replifactory.plugins.experiments import ExperimentPlugin
 from replifactory.plugins import PluginUiModuleMetadata
+from replifactory.plugins.experiments import ExperimentPlugin
 
 
 def init_plugin(*args, **kwargs):

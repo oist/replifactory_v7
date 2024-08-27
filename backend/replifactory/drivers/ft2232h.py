@@ -14,9 +14,9 @@ from usb.core import Device as UsbDevice
 from replifactory.drivers import (
     Driver,
     I2cController,
-    SpiController,
     I2cPort,
     LazyPort,
+    SpiController,
     SpiPort,
 )
 from replifactory.drivers.ftdi import FtdiEeprom
@@ -124,8 +124,12 @@ class FtdiDriver(Driver):
         return self._spi_controller
 
     def get_i2c_hw_port(
-        self, address: int | list[int], name: str, registers: dict[int, str] = {}
+        self,
+        address: int | list[int],
+        name: str,
+        registers: Optional[dict[int, str]] = None,
     ):
+        registers = registers or {}
         if isinstance(address, list):
             return LazyPort(
                 get_port=self.get_first_active_i2c_port_callback(
@@ -135,16 +139,19 @@ class FtdiDriver(Driver):
         return LazyPort(get_port=self.get_i2c_port_callback(address, name, registers))
 
     def get_i2c_port_callback(
-        self, address: int, name: str, registers: dict[int, str] = {}
+        self, address: int, name: str, registers: Optional[dict[int, str]] = None
     ):
+        registers = registers or {}
+
         def callback():
             return self.get_i2c_port(address, name, registers)
 
         return callback
 
     def get_i2c_port(
-        self, address: int, name: str, registers: dict[int, str] = {}
+        self, address: int, name: str, registers: Optional[dict[int, str]] = None
     ) -> I2cPort:
+        registers = registers or {}
         port_id = f"i2c_{address}_{name}"
         if port_id in self._opened_ports:
             return self._opened_ports[port_id]
@@ -199,16 +206,25 @@ class FtdiDriver(Driver):
     # HIGHEST_I2C_SLAVE_ADDRESS = 0x78
 
     def get_first_active_i2c_port_callback(
-        self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}
+        self,
+        possible_addresses: list[int],
+        name: str,
+        registers: Optional[dict[int, str]] = None,
     ):
+        registers = registers or {}
+
         def callback():
             return self.get_first_active_port(possible_addresses, name, registers)
 
         return callback
 
     def get_first_active_port(
-        self, possible_addresses: list[int], name: str, registers: dict[int, str] = {}
+        self,
+        possible_addresses: list[int],
+        name: str,
+        registers: Optional[dict[int, str]] = None,
     ) -> I2cPort:
+        registers = registers or {}
         """Scan an I2C bus and return first answered port."""
         for addr in possible_addresses:
             port = self.get_i2c_port(addr, name, registers)

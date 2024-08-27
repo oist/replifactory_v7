@@ -114,7 +114,7 @@
     <div class="container">
       <div class="text-center">
         <span class="text-muted"
-          >Application version: 1.0.0.
+          >Application version: {{ appVersion }}
           <a class="text-dark" href="https://project-home-page.com"
             ><CIcon icon="cibGithub" /></a
         ></span>
@@ -130,6 +130,7 @@ import { CIcon } from "@coreui/icons-vue";
 import BootstrapRouterLink from "@/client/router/BootstrapRouterLink.vue";
 import MachineNotification from "@/client/components/machine/MachineNotification.vue";
 import { CFormSwitch } from "@coreui/vue";
+import { inject } from 'vue'
 
 export default {
   name: "HomePage",
@@ -142,6 +143,7 @@ export default {
   data() {
     return {
       publicPath: import.meta.env.BASE_URL,
+      appVersion: inject("appVersion"),
     };
   },
   computed: {

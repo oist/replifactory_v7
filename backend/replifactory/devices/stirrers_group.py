@@ -1,5 +1,5 @@
-import logging
 import time
+
 from replifactory.devices import Device
 from replifactory.devices.stirrer import Stirrer
 from replifactory.drivers import Driver
@@ -31,7 +31,7 @@ class StirrersGroup(Device):
         try:
             self.run_all(0.2)
             time.sleep(2)
-            self.stop_all(0.0)
+            self.stop_all()
             return True
         except Exception as e:
             self._log.exception(e)

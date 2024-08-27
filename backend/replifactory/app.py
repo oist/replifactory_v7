@@ -2,10 +2,10 @@ from gevent import monkey
 
 monkey.patch_all()
 
-import sys
-
+# flake8: noqa: E402
 from gunicorn.app.wsgiapp import WSGIApplication
 
+# flake8: noqa: E402
 from replifactory.server import create_app
 
 application = create_app()

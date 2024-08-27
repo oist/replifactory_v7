@@ -1,4 +1,3 @@
-import contextlib
 import copy
 import os
 import pickle
@@ -11,6 +10,7 @@ import threading
 import time
 import unicodedata
 from collections.abc import Set
+from contextlib import contextmanager, suppress
 from typing import Iterable, Literal, Union
 
 import numpy as np
@@ -47,7 +47,8 @@ def read_csv_tail(filepath, lines=1000, _buffer=4096):
     """Tail a file and get X lines from the end
     modified from https://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-similar-to-tail/136368#136368
     """
-    header = open(filepath).readline().rstrip().split(",")
+    with open(filepath) as f:
+        header = f.readline().rstrip().split(",")
     lines_found = read_file_tail(filepath=filepath, lines=lines, _buffer=_buffer)
 
     lines_found = lines_found[1:]  # cut header if lines > total lines in file
@@ -163,13 +164,11 @@ class ArrayOfBytesAsInt:
 
     def __str__(self):
         result: int = 0
-        byte_counter = 0
-        for byte in self.value:
+        for byte_counter, byte in enumerate(self.value):
             if self.byteorder == "little":
                 result |= byte << byte_counter * 8
             else:
                 result = result << 8 | byte
-            byte_counter += 1
         return result.__str__()
 
 
@@ -178,7 +177,9 @@ class InvariantContainer:
         from threading import RLock
 
         if guarantee_invariant is None:
-            guarantee_invariant = lambda data: data
+
+            def guarantee_invariant(data):
+                return data
 
         self._data = []
         self._mutex = RLock()
@@ -236,10 +237,8 @@ def silent_remove(file):
         file (string): The path of the file to be removed
     """
 
-    try:
+    with suppress(ValueError):
         os.remove(file)
-    except OSError:
-        pass
 
 
 # figure out current umask - sadly only doable by setting a new one and resetting it, no query method
@@ -247,7 +246,7 @@ UMASK = os.umask(0)
 os.umask(UMASK)
 
 
-@contextlib.contextmanager
+@contextmanager
 def atomic_write(
     filename,
     mode="w+b",
@@ -368,11 +367,8 @@ def dict_merge(a, b, leaf_merger=None, in_place=False):
         else:
             merged = None
             if k in result and callable(leaf_merger):
-                try:
+                with suppress(ValueError):  # can't be merged by leaf merger
                     merged = leaf_merger(result[k], v)
-                except ValueError:
-                    # can't be merged by leaf merger
-                    pass
 
             if merged is None:
                 merged = fast_deepcopy(v)

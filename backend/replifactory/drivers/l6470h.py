@@ -1,11 +1,10 @@
-import logging
 import math
 from dataclasses import dataclass
 from typing import Optional, Union
 
+from replifactory.drivers import HardwarePort, StepperDriver
 from replifactory.util import ArrayOfBytesAsInt
 from replifactory.util import BraceMessage as __
-from replifactory.drivers import HardwarePort, StepperDriver
 
 
 def to_float(x: int, n: int) -> float:
@@ -158,7 +157,7 @@ class ParameterValue:
 
     def __eq__(self, other):
         if isinstance(other, ParameterValue):
-            return type(self) == type(other) and self._raw_value == other._raw_value
+            return isinstance(self, type(other)) and self._raw_value == other._raw_value
         return False
 
 
@@ -403,7 +402,7 @@ STEP_MODES = (
 
 
 @dataclass
-class Command(object):
+class Command:
     address: int
     mask: list[int]
 
@@ -689,9 +688,10 @@ class StepMotorDriver(StepperDriver):
     def _command(
         self,
         cmd: int,
-        data_bytes: Union[list[int], bytes] = [],
+        data_bytes: Optional[Union[list[int], bytes]] = None,
         readlen: int = 0,
     ) -> bytes:
+        data_bytes = data_bytes or []
         self._log.debug(
             __(
                 "Write to SPI (cs={cs}) cmd: {cmd_name} (0x{cmd:02X}) data: {int_data} {data} readlen: {readlen:d}",

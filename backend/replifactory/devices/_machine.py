@@ -560,7 +560,7 @@ class Machine(Device, DeviceCallback):
             done = True
             try:
                 if isinstance(entry, tuple):
-                    if not len(entry) == 4:
+                    if len(entry) != 4:
                         # something with that entry is broken, ignore it and fetch
                         # the next one
                         continue
@@ -1074,10 +1074,10 @@ class Machine(Device, DeviceCallback):
             pump.stop()
 
         return LongtimeMachineCommand(
+            *args,
             callback=command,
             condition=kwargs["condition"] if "condition" in kwargs else condition,
             cancel=kwargs["cancel"] if "cancel" in kwargs else cancel,
-            *args,
             **kwargs,
         )
 
@@ -1170,7 +1170,7 @@ class Machine(Device, DeviceCallback):
         # close all valves except vial valve
         commands += [
             (
-                self.machine_command_entry(lambda: valve.close(), *args, **kwargs)
+                self.machine_command_entry(lambda v=valve: v.close(), *args, **kwargs)
                 for valve in self._valves
                 if valve.id != vial_valve.id
             )

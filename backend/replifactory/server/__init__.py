@@ -22,11 +22,7 @@ from replifactory.database import db
 from replifactory.events import Events, eventManager
 from replifactory.experiment import register_experiment
 from replifactory.experiment_manager import experimentManager
-from replifactory.machine import (
-    machineRegistry,
-    replifactory_v5,
-    replifactory_virtual,
-)
+from replifactory.machine import machineRegistry, replifactory_v5, replifactory_virtual
 from replifactory.machine_manager import machineManager
 from replifactory.plugins import pluginsManager
 from replifactory.plugins.experiments import ExperimentPlugin
@@ -169,7 +165,7 @@ def create_app():
 
         @app.errorhandler(HTTPException)
         def _handle_api_error(ex):
-            if any(map(lambda x: request.path.startswith(x), api_endpoints)):
+            if any(request.path.startswith(x) for x in api_endpoints):
                 return make_api_error(ex.description, ex.code)
             else:
                 return ex
@@ -206,7 +202,7 @@ def create_app():
         atexit.register(on_shutdown)
         eventManager().fire(Events.STARTUP)
 
-    setattr(app, "run_before_server_started", _run_before_server_started)
+    app.run_before_server_started = _run_before_server_started
 
     # @app.route("/help", defaults={"path": ""})
     # @app.route("/help/<path:path>")

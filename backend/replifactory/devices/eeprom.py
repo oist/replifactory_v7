@@ -36,10 +36,7 @@ class Eeprom:
         """
         if len(self._eeprom) != self.size:
             return False
-        for byte in self._eeprom:
-            if byte != 0xFF:
-                return False
-        return True
+        return all(byte == 255 for byte in self._eeprom)
 
     def connect(self):
         self._eeprom = self._read_eeprom()

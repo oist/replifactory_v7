@@ -3,6 +3,8 @@ import sys
 
 bin_dir = os.path.dirname(sys.executable)
 sys.path.insert(0, bin_dir)
+
+# flake8: noqa: E402
 import replifactory.drivers.ftdi
 
 sys.modules["pyftdi.eeprom"] = replifactory.drivers.ftdi

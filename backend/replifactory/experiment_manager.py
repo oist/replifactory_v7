@@ -68,10 +68,10 @@ class ExperimentManager(ExperimentCallback):
 
             callback = self.NamedExperimentCallback(experiment_id)
             experiment = experiment_class(
+                *args,
                 machine=machine,
                 experiment_callback=callback,
                 id=experiment_id,
-                *args,
                 **kwargs,
             )
 
@@ -111,5 +111,5 @@ class ExperimentManager(ExperimentCallback):
             return experiment.status()
 
     def _get_experiment(self, experiment_id: str) -> Experiment:
-        experiment, _ = self._experiments.get(experiment_id, None)
+        experiment, _ = self._experiments.get(experiment_id, (None, None))
         return experiment

@@ -1,5 +1,5 @@
-from importlib import import_module
 import sys
+from importlib import import_module
 
 
 def cached_import(module_path, class_name):

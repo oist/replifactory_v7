@@ -71,9 +71,10 @@ class Motor(Device):
         self,
         driver: l6470h.StepMotorDriver,
         callback: Optional[DeviceCallback] = None,
-        profile: MotorProfile = MotorProfile(),
+        profile: Optional[MotorProfile] = None,
         name: str = "Motor",
     ):
+        profile = profile or MotorProfile()
         self.driver: l6470h.StepMotorDriver = driver
         super().__init__(name=name, callback=callback)
         self.steps_per_revolution: int = 200  # nema-17 step motor datasheet

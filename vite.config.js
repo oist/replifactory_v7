@@ -6,7 +6,6 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 /** @type {import('vite').UserConfig} */
 export default defineConfig({
-  // https://vitejs.dev/config/
   plugins: [vue(), nodePolyfills()],
   define: {
     "process.env": {},
@@ -21,7 +20,7 @@ export default defineConfig({
   base: "/",
   publicDir: "./public",
   build: {
-    outDir: resolve(__dirname, "backend/server/static/build"),
+    outDir: resolve(__dirname, "backend/replifactory/server/static/build"),
     assetsDir: "./",
     rollupOptions: {
       input: resolve(__dirname, "vue/index.html"),

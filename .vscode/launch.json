@@ -85,6 +85,7 @@
         "ENVIRONMENT": "development",
         "REDIRECT_HOST": "localhost:8080",
         "REPLIFACTORY_VIRTUAL_MACHINE_ENABLED": "True",
+        "GEVENT_SUPPORT": "True",
       },
       "args": ["run", "--no-debugger", "--no-reload"],
       "jinja": true,

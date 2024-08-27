@@ -1,11 +1,10 @@
 # singleton
 import collections
 import logging
-from multiprocessing import RLock
 import queue
 import re
 import threading
-
+from multiprocessing import RLock
 
 _instance = None
 _instance_lock = RLock()

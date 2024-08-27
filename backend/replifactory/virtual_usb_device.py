@@ -1,4 +1,5 @@
-from usb.core import Device as UsbDevice, Configuration as UsbConfiguration
+from usb.core import Configuration as UsbConfiguration
+from usb.core import Device as UsbDevice
 
 
 class VirtualUsbDevice(UsbDevice):

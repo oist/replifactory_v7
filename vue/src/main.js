@@ -10,6 +10,7 @@ window.Vue = Vue;
     (m) => m.default,
   );
   const icons = await import("@coreui/icons");
+  const __version__ = await import("@/versions.js").then((m) => m.default);
 
   const App = await import("./client/App.vue").then((m) => m.default);
   const store = await import("./client/store").then((m) => m.default);
@@ -47,5 +48,6 @@ window.Vue = Vue;
   app.use(store);
   app.use(router);
   app.provide("icons", icons);
+  app.provide("appVersion", __version__);
   app.mount("#replifactory");
 })();

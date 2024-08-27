@@ -1,0 +1,119 @@
+name: Start release branch
+run-name: ${{ github.actor }} start release branch
+on:
+  workflow_dispatch:
+    inputs:
+      # environment_name:
+      #   description: Name of environment
+      #   required: true
+      #   default: stage
+      #   type: choice
+      #   options:
+      #     - stage
+      #     - production
+      # log_level:
+      #   description: 'Log level'
+      #   required: true
+      #   default: 'INFO'
+      #   type: choice
+      #   options:
+      #     - WARNING
+      #     - INFO
+      #     - DEBUG
+      previous_commit:
+        description: 'Ref to commit wher you want to start release branch (Set to: develop|<ref>)'
+        required: true
+        default: develop
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: '${{ github.workflow }}'
+  # cancel-in-progress: true
+jobs:
+  # check there is no unmerged release branches
+  # run checks
+  # run tests
+  # update app version
+  # update changelog
+  # create release branch
+  # commit
+  # create merge request to main branch
+  check-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for unmerged release branches
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: branches } = await github.repos.listBranches({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+          });
+
+          const unmergedBranches = [];
+          for (const branch of branches) {
+            if (branch.name.startsWith('release/')) {
+              const { data: comparison } = await github.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: 'main',
+                head: branch.name,
+              });
+              if (comparison.status !== 'identical') {
+                unmergedBranches.push(branch.name);
+              }
+            }
+          }
+
+          if (unmergedBranches.length > 0) {
+            core.setFailed(`Unmerged release branches found: ${unmergedBranches.join(', ')}`);
+          } else {
+            console.log('No unmerged release branches found.');
+          }
+  check-python:
+    needs: check-repo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+      - name: Tests
+  check-js:
+    needs: check-repo
+    steps:
+      - name: Lint
+      - name: Tests
+  create-release-mr:
+    needs: [check-python, check-js]
+    steps:
+      - name: Update version
+      - name: Update changelog
+      - name: Create release merge request
+
+
+  # init:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     api_endpoint: ${{ steps.parameters.outputs.api_endpoint }}
+  #     token_secret_name: ${{ steps.parameters.outputs.token_secret_name }}
+  #   steps:
+  #   - name: Set parameters
+  #     id: parameters
+  #     run: |
+  #       if [[ "${{ github.event.inputs.environment_name }}" == "production" ]]
+  #       then
+  #         echo "api_endpoint=https://problems.org.uk/api/v1" >> $GITHUB_OUTPUT
+  #         echo "token_secret_name=PRODUCTION_TOKEN" >> $GITHUB_OUTPUT
+  #       else
+  #         echo "api_endpoint=https://stage.problems.org.uk/api/v1" >> $GITHUB_OUTPUT
+  #         echo "token_secret_name=STAGE_TOKEN" >> $GITHUB_OUTPUT
+  #       fi
+  upload:
+    needs: init
+    uses: ./.github/workflows/auto-upload-problems.yaml
+    with:
+      ref: ${{ github.ref_name }}
+      api_endpoint: ${{ needs.init.outputs.api_endpoint }}
+      log_level: ${{ github.event.inputs.log_level }}
+      previous_commit: ${{ github.event.inputs.previous_commit }}
+    secrets:
+      token: ${{ secrets[needs.init.outputs.token_secret_name] }}

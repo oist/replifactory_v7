@@ -49,4 +49,4 @@ def test_reactor_cmd_raises():
     except AttributeError as exc:
         assert str(exc) == "No command named e found"
     else:
-        assert False, "Expected AttributeError to be raised"
+        raise AssertionError("Expected AttributeError to be raised")

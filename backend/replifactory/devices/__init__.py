@@ -1,5 +1,5 @@
-from inspect import signature
 import logging
+from inspect import signature
 from typing import Optional
 
 from replifactory.drivers import Driver

@@ -1,7 +1,7 @@
 import copy
 import logging
-import flask
 
+import flask
 
 log = logging.getLogger(__name__)
 

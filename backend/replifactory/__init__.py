@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+
 from ._version import get_data as get_version_data
 
 

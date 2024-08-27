@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import logging
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 from replifactory.devices.laser import Laser
@@ -79,7 +79,7 @@ class ReplifactoryMachine(BaseMachine):
             reconnect=True,
         )
         super().__init__(
-            reactors_count=7, connection_adapter=self._ftdi_adapter, *args, **kwargs
+            *args, reactors_count=7, connection_adapter=self._ftdi_adapter, **kwargs
         )
 
         # Replifactory v5 layout
@@ -341,7 +341,7 @@ class ReplifactoryMachine(BaseMachine):
     def disconnect_reactors_from_pumps(self):
         self._log.debug("Disconnecting reactors from pumps")
         for reactor in self._reactors:
-            wait = False if reactor._num != self._reactors[-1]._num else True
+            wait = reactor._num == self._reactors[-1]._num
             self.close_valve(reactor._num, wait=wait)
 
     @machine_command
@@ -439,7 +439,7 @@ class ReplifactoryReactor(Reactor):
 
     def __init__(self, *args, **kwargs) -> None:
         reactor_num = kwargs.pop("reactor_num", None)
-        super().__init__(reactor_num=reactor_num, *args, **kwargs)
+        super().__init__(*args, reactor_num=reactor_num, **kwargs)
         self._machine: ReplifactoryMachine = kwargs.pop("machine", None)
         if self._machine is None or not isinstance(self._machine, ReplifactoryMachine):
             raise ValueError("Invalid machine")

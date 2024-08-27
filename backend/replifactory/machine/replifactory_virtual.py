@@ -36,9 +36,9 @@ class VirtualReplifactoryMachine(BaseMachine):
 
     def __init__(self, *args, **kwargs):
         super().__init__(
+            *args,
             reactors_count=7,
             connection_adapter=VirtualConnectionAdapter(callbacks=self),
-            *args,
             **kwargs,
         )
 
@@ -154,7 +154,7 @@ class VirtualReplifactoryReactor(Reactor):
 
     def __init__(self, *args, **kwargs) -> None:
         reactor_num = kwargs.pop("reactor_num", None)
-        super().__init__(reactor_num=reactor_num, *args, **kwargs)
+        super().__init__(*args, reactor_num=reactor_num, **kwargs)
         self._machine: VirtualReplifactoryMachine = kwargs.pop("machine", None)
         if self._machine is None or not isinstance(
             self._machine, VirtualReplifactoryMachine

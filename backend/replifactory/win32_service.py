@@ -10,7 +10,6 @@ import win32serviceutil
 from server import create_app
 from waitress import serve
 
-
 bundle_dir = os.path.abspath(os.path.dirname(__file__))
 logging.basicConfig(
     level=logging.INFO, format="[flaskapp] %(levelname)-7.7s %(message)s"
