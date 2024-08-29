@@ -1,8 +1,5 @@
-#git clone http://github.com/catalin-rusnac/replifactory_v7; cd replifactory_v7; make install
-
 default: build-all serve
 
-UI_SERVICE_NAME = ReplifactoryUI
 POETRY_VERSION = 1.8.3
 PYTHON = poetry run python
 
@@ -233,18 +230,10 @@ update-hostname:
 	@sudo sed -i "s/127.0.1.1.*/127.0.1.1       $(RASPBERRY_NAME)/" /etc/hosts
 	@echo "Hostname updated. You may need to reboot for changes to take effect."
 
-secrets:
-	make dwservice_run
-	make update-hostname
-	sudo systemctl daemon-reload
-	ssh-keygen -t rsa -b 4096 -C "pi@$(RASPBERRY_NAME)" -f ~/.ssh/id_rsa -N ""
-	ssh-copy-id -i ~/.ssh/id_rsa.pub replifactory-device@$(VPS_IP)
-	make vps
-
 
 COMPOSE_OPT = --build --force-recreate
 DOCKER_BUILD_OPT =
-DOCKER_TAG = replifactory:7-latest
+DOCKER_TAG = biofactory:latest
 
 docker-build:
 	docker build $(DOCKER_BUILD_OPT) -t $(DOCKER_TAG) .

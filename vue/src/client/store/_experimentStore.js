@@ -5,7 +5,7 @@ export default {
   state: {
     // audioContext: new (window.AudioContext || window.webkitAudioContext)(),
 
-    hostname: "replifactory_GUI",
+    hostname: "biofactory_GUI",
     errorMessage: null,
     experiments: [],
     currentExperiment: {

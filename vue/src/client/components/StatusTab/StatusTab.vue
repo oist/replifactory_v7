@@ -96,7 +96,7 @@ export default {
           const a = document.createElement("a");
           // URL.createObjectURL creates a URL representing the file
           a.href = URL.createObjectURL(file);
-          a.download = document.title + "_replifactory.db";
+          a.download = document.title + "_biofactory.db";
           // Add the link to the document
           document.body.appendChild(a);
           // Simulate click on the link

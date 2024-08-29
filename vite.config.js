@@ -20,7 +20,7 @@ export default defineConfig({
   base: "/",
   publicDir: "./public",
   build: {
-    outDir: resolve(__dirname, "backend/replifactory/server/static/build"),
+    outDir: resolve(__dirname, "backend/biofactory/server/static/build"),
     assetsDir: "./",
     rollupOptions: {
       input: resolve(__dirname, "vue/index.html"),

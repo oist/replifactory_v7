@@ -1,4 +1,4 @@
-from replifactory.machine import Reactor, reactor_command
+from biofactory.machine import Reactor, reactor_command
 
 
 class MockReactor(Reactor):

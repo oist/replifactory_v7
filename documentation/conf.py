@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "replifactory"
-copyright = "2023, Catalin Rusnac"
-author = "Catalin Rusnac"
+project = "biofactory"
+copyright = "2024, Fedor Gagarin"
+author = "Fedor Gagarin"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

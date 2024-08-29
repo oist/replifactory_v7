@@ -1,13 +1,21 @@
-# Replifactory
+# Biofactory
 
-### New device initialization
+Tool for controlling various robotic platforms for experimental automation in biological science research and education.
+
+### For Developers
+
+Required tools:
+  * [just](https://github.com/casey/just)
+  * [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
+  * [node](https://nodejs.org/en/download/package-manager) v22
+
 
 #### Write USB String Descriptor
 
 For PCBv5:
 
-1. Plug only one instance of replifactory machine to USB port.
-2. Run `poetry run python replifactory_ftconf.py` to get list of devices urls. Output should looks like:
+1. Plug only one instance of machine to USB port.
+2. Run `poetry run ftconf` to get list of devices urls. Output should looks like:
 
    ```
    Available interfaces:
@@ -21,12 +29,12 @@ For PCBv5:
 
 3. Now write new machine serial number to selected interface:
    ```
-   poetry run python replifactory_ftconf.py -i data.ini -s FT050000 -u ftdi://ftdi:2232:1:e/2
+   poetry run python ftconf -i data.ini -s FT050000 -u ftdi://ftdi:2232:1:e/2
    ```
 4. Check the result. Read configuration from EEPROM:
 
    ```
-   poetry run python replifactory_ftconf.py -o - ftdi://ftdi:2232:1:e/2
+   poetry run python ftconf -o - ftdi://ftdi:2232:1:e/2
    ```
 
    Output should look like:
@@ -45,7 +53,7 @@ For PCBv5:
    out_isochronous = true
    in_isochronous = true
    manufacturer = OIST_ESB
-   product = Replifactory
+   product = Biofactory
    serial = FT050005
    channel_a_driver = VCP
    channel_b_driver = VCP

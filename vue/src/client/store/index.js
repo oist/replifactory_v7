@@ -13,7 +13,7 @@ export default createStore({
     deviceConnected: false,
     deviceControlEnabled: true,
     experimentRunning: null,
-    hostname: "replifactory_GUI",
+    hostname: "biofactory_GUI",
     backendConnected: false,
     messages: [],
     debug: false,

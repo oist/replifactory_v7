@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-wsgi_app = "replifactory.app"
+wsgi_app = "biofactory.app"
 
 # Server Socket
 PORT = os.environ.get("PORT", 5000)

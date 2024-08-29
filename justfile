@@ -1,4 +1,6 @@
 
+set dotenv-load
+
 install-libusb:
     sudo apt install libusb-1.0-0
 
@@ -39,7 +41,7 @@ lint-vue:
 
 
 run: install
-    poetry run replifactory
+    poetry run biofactory
 
 run-flask:
     poetry run flask -e .env run

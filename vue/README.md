@@ -1,4 +1,4 @@
-# replifactory_gui
+# Biofactory UI
 
 ## Project setup
 

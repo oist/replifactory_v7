@@ -1,7 +1,7 @@
 {
-  "name": "replifactory-ui",
+  "name": "biofactory-ui",
   "version": "1.0.0",
-  "description": "Сontrol a machine for bacterial growth experiments.",
+  "description": "User interface for biofactory backend.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,24 +17,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/catalin-rusnac/replifactory_v7.git"
+    "url": "git+https://github.com/oist/biofactory.git"
   },
-  "author": "Catalin Rusnac <ctlnrsnc@gmail.com> (https://www.linkedin.com/in/cata7in/)",
+  "author": "Fedor Gagarin <fddgagarin@gmail.com> (https://www.linkedin.com/in/fgagarin/)",
   "contributors": [
-    {
-      "name": "Fedor Gagarin",
-      "email": "fddgagarin@gmail.com",
-      "url": "https://www.linkedin.com/in/fgagarin/"
-    }
   ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "bugs": {
-    "url": "https://github.com/catalin-rusnac/replifactory_v7/issues"
+    "url": "https://github.com/oist/biofactory/issues"
   },
-  "homepage": "https://www.replifactory.com/",
+  "homepage": "https://github.com/oist/biofactory",
   "dependencies": {
     "@coreui/coreui": "^4.2.6",
     "@coreui/icons": "^3.0.1",

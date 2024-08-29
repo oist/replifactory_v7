@@ -6,14 +6,14 @@ const routes = [
   {
     path: "/",
     name: "Index",
-    component: () => import("@/client/pages/ReplifactoryPage.vue"),
+    component: () => import("@/client/pages/BiofactoryPage.vue"),
     beforeEnter: requireAuth,
     children: [
       {
         path: "/home",
         alias: "/",
         name: "Home",
-        component: () => import("@/client/pages/replifactory/HomeSection.vue"),
+        component: () => import("@/client/pages/biofactory/HomeSection.vue"),
       },
       {
         path: "/machine",
@@ -23,25 +23,25 @@ const routes = [
       {
         path: "/experiments",
         name: "Experiments",
-        component: () => import("@/client/pages/replifactory/ExperimentSection.vue"),
+        component: () => import("@/client/pages/biofactory/ExperimentSection.vue"),
         children: [
           {
             path: "/experiments/new",
             alias: "/experiments/",
             name: "NewExperiment",
-            component: () => import("@/client/pages/replifactory/experiments/NewExperimentForm.vue"),
+            component: () => import("@/client/pages/biofactory/experiments/NewExperimentForm.vue"),
           },
           {
             path: "/experiments/:id",
             name: "ExperimentDetail",
-            component: () => import("@/client/pages/replifactory/experiments/ExperimentDetail.vue"),
+            component: () => import("@/client/pages/biofactory/experiments/ExperimentDetail.vue"),
           }
         ],
       },
       {
         path: "/maintance",
         name: "Maintance",
-        component: () => import("@/client/pages/replifactory/MaintanceSection.vue"),
+        component: () => import("@/client/pages/biofactory/MaintanceSection.vue"),
       },
       {
         path: "/archive",

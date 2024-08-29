@@ -1,4 +1,4 @@
-Welcome to the replifactory documentation!
+Welcome to the biofactory documentation!
 ==========================================
 
 .. toctree::

@@ -49,5 +49,5 @@ window.Vue = Vue;
   app.use(router);
   app.provide("icons", icons);
   app.provide("appVersion", __version__);
-  app.mount("#replifactory");
+  app.mount("#biofactory");
 })();

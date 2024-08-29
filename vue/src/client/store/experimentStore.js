@@ -5,7 +5,7 @@ export default {
   state: {
     experiments: {},
 
-    // hostname: "replifactory_GUI",
+    // hostname: "biofactory_GUI",
     // errorMessage: null,
     // experiments: [],
     // currentExperiment: {

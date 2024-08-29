@@ -1,6 +1,6 @@
 <template>
   <div class="HomeTab">
-    <h1>Welcome to replifactory!</h1>
+    <h1>Welcome to biofactory!</h1>
     <p>
       To start using the app, navigate to the 'Device' tab and start controlling
       your device.

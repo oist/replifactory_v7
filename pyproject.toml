@@ -1,18 +1,18 @@
 [tool.poetry]
-name = "replifactory"
+name = "biofactory"
 version = "0.1.0"
-description = "replifactory morbidostat python package"
+description = "Tool for controlling various robotic platforms for experimental automation in biological science research and education."
 authors = ["Fedor Gagarin <fddgagarin@gmail.com>"]
 maintainers = []
 readme = "README.md"
-homepage = "https://replifactory.com"
+homepage = "https://github.com/oist/biofactory"
 packages = [
-    { include = "replifactory", from = "backend" },
+    { include = "biofactory", from = "backend" },
 ]
 
 [tool.poetry.scripts]
-ftconf = 'replifactory.ftconf:main'
-replifactory = 'replifactory.app:main'
+ftconf = 'biofactory.ftconf:main'
+biofactory = 'biofactory.app:main'
 
 [tool.poetry.dependencies]
 python = ">=3.10.0, <3.13"
@@ -87,7 +87,7 @@ pythonpath = "backend"
 testpaths = ["backend_tests"]
 addopts = [
     "--import-mode=importlib",
-    "--cov=replifactory",
+    "--cov=biofactory",
     "--cov-report=xml",
     "--cov-report=term",
 ]
@@ -127,7 +127,7 @@ format-jinja = """
 """
 
 [tool.poetry-dynamic-versioning.substitution]
-files = ["**/replifactory/__init__.py", "**/versions*.js"]
+files = ["**/biofactory/__init__.py", "**/versions*.js"]
 folders = [
   { path = "backend" }
 ]

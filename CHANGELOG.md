@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## [v0.1.0](https://github.com/oist/replifactory_v7/releases/tag/v0.1.0) - 2024-08-05
+## [0.1.0](https://github.com/oist/replifactory_v7/releases/tag/0.1.0) - 2024-08-29
 
-<small>[Compare with first commit](https://github.com/oist/replifactory_v7/compare/6c8e6958fcfcefe3043854997b550cfc5e69cb36...v0.1.0)</small>
+<small>[Compare with first commit](https://github.com/oist/replifactory_v7/compare/6c8e6958fcfcefe3043854997b550cfc5e69cb36...0.1.0)</small>
 
 ### Features
 
@@ -66,5 +66,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Continuous Integration
 
+- add linter for backend ([cd4b47a](https://github.com/oist/replifactory_v7/commit/cd4b47a539169db13e7218d9a10b529b77bb6e34) by Fedor Gagarin).
 - single docker image ([5083978](https://github.com/oist/replifactory_v7/commit/5083978d2d283aad9c0821714f9b086c30ff076e) by Fedor Gagarin).
 

@@ -1,6 +1,6 @@
 from flask import Flask
 
-from replifactory.util.flask import get_json_command_from_request
+from biofactory.util.flask import get_json_command_from_request
 
 
 def test_get_json_command_from_request():

@@ -3,9 +3,9 @@
 ## Object model
 
 ```yml
-# experiments/replifactory.experiment.MorbidostatExperiment/presets/slow_growth.yaml
+# experiments/biofactory.experiment.MorbidostatExperiment/presets/slow_growth.yaml
 experiment:
-  class: replifactory.experiment.MorbidostatExperiment
+  class: biofactory.experiment.MorbidostatExperiment
   parameters:
     volume_added: 0.5  # ml
     od_threshold: 0.400
@@ -24,12 +24,12 @@ experiment:
       volume_fixed: 5.0  # ml
 ```
 
-experiments/replifactory.experiment.MorbidostatExperiment/presets/slow_growth.yaml
-experiments/replifactory.experiment.MorbidostatExperiment/runs/20240620_114735/_experiment.yaml
+experiments/biofactory.experiment.MorbidostatExperiment/presets/slow_growth.yaml
+experiments/biofactory.experiment.MorbidostatExperiment/runs/20240620_114735/_experiment.yaml
 
 ```yaml
 experiment:
-  class: replifactory.experiment.MorbidostatExperiment
+  class: biofactory.experiment.MorbidostatExperiment
   parameters:
     volume_added: 0.5  # ml
     od_threshold: 0.400
@@ -47,7 +47,7 @@ experiment:
       culture_comment: BY4741
       reactor: reactor-2
 machine:
-    class: replifactory.machine.replifactory_v5.ReplifactoryMachine
+    class: biofactory.machine.replifactory_v5.ReplifactoryMachine
     parameters:
       serial_number: FT05001
     reactors:
@@ -94,9 +94,9 @@ machine:
           0.500: 0.5
 ```
 
-experiments/replifactory.experiment.MorbidostatExperiment/runs/20240620_114735/_experiment.log
-experiments/replifactory.experiment.MorbidostatExperiment/runs/20240620_114735/reactor-1.csv
-experiments/replifactory.experiment.MorbidostatExperiment/runs/20240620_114735/reactor-2.csv
+experiments/biofactory.experiment.MorbidostatExperiment/runs/20240620_114735/_experiment.log
+experiments/biofactory.experiment.MorbidostatExperiment/runs/20240620_114735/reactor-1.csv
+experiments/biofactory.experiment.MorbidostatExperiment/runs/20240620_114735/reactor-2.csv
 
 ## Processes
 

@@ -4,7 +4,7 @@ node_modules/
 /data/
 /.idea/
 .vscode/
-backend/replifactory/server/static/build/
+backend/biofactory/server/static/build/
 cache_manifest.json
 dist/
 
